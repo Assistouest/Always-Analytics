@@ -82,6 +82,7 @@ class Statify_Activator {
             is_logged_in    TINYINT(1)      DEFAULT 0,
             user_id         BIGINT UNSIGNED DEFAULT 0,
             scroll_depth    TINYINT UNSIGNED DEFAULT 0,
+            hit_source      VARCHAR(20)     DEFAULT 'js',
             hit_at          DATETIME        NOT NULL,
             PRIMARY KEY  (id),
             KEY idx_hit_at       (hit_at),
@@ -161,6 +162,25 @@ class Statify_Activator {
         }
         if ( ! in_array( 'engagement_time', $cols_s, true ) ) {
             $wpdb->query( "ALTER TABLE {$table_sessions} ADD COLUMN engagement_time INT UNSIGNED DEFAULT 0 AFTER max_scroll_depth" );
+        }
+
+        // ── v1.2 migrations ────────────────────────────────────────────────────
+        // Colonne hit_source : distingue hits JS, noscript, pre_consent
+        $cols = $wpdb->get_col( "DESCRIBE {$table_hits}", 0 );
+        if ( ! in_array( 'hit_source', $cols, true ) ) {
+            $wpdb->query( "ALTER TABLE {$table_hits} ADD COLUMN hit_source VARCHAR(20) DEFAULT 'js' AFTER scroll_depth" );
+        }
+
+        // Index sur hit_source pour les filtrages dashboard
+        $indexes = $wpdb->get_results( "SHOW INDEX FROM {$table_hits}", ARRAY_A );
+        $idx_names = array_column( $indexes, 'Key_name' );
+        if ( ! in_array( 'idx_hit_source', $idx_names, true ) ) {
+            $wpdb->query( "ALTER TABLE {$table_hits} ADD INDEX idx_hit_source (hit_source)" );
+        }
+
+        // Colonne is_superseded sur hits (pre_consent fusionné → marquer pour exclusion)
+        if ( ! in_array( 'is_superseded', $cols, true ) ) {
+            $wpdb->query( "ALTER TABLE {$table_hits} ADD COLUMN is_superseded TINYINT(1) DEFAULT 0 AFTER hit_source" );
         }
 
         update_option( 'statify_db_version', STATIFY_VERSION );
@@ -294,7 +314,7 @@ class Statify_Activator {
             'tracking_mode'      => 'cookieless',    // 'cookieless' or 'cookie'
             'excluded_roles'     => array( 'administrator' ),
             'excluded_ips'       => '',
-            'anonymize_ip'       => true,
+            'anonymize_ip'       => true,            // FORCÉ true — requis RGPD mode cookieless
             'retention_days'     => 90,
             'delete_on_uninstall'=> true,
             'geo_enabled'        => true,

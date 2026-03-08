@@ -50,15 +50,20 @@ class Statify_Tracker {
         }
 
         // ── Visitor hash ───────────────────────────────────────────────────────
-        $tracking_mode = isset( $options['tracking_mode'] ) ? $options['tracking_mode'] : 'cookieless';
-        $visitor_hash  = self::generate_visitor_hash( $ip, $ua_string, $tracking_mode, $data );
+        $tracking_mode  = isset( $options['tracking_mode'] ) ? $options['tracking_mode'] : 'cookieless';
+        // $effective_mode peut differrer de $tracking_mode si visitorId est absent
+        // en mode cookie (fallback cookieless automatique - aucune visite perdue).
+        $effective_mode = $tracking_mode;
+        $visitor_hash   = self::generate_visitor_hash( $ip, $ua_string, $tracking_mode, $data, $effective_mode );
 
         if ( empty( $visitor_hash ) ) {
             return false;
         }
 
         // ── Nouveau visiteur ? ─────────────────────────────────────────────────
-        $is_new = self::is_new_visitor( $visitor_hash, $tracking_mode );
+        // Utilise $effective_mode : si fallback cookieless, is_new = lookup du jour
+        // (pas lookup global qui serait faux sur un hash qui change chaque jour).
+        $is_new = self::is_new_visitor( $visitor_hash, $effective_mode );
 
         // ── Post ID / type ─────────────────────────────────────────────────────
         $post_id   = isset( $data['postId'] ) ? absint( $data['postId'] ) : 0;
@@ -117,6 +122,12 @@ class Statify_Tracker {
             'is_logged_in'    => is_user_logged_in() ? 1 : 0,
             'user_id'         => get_current_user_id(),
             'scroll_depth'    => 0, // mis à jour par les events scroll
+            // hit_source : si mode cookie mais visitorId absent (fallback cookieless),
+            // on marque 'js_cookieless' pour distinguer dans les stats.
+            'hit_source'      => isset( $data['hitSource'] )
+                ? sanitize_key( $data['hitSource'] )
+                : ( 'cookie' === $tracking_mode && 'cookieless' === $effective_mode ? 'js_cookieless' : 'js' ),
+            'is_superseded'   => 0,
             'hit_at'          => current_time( 'mysql', true ), // UTC
         );
 
@@ -146,6 +157,207 @@ class Statify_Tracker {
         do_action( 'statify_after_track', $hit_id, $hit_data );
 
         return $hit_id;
+    }
+
+    // ── Noscript tracker ──────────────────────────────────────────────────────
+
+    /**
+     * Enregistre un hit minimal depuis le pixel <noscript>.
+     * Toujours en mode cookieless : IP anonymisée, pas de cookie, pas de visitorId.
+     * Appelé uniquement si JS est désactivé (le pixel <noscript> n'est chargé
+     * que quand JS est absent — garantie navigateur).
+     *
+     * Déduplication : on vérifie si un hit JS récent (< 60s) existe pour le même
+     * hash afin de se protéger contre des cas edge (proxies, crawlers malveillants
+     * qui chargent à la fois JS et noscript).
+     *
+     * @param array $data Données parsées depuis les query params GET.
+     * @return int|false  ID du hit inséré, ou false si ignoré.
+     */
+    public static function track_noscript( $data ) {
+        global $wpdb;
+
+        $options = get_option( 'statify_options', array() );
+
+        // ── Bot filter ────────────────────────────────────────────────────────
+        $ua_string = isset( $_SERVER['HTTP_USER_AGENT'] )
+            ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) )
+            : '';
+
+        $bot_mode = isset( $options['bot_filter_mode'] ) ? $options['bot_filter_mode'] : 'normal';
+        if ( 'off' !== $bot_mode && Statify_Bot_Filter::is_bot( $ua_string, $bot_mode ) ) {
+            return false;
+        }
+
+        // ── IP — toujours anonymisée en noscript ──────────────────────────────
+        $ip = self::get_client_ip();
+        if ( self::is_excluded_ip( $ip, $options ) ) {
+            return false;
+        }
+        $ip_anon    = Statify_Privacy::anonymize_ip( $ip );
+        $ip_for_geo = $ip; // IP réelle pour la géoloc, avant anonymisation
+
+        // ── Hash cookieless standard ──────────────────────────────────────────
+        $accept_lang = isset( $_SERVER['HTTP_ACCEPT_LANGUAGE'] )
+            ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_ACCEPT_LANGUAGE'] ) )
+            : '';
+        $daily_salt   = gmdate( 'Y-m-d' );
+        $visitor_hash = hash( 'sha256', $ip_anon . $ua_string . $accept_lang . $daily_salt );
+
+        // ── Déduplication : hit JS récent pour ce hash ? ──────────────────────
+        $table = $wpdb->prefix . 'statify_hits';
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $recent_js = $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$table}
+             WHERE visitor_hash = %s
+               AND hit_source IN ('js','pre_consent')
+               AND hit_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 60 SECOND)
+             LIMIT 1",
+            $visitor_hash
+        ) );
+        if ( (int) $recent_js > 0 ) {
+            return false; // hit JS déjà présent — on ignore le pixel noscript
+        }
+
+        // ── Device depuis UA ──────────────────────────────────────────────────
+        $device_info = self::parse_user_agent( $ua_string );
+
+        // ── Géolocalisation ───────────────────────────────────────────────────
+        $geo = array( 'country_code' => '', 'region' => '', 'city' => '' );
+        if ( ! empty( $options['geo_enabled'] ) ) {
+            $geo_provider = isset( $options['geo_provider'] ) ? $options['geo_provider'] : 'native';
+            $geolocation  = new Statify_Geolocation( $geo_provider, $options );
+            $geo          = $geolocation->lookup( $ip_for_geo );
+        }
+
+        // ── Nouveau visiteur ──────────────────────────────────────────────────
+        $is_new = self::is_new_visitor( $visitor_hash, 'cookieless' );
+
+        // ── URL / referrer ─────────────────────────────────────────────────────
+        $page_url   = isset( $data['url'] )     ? esc_url_raw( $data['url'] )               : '';
+        $page_title = isset( $data['title'] )   ? sanitize_text_field( $data['title'] )     : '';
+        $post_id    = isset( $data['postId'] )  ? absint( $data['postId'] )                 : 0;
+        $referrer   = isset( $data['referrer'] )? esc_url_raw( $data['referrer'] )          : '';
+        $referrer_domain = '';
+        if ( $referrer ) {
+            $parsed          = wp_parse_url( $referrer );
+            $referrer_domain = isset( $parsed['host'] ) ? sanitize_text_field( $parsed['host'] ) : '';
+            $site_host       = wp_parse_url( home_url(), PHP_URL_HOST );
+            $strip_www       = function( $h ) { return preg_replace( '/^www\./i', '', $h ); };
+            if ( $referrer_domain && $strip_www( $referrer_domain ) === $strip_www( $site_host ) ) {
+                $referrer = $referrer_domain = '';
+            }
+        }
+
+        // ── Session ID unique pour ce hit noscript ────────────────────────────
+        // Pas de sessionStorage disponible → chaque chargement de page est sa propre session.
+        $session_id = 'noscript_' . wp_generate_uuid4();
+
+        // ── Hit data ──────────────────────────────────────────────────────────
+        $hit_data = array(
+            'visitor_hash'    => $visitor_hash,
+            'session_id'      => $session_id,
+            'page_url'        => $page_url,
+            'page_title'      => $page_title,
+            'post_id'         => $post_id,
+            'post_type'       => $post_id > 0 ? ( get_post_type( $post_id ) ?: '' ) : '',
+            'referrer'        => $referrer,
+            'referrer_domain' => $referrer_domain,
+            'utm_source'      => isset( $data['utm_source'] )   ? sanitize_text_field( $data['utm_source'] )   : '',
+            'utm_medium'      => isset( $data['utm_medium'] )   ? sanitize_text_field( $data['utm_medium'] )   : '',
+            'utm_campaign'    => isset( $data['utm_campaign'] ) ? sanitize_text_field( $data['utm_campaign'] ) : '',
+            'device_type'     => $device_info['device_type'],
+            'browser'         => $device_info['browser'],
+            'browser_version' => $device_info['browser_version'],
+            'os'              => $device_info['os'],
+            'os_version'      => $device_info['os_version'],
+            'screen_width'    => 0,
+            'screen_height'   => 0,
+            'country_code'    => sanitize_text_field( $geo['country_code'] ),
+            'region'          => sanitize_text_field( $geo['region'] ),
+            'city'            => sanitize_text_field( $geo['city'] ),
+            'is_new_visitor'  => $is_new ? 1 : 0,
+            'is_logged_in'    => 0,
+            'user_id'         => 0,
+            'scroll_depth'    => 0,
+            'hit_source'      => 'noscript',
+            'is_superseded'   => 0,
+            'hit_at'          => current_time( 'mysql', true ),
+        );
+
+        $hit_data = apply_filters( 'statify_before_track', $hit_data );
+        if ( empty( $hit_data ) ) {
+            return false;
+        }
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $inserted = $wpdb->insert( $table, $hit_data );
+        if ( false === $inserted ) {
+            return false;
+        }
+
+        $hit_id = $wpdb->insert_id;
+
+        // Session minimale (bounce automatique, durée 0)
+        Statify_Session::update_session( $session_id, $hit_data );
+
+        do_action( 'statify_after_track', $hit_id, $hit_data );
+        return $hit_id;
+    }
+
+    // ── Pre-consent upgrade ───────────────────────────────────────────────────
+
+    /**
+     * Fusionne un hit pre_consent avec le hit cookie complet après acceptation.
+     *
+     * Scénario mode cookie + bannière :
+     *   1. Visiteur arrive → JS envoie un hit cookieless avancé (hit_source='pre_consent')
+     *      avec le sessionId de sessionStorage. Scroll, heartbeat, durée sont collectés.
+     *   2. Visiteur accepte → JS envoie le hit complet (visitorId cookie) en incluant
+     *      preConsentSessionId pour permettre la fusion.
+     *   3. Cette méthode :
+     *      - Marque les hits pre_consent comme is_superseded=1 (exclus du comptage UV)
+     *      - Rattache la session pre_consent au visitor_hash définitif (cookie)
+     *      - Les données scroll/durée/engagement sont ainsi conservées et rattachées
+     *
+     * @param string $pre_session_id   SessionId du hit pre_consent à fusionner.
+     * @param string $new_visitor_hash Visitor hash définitif (depuis cookie).
+     * @return bool
+     */
+    public static function upgrade_pre_consent( $pre_session_id, $new_visitor_hash ) {
+        global $wpdb;
+        $table_hits = $wpdb->prefix . 'statify_hits';
+        $table_sess = $wpdb->prefix . 'statify_sessions';
+
+        if ( empty( $pre_session_id ) || empty( $new_visitor_hash ) ) {
+            return false;
+        }
+
+        // Marquer tous les hits pre_consent de cette session comme superseded
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $updated = $wpdb->update(
+            $table_hits,
+            array( 'is_superseded' => 1 ),
+            array( 'session_id' => $pre_session_id, 'hit_source' => 'pre_consent' ),
+            array( '%d' ),
+            array( '%s', '%s' )
+        );
+
+        // Rattacher la session pre_consent au visitor_hash définitif
+        // Les données de scroll/durée/engagement collectées avant consentement
+        // sont ainsi liées au visiteur identifié par cookie.
+        if ( $updated ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+            $wpdb->update(
+                $table_sess,
+                array( 'visitor_hash' => $new_visitor_hash ),
+                array( 'session_id'   => $pre_session_id ),
+                array( '%s' ),
+                array( '%s' )
+            );
+        }
+
+        return (bool) $updated;
     }
 
     // ── Scroll event ──────────────────────────────────────────────────────────
@@ -257,18 +469,21 @@ class Statify_Tracker {
 
     // ── Visitor hash ───────────────────────────────────────────────────────────
 
-    private static function generate_visitor_hash( $ip, $ua_string, $tracking_mode, $data ) {
+    private static function generate_visitor_hash( $ip, $ua_string, $tracking_mode, $data, &$effective_mode = null ) {
         if ( 'cookie' === $tracking_mode ) {
-            // En mode cookie, le JS envoie toujours le visitorId.
-            // Si absent (JS désactivé, bloqueur…), on refuse le hit pour
-            // éviter de créer un doublon via le hash IP/UA.
             if ( ! empty( $data['visitorId'] ) ) {
+                // Cas nominal : visitorId cookie present -> hash permanent.
+                if ( null !== $effective_mode ) $effective_mode = 'cookie';
                 return hash( 'sha256', sanitize_text_field( $data['visitorId'] ) );
             }
-            return ''; // hash vide → hit refusé dans track()
+            // Fallback cookieless : visitorId absent (cookie bloque, JS qui plante,
+            // bloqueur de pub, mode navigation privee...).
+            // On ne refuse plus le hit - on le capture avec un hash journalier
+            // exactement comme le mode cookieless, pour ne perdre aucune visite.
+            if ( null !== $effective_mode ) $effective_mode = 'cookieless';
         }
 
-        // Mode cookieless : hash journalier SHA-256(IP + UA + Accept-Language + date)
+        // Hash journalier SHA-256(IP_anonymisee + UA + Accept-Language + date UTC)
         $accept_lang = isset( $_SERVER['HTTP_ACCEPT_LANGUAGE'] )
             ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_ACCEPT_LANGUAGE'] ) )
             : '';

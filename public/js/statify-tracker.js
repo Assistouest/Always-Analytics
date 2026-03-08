@@ -1,14 +1,33 @@
 /**
- * Advanced Stats — Front-end Tracker v4
- * Tracking : page vue, durée de session (heartbeat + sendBeacon),
- *            temps d'engagement (visibilité), profondeur de scroll (25/50/75/100%).
+ * Advanced Stats — Front-end Tracker v5
  *
- * Changements majeurs vs v3 :
- * - sendBeacon + visibilitychange pour ping final au départ → élimine ~80% des sessions 0s
- * - Premier ping réduit à 5s (au lieu de 10s)
- * - Calcul de durée côté client (engagement time) transmis au serveur
- * - Heartbeat adapté à la visibilité : pause quand l'onglet est masqué, reprise au retour
- * - Fallback pagehide/beforeunload pour navigateurs sans support visibilitychange
+ * Modes de fonctionnement :
+ *
+ * ── Mode cookieless (trackingMode = 'cookieless') ──────────────────────────
+ *   Démarre immédiatement. Hash côté serveur (IP+UA+date). Aucun cookie.
+ *   Scroll, heartbeat, sendBeacon pleinement actifs.
+ *
+ * ── Mode cookie + bannière (trackingMode = 'cookie', preConsentEnabled = true) ──
+ *   Phase 1 — PRE_CONSENT (avant réponse bannière) :
+ *     • Envoi immédiat d'un hit 'pre_consent' en mode cookieless avancé
+ *     • Scroll, heartbeat, durée collectés normalement (même sessionId)
+ *
+ *   Phase 2a — GRANTED (visiteur accepte) :
+ *     • Cookie visitorId créé (13 mois)
+ *     • Hit complet envoyé avec preConsentSessionId → fusion côté serveur
+ *       (hit pre_consent marqué superseded, session rattachée au visitor cookie)
+ *     • 0 doublon garanti
+ *
+ *   Phase 2b — DENIED (visiteur refuse) :
+ *     • Cookie statify_vid supprimé s'il existe
+ *     • Hit pre_consent reste en base comme visite anonyme (cookieless)
+ *
+ *   Phase 2c — Page fermée sans décision :
+ *     • sendBeacon final envoyé avec scroll/durée collectés
+ *     • Hit pre_consent reste en base comme visite anonyme
+ *
+ * ── Mode cookie sans bannière (preConsentEnabled absent/false) ────────────
+ *   Démarre immédiatement avec cookie visitorId. Tracking complet.
  */
 (function () {
     'use strict';
@@ -18,88 +37,138 @@
     var config      = statifyConfig;
     var COOKIE_VID  = 'statify_vid';
     var COOKIE_CONS = 'statify_consent';
-    var COOKIE_DAYS = 395;  // 13 mois — recommandation CNIL pour cookies analytiques
+    var COOKIE_DAYS = 395;
 
     // ── Chronomètre d'engagement ──────────────────────────────────────────────
-    // Mesure le temps réel passé sur la page (uniquement quand l'onglet est visible).
-    // Similaire au "engagement time" de GA4.
+    var _pageStartTime   = Date.now();
+    var _engagementMs    = 0;
+    var _lastVisibleTime = Date.now();
+    var _isPageVisible   = !document.hidden;
+    var _hitSent         = false;
+    var _finalPingSent   = false;
+    var _preConsentPromise = null; // Promesse du hit pre_consent — attendue avant d'envoyer le hit complet
 
-    var _pageStartTime    = Date.now();           // timestamp absolu du chargement
-    var _engagementMs     = 0;                    // temps d'engagement cumulé (ms)
-    var _lastVisibleTime  = Date.now();           // dernier moment où la page est devenue visible
-    var _isPageVisible    = !document.hidden;     // état courant de visibilité
-    var _hitSent          = false;                // le hit initial a-t-il été envoyé ?
-    var _finalPingSent    = false;                // le ping final a-t-il été envoyé ?
-
-    /**
-     * Met à jour le compteur d'engagement.
-     * Appelé à chaque transition visible→caché ou avant chaque ping.
-     */
     function updateEngagement() {
         if (_isPageVisible) {
             _engagementMs += Math.max(0, Date.now() - _lastVisibleTime);
             _lastVisibleTime = Date.now();
         }
     }
-
-    /**
-     * Durée totale depuis le chargement en secondes.
-     */
     function totalDurationSeconds() {
         return Math.round(Math.max(0, Date.now() - _pageStartTime) / 1000);
     }
-
-    /**
-     * Durée d'engagement en secondes (page visible uniquement).
-     */
     function engagementSeconds() {
         updateEngagement();
         return Math.round(_engagementMs / 1000);
     }
 
-    // ── Consentement ──────────────────────────────────────────────────────────
+    // ── État du consentement ──────────────────────────────────────────────────
 
     function consentStatus() {
         if (config.trackingMode !== 'cookie') return 'not_required';
-        if (config.consentGiven === 'not_required') return 'not_required';
-        if (window.statifyConsentStatus) return window.statifyConsentStatus;
+        if (!config.preConsentEnabled)        return 'not_required';
+        if (window.statifyConsentStatus)      return window.statifyConsentStatus;
         var stored = getCookie(COOKIE_CONS);
         if (stored === 'granted') { window.statifyConsentStatus = 'granted'; return 'granted'; }
         if (stored === 'denied')  { window.statifyConsentStatus = 'denied';  return 'denied'; }
         return 'pending';
     }
 
-    // ── Tracking principal ────────────────────────────────────────────────────
+    // ── Point d'entrée ────────────────────────────────────────────────────────
 
     function track() {
         var cs = consentStatus();
-        if (cs === 'denied') return;
-        if (cs === 'pending') {
-            window.statifyOnConsent = function (status) {
-                if (status === 'granted') doSendHit();
-            };
+
+        if (cs === 'denied') {
+            deleteVisitorCookie();
             return;
         }
-        doSendHit();
+
+        if (cs === 'not_required' || cs === 'granted') {
+            doSendHit('js');
+            return;
+        }
+
+        // cs === 'pending' : cookieless avancé immédiatement
+        doSendPreConsent();
+
+        window.statifyOnConsent = function (status) {
+            if (status === 'granted') {
+                onConsentGranted();
+            } else {
+                onConsentDenied();
+            }
+        };
     }
 
-    function doSendHit() {
-        var data = collectData();
+    // ── Phase pre_consent ─────────────────────────────────────────────────────
+
+    function doSendPreConsent() {
+        var data = collectBaseData();
         if (!data) return;
-        sendPost(data);
+        data.action    = 'pre_consent';
+        data.hitSource = 'pre_consent';
+        // Stocker la Promise pour pouvoir l'attendre dans onConsentGranted()
+        // Protège contre la race condition si l'utilisateur accepte en < 200ms
+        _preConsentPromise = sendPost(data);
         _hitSent = true;
-
-        // Démarre le scroll tracker après l'envoi du hit initial
         initScrollTracker();
-
-        // Démarre le suivi de visibilité et les heartbeats
         initVisibilityTracker();
         startHeartbeat();
     }
 
-    // ── Collecte ──────────────────────────────────────────────────────────────
+    // ── Acceptation ───────────────────────────────────────────────────────────
 
-    function collectData() {
+    function onConsentGranted() {
+        var vid  = getOrCreateVisitorId();
+        var data = collectBaseData();
+        if (!data) return;
+        // vid peut être null si cookie bloqué → fallback cookieless côté serveur.
+        if (vid) data.visitorId = vid;
+        var preSessionId = getSessionId();
+        if (preSessionId) {
+            data.preConsentSessionId = preSessionId;
+        }
+
+        // Attendre que le hit pre_consent soit confirmé reçu par le serveur
+        // avant d'envoyer le hit complet avec preConsentSessionId.
+        // Sans ça, si l'utilisateur accepte en < 200ms, le serveur cherche à fusionner
+        // un hit pre_consent qui n'est pas encore en base → fusion ratée → doublon.
+        Promise.resolve(_preConsentPromise).then(function () {
+            sendPost(data);
+        });
+        // _hitSent déjà true — scroll/heartbeat continuent avec la même session
+    }
+
+    // ── Refus ─────────────────────────────────────────────────────────────────
+
+    function onConsentDenied() {
+        deleteVisitorCookie();
+        // Le hit pre_consent reste en base comme visite anonyme
+    }
+
+    // ── Hit complet (modes sans consentement pending) ─────────────────────────
+
+    function doSendHit(source) {
+        var data = collectBaseData();
+        if (!data) return;
+        if (config.trackingMode === 'cookie') {
+            var vid = getOrCreateVisitorId();
+            // Si vid est null (cookie bloqué), on n'inclut pas visitorId dans le body.
+            // Le serveur détecte l'absence et applique le fallback cookieless automatiquement.
+            if (vid) data.visitorId = vid;
+        }
+        data.hitSource = source || 'js';
+        sendPost(data);
+        _hitSent = true;
+        initScrollTracker();
+        initVisibilityTracker();
+        startHeartbeat();
+    }
+
+    // ── Collecte des données de base ──────────────────────────────────────────
+
+    function collectBaseData() {
         var data = {
             url:          window.location.href,
             title:        document.title,
@@ -108,25 +177,17 @@
             screenHeight: screen.height,
             sessionId:    getSessionId(),
         };
-
         if (config.postId) data.postId = config.postId;
-
         try {
             var p = new URLSearchParams(window.location.search);
             if (p.get('utm_source'))   data.utmSource   = p.get('utm_source');
             if (p.get('utm_medium'))   data.utmMedium   = p.get('utm_medium');
             if (p.get('utm_campaign')) data.utmCampaign = p.get('utm_campaign');
         } catch(e) {}
-
-        if (config.trackingMode === 'cookie') {
-            data.visitorId = getOrCreateVisitorId();
-        }
-
         if (typeof window.statifyBeforeTrack === 'function') {
             data = window.statifyBeforeTrack(data);
             if (!data) return null;
         }
-
         return data;
     }
 
@@ -137,92 +198,61 @@
     function initVisibilityTracker() {
         if (_visibilityInited) return;
         _visibilityInited = true;
-
-        // visibilitychange — standard moderne, déclenché à chaque changement d'onglet/fermeture
         document.addEventListener('visibilitychange', onVisibilityChange);
-
-        // pagehide — filet de sécurité pour iOS Safari (bfcache) et navigation SPA
         window.addEventListener('pagehide', onPageHide);
-
-        // beforeunload — dernier recours pour les anciens navigateurs
         window.addEventListener('beforeunload', onBeforeUnload);
     }
 
     function onVisibilityChange() {
-        if (document.visibilityState === 'hidden') {
-            onPageBecameHidden();
-        } else {
-            onPageBecameVisible();
-        }
+        if (document.visibilityState === 'hidden') { onPageBecameHidden(); }
+        else { onPageBecameVisible(); }
     }
-
     function onPageBecameHidden() {
-        if (_isPageVisible) {
-            updateEngagement();
-            _isPageVisible = false;
-        }
+        if (_isPageVisible) { updateEngagement(); _isPageVisible = false; }
         sendFinalPing();
     }
-
     function onPageBecameVisible() {
         if (!_isPageVisible) {
-            _isPageVisible = true;
+            _isPageVisible   = true;
             _lastVisibleTime = Date.now();
-            // Permet un nouveau ping final au prochain départ
-            _finalPingSent = false;
-            // Ping de réconciliation pour signaler le retour
+            _finalPingSent   = false;
             sendPing();
         }
     }
-
-    function onPageHide() {
-        onPageBecameHidden();
-    }
-
-    function onBeforeUnload() {
-        onPageBecameHidden();
-    }
+    function onPageHide()     { onPageBecameHidden(); }
+    function onBeforeUnload() { onPageBecameHidden(); }
 
     // ── Scroll tracker ────────────────────────────────────────────────────────
 
-    var _scrollSent     = { 25: false, 50: false, 75: false, 100: false };
-    var _scrollInited   = false;
-    var _scrollRaf      = null;
+    var _scrollSent   = { 25: false, 50: false, 75: false, 100: false };
+    var _scrollInited = false;
+    var _scrollRaf    = null;
     var _currentScrollPct = 0;
 
     function initScrollTracker() {
         if (_scrollInited) return;
         _scrollInited = true;
-
         window.addEventListener('scroll', onScroll, { passive: true });
         requestAnimationFrame(checkScrollDepth);
     }
 
     function onScroll() {
         if (_scrollRaf) return;
-        _scrollRaf = requestAnimationFrame(function () {
-            _scrollRaf = null;
-            checkScrollDepth();
-        });
+        _scrollRaf = requestAnimationFrame(function () { _scrollRaf = null; checkScrollDepth(); });
     }
 
     function checkScrollDepth() {
-        var docH    = Math.max(
-            document.body.scrollHeight,
-            document.documentElement.scrollHeight,
-            document.body.offsetHeight,
-            document.documentElement.offsetHeight
+        var docH = Math.max(
+            document.body.scrollHeight, document.documentElement.scrollHeight,
+            document.body.offsetHeight,  document.documentElement.offsetHeight
         );
-        var viewH   = window.innerHeight || document.documentElement.clientHeight;
+        var viewH    = window.innerHeight || document.documentElement.clientHeight;
         var scrolled = window.pageYOffset || document.documentElement.scrollTop || 0;
-
         var scrollable = docH - viewH;
         var pct = scrollable > 10
             ? Math.min(100, Math.round(((scrolled + viewH) / docH) * 100))
             : 100;
-
         _currentScrollPct = pct;
-
         var thresholds = [25, 50, 75, 100];
         for (var i = 0; i < thresholds.length; i++) {
             var t = thresholds[i];
@@ -235,16 +265,18 @@
 
     function sendScrollEvent(depth) {
         var cs = consentStatus();
-        if (cs === 'denied' || cs === 'pending') return;
+        if (cs === 'denied') return;
+        if (!_hitSent) return;
 
         var data = {
-            action:     'scroll',
-            sessionId:  getSessionId(),
+            action:      'scroll',
+            sessionId:   getSessionId(),
             scrollDepth: depth,
-            url:        window.location.href,
+            url:         window.location.href,
         };
 
-        if (config.trackingMode === 'cookie') {
+        // En mode pending (pre_consent) : on envoie le scroll sans visitorId
+        if (config.trackingMode === 'cookie' && cs !== 'pending') {
             data.visitorId = getCookie(COOKIE_VID);
             if (!data.visitorId) return;
         }
@@ -252,35 +284,30 @@
         sendPost(data);
     }
 
-    // ── Heartbeat (durée de session) ──────────────────────────────────────────
+    // ── Heartbeat ─────────────────────────────────────────────────────────────
 
     function startHeartbeat() {
-        // Premier ping après 5 secondes (réduit depuis 10s)
         setTimeout(function () {
             sendPing();
-            // Puis heartbeat régulier toutes les 15 secondes
             setInterval(sendPing, 15000);
         }, 5000);
     }
 
     function sendPing() {
         var cs = consentStatus();
-        if (cs === 'denied' || cs === 'pending') return;
+        if (cs === 'denied') return;
         if (!_hitSent) return;
-
-        // On n'envoie pas de ping heartbeat si l'onglet est caché
-        // (le ping final via sendBeacon s'en occupe)
         if (document.hidden) return;
 
         var data = {
-            action:          'ping',
-            sessionId:       getSessionId(),
-            scrollDepth:     _currentScrollPct,
-            clientDuration:  totalDurationSeconds(),
-            engagementTime:  engagementSeconds(),
+            action:         'ping',
+            sessionId:      getSessionId(),
+            scrollDepth:    _currentScrollPct,
+            clientDuration: totalDurationSeconds(),
+            engagementTime: engagementSeconds(),
         };
 
-        if (config.trackingMode === 'cookie') {
+        if (config.trackingMode === 'cookie' && cs !== 'pending') {
             data.visitorId = getCookie(COOKIE_VID);
             if (!data.visitorId) return;
         }
@@ -288,49 +315,39 @@
         sendPost(data);
     }
 
-    /**
-     * Ping final envoyé via sendBeacon quand l'utilisateur quitte la page.
-     * sendBeacon() est garanti d'être envoyé même pendant le déchargement.
-     */
     function sendFinalPing() {
         var cs = consentStatus();
-        if (cs === 'denied' || cs === 'pending') return;
+        if (cs === 'denied') return;
         if (!_hitSent) return;
         if (_finalPingSent) return;
         _finalPingSent = true;
 
         var data = {
-            action:          'ping',
-            sessionId:       getSessionId(),
-            scrollDepth:     _currentScrollPct,
-            clientDuration:  totalDurationSeconds(),
-            engagementTime:  engagementSeconds(),
-            isFinal:         true,
+            action:         'ping',
+            sessionId:      getSessionId(),
+            scrollDepth:    _currentScrollPct,
+            clientDuration: totalDurationSeconds(),
+            engagementTime: engagementSeconds(),
+            isFinal:        true,
         };
 
-        if (config.trackingMode === 'cookie') {
+        if (config.trackingMode === 'cookie' && cs !== 'pending') {
             data.visitorId = getCookie(COOKIE_VID);
             if (!data.visitorId) return;
         }
 
         var payload = JSON.stringify(data);
-
-        // sendBeacon — fiable pendant le déchargement de page
         try {
             if (navigator.sendBeacon) {
                 var blob = new Blob([payload], { type: 'application/json' });
-                var sent = navigator.sendBeacon(config.endpoint, blob);
-                if (sent) return;
+                if (navigator.sendBeacon(config.endpoint, blob)) return;
             }
         } catch (e) {}
-
-        // Fallback : fetch avec keepalive
         try {
             fetch(config.endpoint, {
-                method:    'POST',
-                keepalive: true,
-                headers:   { 'Content-Type': 'application/json' },
-                body:      payload,
+                method: 'POST', keepalive: true,
+                headers: { 'Content-Type': 'application/json' },
+                body: payload,
             }).catch(function () {});
         } catch (e) {}
     }
@@ -339,15 +356,14 @@
 
     function sendPost(data) {
         try {
-            fetch(config.endpoint, {
-                method:    'POST',
-                keepalive: true,
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+            return fetch(config.endpoint, {
+                method: 'POST', keepalive: true,
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
             }).catch(function () {});
-        } catch (e) {}
+        } catch (e) {
+            return Promise.resolve();
+        }
     }
 
     // ── Session ID ────────────────────────────────────────────────────────────
@@ -365,12 +381,28 @@
         return sid;
     }
 
-    // ── Visitor ID (cookie mode) ──────────────────────────────────────────────
+    // ── Visitor ID ────────────────────────────────────────────────────────────
 
+    // Retourne le visitorId persisté en cookie, ou null si les cookies sont bloqués.
+    // Si null, le hit est envoyé sans visitorId → le serveur applique le fallback
+    // cookieless (hash journalier IP+UA) pour ne perdre aucune visite.
     function getOrCreateVisitorId() {
         var vid = getCookie(COOKIE_VID);
-        if (!vid) { vid = genId(); setVisitorCookie(vid); }
-        return vid;
+        if (vid) return vid;
+
+        // Tenter de créer le cookie et vérifier qu'il a bien été persisté.
+        var candidate = genId();
+        setVisitorCookie(candidate);
+        var persisted = getCookie(COOKIE_VID);
+
+        if (persisted) {
+            // Cookie accepté par le navigateur — visitorId stable.
+            return persisted;
+        }
+
+        // Cookie bloqué (ITP, mode privé, bloqueur) — on retourne null.
+        // Le hit sera envoyé sans visitorId, le serveur basculera en cookieless.
+        return null;
     }
 
     function setVisitorCookie(value) {
@@ -381,6 +413,10 @@
               + ';path=/;SameSite=Lax';
         if (window.location.protocol === 'https:') c += ';Secure';
         document.cookie = c;
+    }
+
+    function deleteVisitorCookie() {
+        document.cookie = COOKIE_VID + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax';
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

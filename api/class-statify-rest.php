@@ -87,6 +87,13 @@ class Statify_Rest {
             'permission_callback' => '__return_true',
         ) );
 
+        // ── Endpoint public : pixel noscript (GET, retourne GIF 1×1) ─────────
+        register_rest_route( self::NAMESPACE, '/noscript', array(
+            'methods'             => 'GET',
+            'callback'            => array( __CLASS__, 'handle_noscript' ),
+            'permission_callback' => '__return_true',
+        ) );
+
         // ── Endpoints admin ────────────────────────────────────────────────────
         $admin_routes = array(
             array( 'overview',        'GET', 'get_overview' ),
@@ -203,9 +210,109 @@ class Statify_Rest {
             return new \WP_REST_Response( null, 204 );
         }
 
-        // ── Hit normal ────────────────────────────────────────────────────────
-        Statify_Tracker::track( $data );
+        // ── Hit pre_consent (cookieless avancé avant bannière) ────────────────
+        // Envoyé immédiatement au chargement en mode cookie+bannière.
+        // Collecte scroll, durée, engagement AVANT que l'utilisateur réponde.
+        // Marqué hit_source='pre_consent'. Si l'utilisateur accepte ensuite,
+        // un hit complet arrive avec preConsentSessionId → fusion via upgrade_pre_consent().
+        if ( 'pre_consent' === $action ) {
+            $data['hitSource'] = 'pre_consent';
+            Statify_Tracker::track( $data );
+            return new \WP_REST_Response( null, 204 );
+        }
+
+        // ── Hit normal (JS complet) ────────────────────────────────────────────
+        // Si un preConsentSessionId est fourni → le visiteur venait d'accepter.
+        // On fusionne le hit pre_consent avec ce hit complet pour éviter le doublon.
+        $pre_consent_sid = isset( $data['preConsentSessionId'] )
+            ? sanitize_text_field( $data['preConsentSessionId'] )
+            : '';
+
+        $hit_id = Statify_Tracker::track( $data );
+
+        // Fusion post-consentement uniquement si :
+        //   1. Le hit complet a bien été inséré (track() retourne un ID > 0)
+        //   2. Un preConsentSessionId est fourni
+        //   3. Un visitorId est présent pour reconstruire le visitor_hash définitif
+        if ( $hit_id && $pre_consent_sid && ! empty( $data['visitorId'] ) ) {
+            $new_visitor_hash = hash( 'sha256', sanitize_text_field( $data['visitorId'] ) );
+            Statify_Tracker::upgrade_pre_consent( $pre_consent_sid, $new_visitor_hash );
+        }
+
         return new \WP_REST_Response( null, 204 );
+    }
+
+    // ── /noscript ─────────────────────────────────────────────────────────────
+
+    /**
+     * Endpoint GET — retourne un GIF 1×1 transparent et enregistre un hit minimal.
+     * Appelé par la balise <noscript><img> — uniquement quand JS est désactivé.
+     *
+     * Toujours en mode cookieless (IP anonymisée, aucun cookie écrit/lu).
+     * Déduplication intégrée dans Statify_Tracker::track_noscript().
+     */
+    public static function handle_noscript( $request ) {
+        // ── Vérification du domaine ───────────────────────────────────────────
+        $site_host = wp_parse_url( home_url(), PHP_URL_HOST );
+        $referer   = $request->get_header( 'referer' );
+        if ( ! $referer || wp_parse_url( $referer, PHP_URL_HOST ) !== $site_host ) {
+            // Même en cas de referer invalide, on renvoie quand même le GIF
+            // pour éviter des images cassées, mais on n'insère rien.
+            self::output_transparent_gif();
+        }
+
+        // ── Disable tracking check ────────────────────────────────────────────
+        $options = get_option( 'statify_options', array() );
+        if ( ! empty( $options['disable_tracking'] ) ) {
+            self::output_transparent_gif();
+        }
+
+        // ── Parsing des paramètres GET ────────────────────────────────────────
+        $data = array(
+            'url'     => sanitize_text_field( $request->get_param( 'u' ) ?: '' ),
+            'postId'  => absint( $request->get_param( 'p' ) ?: 0 ),
+            'referrer'=> sanitize_text_field( rawurldecode( $request->get_param( 'r' ) ?: '' ) ),
+        );
+
+        // UTM depuis l'URL si présents
+        if ( $data['url'] ) {
+            $parsed_url = wp_parse_url( $data['url'] );
+            if ( ! empty( $parsed_url['query'] ) ) {
+                parse_str( $parsed_url['query'], $qs );
+                if ( ! empty( $qs['utm_source'] ) )   $data['utm_source']   = sanitize_text_field( $qs['utm_source'] );
+                if ( ! empty( $qs['utm_medium'] ) )   $data['utm_medium']   = sanitize_text_field( $qs['utm_medium'] );
+                if ( ! empty( $qs['utm_campaign'] ) ) $data['utm_campaign'] = sanitize_text_field( $qs['utm_campaign'] );
+            }
+        }
+
+        // Rate-limit : 1 requête / 10s par IP (protège contre les crawlers sans UA bot)
+        $ip       = Statify_Tracker::get_client_ip();
+        $rl_key   = 'statify_noscript_rl_' . md5( $ip );
+        if ( false !== get_transient( $rl_key ) ) {
+            self::output_transparent_gif();
+        }
+        set_transient( $rl_key, 1, 10 );
+
+        Statify_Tracker::track_noscript( $data );
+
+        self::output_transparent_gif();
+    }
+
+    /**
+     * Envoie un GIF transparent 1×1 et termine l'exécution.
+     * Headers no-cache inclus pour éviter que le pixel soit mis en cache proxy.
+     */
+    private static function output_transparent_gif() {
+        if ( ! headers_sent() ) {
+            header( 'Content-Type: image/gif' );
+            header( 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0' );
+            header( 'Pragma: no-cache' );
+            header( 'Expires: Thu, 01 Jan 1970 00:00:01 GMT' );
+        }
+        // GIF transparent 1×1 pixel (35 octets, format GIF89a)
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+        echo base64_decode( 'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7' );
+        exit;
     }
 
     // ── /overview ─────────────────────────────────────────────────────────────
@@ -229,7 +336,7 @@ class Statify_Rest {
                 COUNT(DISTINCT session_id) as sessions,
                 SUM(is_new_visitor) as new_visitors
              FROM {$table}
-             WHERE {$where}",
+             WHERE {$where} AND is_superseded = 0",
             ...$args
         ) );
 
@@ -263,7 +370,7 @@ class Statify_Rest {
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery
         $prev = $wpdb->get_row( $wpdb->prepare(
             "SELECT COUNT(DISTINCT visitor_hash) as unique_visitors, COUNT(*) as page_views
-             FROM {$table} WHERE hit_at >= %s AND hit_at <= %s",
+             FROM {$table} WHERE hit_at >= %s AND hit_at <= %s AND is_superseded = 0",
             gmdate( 'Y-m-d H:i:s', strtotime( $prev_from . ' 00:00:00' ) - $tz_off ),
             gmdate( 'Y-m-d H:i:s', strtotime( $prev_to   . ' 23:59:59' ) - $tz_off )
         ) );
@@ -307,7 +414,7 @@ class Statify_Rest {
                             COUNT(DISTINCT visitor_hash) as visitors,
                             COUNT(*) as page_views,
                             COUNT(DISTINCT session_id) as sessions
-                     FROM {$table} WHERE hit_at >= %s AND hit_at <= %s";
+                     FROM {$table} WHERE hit_at >= %s AND hit_at <= %s AND is_superseded = 0";
             $args = array( $from, $to );
             if ( ! empty( $params['device'] ) ) { $sql .= ' AND device_type = %s'; $args[] = $params['device']; }
             $sql .= ' GROUP BY HOUR(hit_at) ORDER BY hour_utc ASC';
@@ -343,7 +450,7 @@ class Statify_Rest {
                         COUNT(DISTINCT visitor_hash) as visitors,
                         COUNT(*) as page_views,
                         COUNT(DISTINCT session_id) as sessions
-                 FROM {$table} WHERE hit_at >= %s AND hit_at <= %s";
+                 FROM {$table} WHERE hit_at >= %s AND hit_at <= %s AND is_superseded = 0";
         $args = array( $tz_str, $from, $to );
         if ( ! empty( $params['device'] ) ) { $sql .= ' AND device_type = %s'; $args[] = $params['device']; }
         $sql   .= " GROUP BY DATE(CONVERT_TZ(hit_at, '+00:00', %s)) ORDER BY date ASC";
@@ -387,7 +494,7 @@ class Statify_Rest {
         $sql  = "SELECT page_url, page_title, post_id,
                     COUNT(*) as views,
                     COUNT(DISTINCT visitor_hash) as unique_visitors
-                FROM {$table} WHERE hit_at >= %s AND hit_at <= %s";
+                FROM {$table} WHERE hit_at >= %s AND hit_at <= %s AND is_superseded = 0";
         $args = array( $params['from_utc'], $params['to_utc'] );
         if ( ! empty( $params['device'] ) )  { $sql .= ' AND device_type = %s';   $args[] = $params['device']; }
         if ( ! empty( $params['country'] ) ) { $sql .= ' AND country_code = %s';  $args[] = $params['country']; }
@@ -409,7 +516,7 @@ class Statify_Rest {
         $limit  = absint( $request->get_param( 'limit' ) ?: 20 );
 
         $sql    = "SELECT referrer_domain, COUNT(*) as hits, COUNT(DISTINCT visitor_hash) as unique_visitors
-                   FROM {$table} WHERE hit_at >= %s AND hit_at <= %s AND referrer_domain != ''";
+                   FROM {$table} WHERE hit_at >= %s AND hit_at <= %s AND is_superseded = 0 AND referrer_domain != ''";
         $args   = array( $params['from_utc'], $params['to_utc'] );
         if ( ! empty( $params['device'] ) ) { $sql .= ' AND device_type = %s'; $args[] = $params['device']; }
         $sql   .= ' GROUP BY referrer_domain ORDER BY hits DESC LIMIT %d';
@@ -438,9 +545,9 @@ class Statify_Rest {
                 country_code,
                 COUNT(*) as hits,
                 COUNT(DISTINCT visitor_hash) as unique_visitors,
-                ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM {$table} WHERE {$where}), 1) as percentage
+                ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM {$table} WHERE {$where} AND is_superseded = 0), 1) as percentage
              FROM {$table}
-             WHERE {$where} AND country_code != ''
+             WHERE {$where} AND is_superseded = 0 AND country_code != ''
              GROUP BY country_code
              ORDER BY hits DESC
              LIMIT %d",
@@ -461,11 +568,11 @@ class Statify_Rest {
         $base_args = array( $params['from_utc'], $params['to_utc'] );
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-        $devices  = $wpdb->get_results( $wpdb->prepare( "SELECT device_type, COUNT(*) as count FROM {$table} WHERE hit_at >= %s AND hit_at <= %s GROUP BY device_type ORDER BY count DESC", $base_args ) );
+        $devices  = $wpdb->get_results( $wpdb->prepare( "SELECT device_type, COUNT(*) as count FROM {$table} WHERE hit_at >= %s AND hit_at <= %s AND is_superseded = 0 GROUP BY device_type ORDER BY count DESC", $base_args ) );
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-        $browsers = $wpdb->get_results( $wpdb->prepare( "SELECT browser, COUNT(*) as count FROM {$table} WHERE hit_at >= %s AND hit_at <= %s AND browser != '' GROUP BY browser ORDER BY count DESC LIMIT 10", $base_args ) );
+        $browsers = $wpdb->get_results( $wpdb->prepare( "SELECT browser, COUNT(*) as count FROM {$table} WHERE hit_at >= %s AND hit_at <= %s AND is_superseded = 0 AND browser != '' GROUP BY browser ORDER BY count DESC LIMIT 10", $base_args ) );
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-        $os_list  = $wpdb->get_results( $wpdb->prepare( "SELECT os, COUNT(*) as count FROM {$table} WHERE hit_at >= %s AND hit_at <= %s AND os != '' GROUP BY os ORDER BY count DESC LIMIT 10", $base_args ) );
+        $os_list  = $wpdb->get_results( $wpdb->prepare( "SELECT os, COUNT(*) as count FROM {$table} WHERE hit_at >= %s AND hit_at <= %s AND is_superseded = 0 AND os != '' GROUP BY os ORDER BY count DESC LIMIT 10", $base_args ) );
 
         return rest_ensure_response( array(
             'devices'  => $devices,
@@ -489,7 +596,7 @@ class Statify_Rest {
                 SUM(CASE WHEN is_new_visitor = 1 THEN 1 ELSE 0 END) as new_visitors,
                 SUM(CASE WHEN is_new_visitor = 0 THEN 1 ELSE 0 END) as returning_visitors,
                 SUM(CASE WHEN is_logged_in = 1 THEN 1 ELSE 0 END) as logged_in
-             FROM {$table} WHERE hit_at >= %s AND hit_at <= %s",
+             FROM {$table} WHERE hit_at >= %s AND hit_at <= %s AND is_superseded = 0",
             $params['from_utc'],
             $params['to_utc']
         ) );
@@ -577,7 +684,7 @@ class Statify_Rest {
                     COUNT(DISTINCT CASE WHEN s.max_scroll_depth >= 75 AND (s.duration > 0 OR s.engagement_time > 0) THEN h.session_id END) AS deep_readers
                  FROM {$t_hits} h
                  LEFT JOIN {$t_sess} s ON s.session_id = h.session_id
-                 WHERE h.hit_at >= %s AND h.hit_at <= %s",
+                 WHERE h.hit_at >= %s AND h.hit_at <= %s AND h.is_superseded = 0",
                 $from, $to
             ) );
         } elseif ( $has_sess_table ) {
@@ -592,7 +699,7 @@ class Statify_Rest {
                     0                                                                      AS deep_readers
                  FROM {$t_hits} h
                  LEFT JOIN {$t_sess} s ON s.session_id = h.session_id
-                 WHERE h.hit_at >= %s AND h.hit_at <= %s",
+                 WHERE h.hit_at >= %s AND h.hit_at <= %s AND h.is_superseded = 0",
                 $from, $to
             ) );
         } else {
@@ -610,7 +717,7 @@ class Statify_Rest {
                  FROM (
                      SELECT session_id, COUNT(*) AS pv
                      FROM {$t_hits}
-                     WHERE hit_at >= %s AND hit_at <= %s
+                     WHERE hit_at >= %s AND hit_at <= %s AND is_superseded = 0
                      GROUP BY session_id
                  ) sub",
                 $from, $to
@@ -701,7 +808,7 @@ class Statify_Rest {
                             {$scroll_col} AS avg_scroll
                      FROM {$t_hits} h
                      LEFT JOIN {$t_sess} s ON s.session_id = h.session_id
-                     WHERE h.hit_at >= %s AND h.hit_at <= %s
+                     WHERE h.hit_at >= %s AND h.hit_at <= %s AND h.is_superseded = 0
                      GROUP BY HOUR(h.hit_at) ORDER BY hour_utc ASC",
                     $from, $to
                 ) );
@@ -712,7 +819,7 @@ class Statify_Rest {
                             COUNT(DISTINCT session_id) AS sessions,
                             0 AS engaged, 0 AS avg_dur, 0 AS avg_scroll
                      FROM {$t_hits}
-                     WHERE hit_at >= %s AND hit_at <= %s
+                     WHERE hit_at >= %s AND hit_at <= %s AND is_superseded = 0
                      GROUP BY HOUR(hit_at) ORDER BY hour_utc ASC",
                     $from, $to
                 ) );
@@ -746,7 +853,7 @@ class Statify_Rest {
                             {$scroll_col} AS avg_scroll
                      FROM {$t_hits} h
                      LEFT JOIN {$t_sess} s ON s.session_id = h.session_id
-                     WHERE h.hit_at >= %s AND h.hit_at <= %s
+                     WHERE h.hit_at >= %s AND h.hit_at <= %s AND h.is_superseded = 0
                      GROUP BY DATE(CONVERT_TZ(h.hit_at, '+00:00', %s))
                      ORDER BY date ASC",
                     $tz_str, $from, $to, $tz_str
@@ -758,7 +865,7 @@ class Statify_Rest {
                             COUNT(DISTINCT session_id) AS sessions,
                             0 AS engaged, 0 AS avg_dur, 0 AS avg_scroll
                      FROM {$t_hits}
-                     WHERE hit_at >= %s AND hit_at <= %s
+                     WHERE hit_at >= %s AND hit_at <= %s AND is_superseded = 0
                      GROUP BY DATE(CONVERT_TZ(hit_at, '+00:00', %s))
                      ORDER BY date ASC",
                     $tz_str, $from, $to, $tz_str
@@ -860,7 +967,7 @@ class Statify_Rest {
                      WHERE recorded_at >= %s AND recorded_at <= %s
                      GROUP BY session_id, page_url
                  ) sc ON sc.session_id = h.session_id AND sc.page_url = h.page_url
-                 WHERE h.hit_at >= %s AND h.hit_at <= %s
+                 WHERE h.hit_at >= %s AND h.hit_at <= %s AND h.is_superseded = 0
                  GROUP BY h.page_url, h.post_id
                  ORDER BY engagement_score DESC
                  LIMIT %d",
@@ -888,7 +995,7 @@ class Statify_Rest {
                     , 1) AS engagement_score
                  FROM {$t_hits} h
                  LEFT JOIN {$t_sess} s ON s.session_id = h.session_id
-                 WHERE h.hit_at >= %s AND h.hit_at <= %s
+                 WHERE h.hit_at >= %s AND h.hit_at <= %s AND h.is_superseded = 0
                  GROUP BY h.page_url, h.post_id
                  ORDER BY engagement_score DESC
                  LIMIT %d",
@@ -916,10 +1023,10 @@ class Statify_Rest {
                  LEFT JOIN (
                      SELECT session_id, COUNT(*) AS pv
                      FROM {$t_hits}
-                     WHERE hit_at >= %s AND hit_at <= %s
+                     WHERE hit_at >= %s AND hit_at <= %s AND is_superseded = 0
                      GROUP BY session_id
                  ) pv ON pv.session_id = h.session_id
-                 WHERE h.hit_at >= %s AND h.hit_at <= %s
+                 WHERE h.hit_at >= %s AND h.hit_at <= %s AND h.is_superseded = 0
                  GROUP BY h.page_url, h.post_id
                  ORDER BY engagement_score DESC, page_views DESC
                  LIMIT %d",

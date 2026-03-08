@@ -3,7 +3,7 @@
  * Plugin Name:       Statify
  * Plugin URI:        https://example.com/statify
  * Description:       Statistiques avancées auto-hébergées, légères et respectueuses de la vie privée pour WordPress.
- * Version:           1.1.0
+ * Version:           1.2.2
  * Author:            Adrien
  * Author URI:        https://example.com
  * License:           GPL-2.0+
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin constants
-define( 'STATIFY_VERSION', '1.1.0' );
+define( 'STATIFY_VERSION', '1.2.2' );
 define( 'STATIFY_PLUGIN_FILE', __FILE__ );
 define( 'STATIFY_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'STATIFY_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -123,16 +123,16 @@ final class Statify {
         // Neutralise l'erreur d'auth WP core sur /hit.
         // WP REST appelle rest_cookie_check_errors() qui renvoie une WP_Error 403
         // si un cookie de session est présent sans nonce valide — AVANT notre callback.
-        // On intercepte cette erreur et on la supprime uniquement pour /hit.
+        // On intercepte cette erreur et on la supprime pour /hit et /noscript.
         add_filter( 'rest_authentication_errors', function ( $result ) {
             $uri = isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '';
-            // Couvre les deux formes d'URL WP REST :
-            // /wp-json/statify/v1/hit  ET  ?rest_route=/statify/v1/hit
-            $is_hit = ( false !== strpos( $uri, '/statify/v1/hit' ) )
-                   || ( false !== strpos( $uri, 'rest_route=%2Fstatify%2Fv1%2Fhit' ) )
-                   || ( false !== strpos( $uri, 'rest_route=/statify/v1/hit' ) );
-            if ( $is_hit ) {
-                return null; // pas d'erreur d'auth sur cet endpoint public
+            $is_public = ( false !== strpos( $uri, '/statify/v1/hit' ) )
+                      || ( false !== strpos( $uri, 'rest_route=%2Fstatify%2Fv1%2Fhit' ) )
+                      || ( false !== strpos( $uri, 'rest_route=/statify/v1/hit' ) )
+                      || ( false !== strpos( $uri, '/statify/v1/noscript' ) )
+                      || ( false !== strpos( $uri, 'rest_route=%2Fstatify%2Fv1%2Fnoscript' ) );
+            if ( $is_public ) {
+                return null;
             }
             return $result;
         }, 100 );
@@ -145,6 +145,9 @@ final class Statify {
         $consent = new Statify\Statify_Consent();
         add_action( 'wp_footer', array( $consent, 'render_banner' ) );
         add_action( 'wp_enqueue_scripts', array( $consent, 'enqueue_assets' ) );
+
+        // Pixel noscript — injecté dans wp_footer() après le tracker JS
+        add_action( 'wp_footer', array( $this, 'render_noscript_pixel' ), 99 );
 
         // Cron jobs
         add_action( 'statify_daily_aggregate', array( $this, 'run_daily_aggregate' ) );
@@ -194,14 +197,57 @@ final class Statify {
             true
         );
 
-        $tracking_mode = isset( $options['tracking_mode'] ) ? $options['tracking_mode'] : 'cookieless';
+        $tracking_mode   = isset( $options['tracking_mode'] ) ? $options['tracking_mode'] : 'cookieless';
         $consent_enabled = ! empty( $options['consent_enabled'] );
 
-        wp_localize_script( 'statify-tracker', 'statifyConfig', array(
+        $config = array(
             'endpoint'     => esc_url_raw( rest_url( 'statify/v1/hit' ) ),
             'trackingMode' => $tracking_mode,
             'consentGiven' => ( 'cookie' === $tracking_mode && $consent_enabled ) ? 'pending' : 'not_required',
-        ) );
+            'postId'       => get_queried_object_id() ?: 0,
+        );
+
+        // En mode cookie + bannière, injecter l'endpoint pour le hit pre_consent
+        if ( 'cookie' === $tracking_mode && $consent_enabled ) {
+            $config['preConsentEnabled'] = true;
+        }
+
+        wp_localize_script( 'statify-tracker', 'statifyConfig', $config );
+    }
+
+    /**
+     * Injecte le pixel <noscript> dans le footer pour tracker les visiteurs sans JS.
+     * Actif dans tous les modes (cookieless, cookie+bannière, cookie sans bannière).
+     * Sécurité : le pixel utilise toujours le mode cookieless côté serveur.
+     */
+    public function render_noscript_pixel() {
+        $options = get_option( 'statify_options', array() );
+
+        if ( ! empty( $options['disable_tracking'] ) ) {
+            return;
+        }
+
+        // Ne pas injecter pour les rôles exclus
+        if ( is_user_logged_in() ) {
+            $excluded_roles = isset( $options['excluded_roles'] ) ? (array) $options['excluded_roles'] : array( 'administrator' );
+            $user           = wp_get_current_user();
+            if ( array_intersect( $excluded_roles, $user->roles ) ) {
+                return;
+            }
+        }
+
+        $post_id  = get_queried_object_id() ?: 0;
+        $referrer = '';
+        // On ne peut pas lire document.referrer en PHP, mais le Referer HTTP est disponible
+        $http_ref = isset( $_SERVER['HTTP_REFERER'] ) ? esc_url_raw( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) : '';
+
+        $pixel_url = add_query_arg( array_filter( array(
+            'p' => $post_id ?: null,
+            'r' => $http_ref ? rawurlencode( $http_ref ) : null,
+            'u' => rawurlencode( esc_url_raw( ( is_ssl() ? 'https' : 'http' ) . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] ) ),
+        ) ), esc_url_raw( rest_url( 'statify/v1/noscript' ) ) );
+
+        echo '<noscript><img src="' . esc_url( $pixel_url ) . '" width="1" height="1" alt="" loading="eager" style="display:none;position:absolute;" /></noscript>' . "\n";
     }
 
     /**
@@ -235,7 +281,7 @@ final class Statify {
                      ELSE 0 END as bounce_rate
              FROM {$table_hits} h
              LEFT JOIN {$t_sess} s ON s.session_id = h.session_id
-             WHERE DATE(h.hit_at) = %s
+             WHERE DATE(h.hit_at) = %s AND h.is_superseded = 0
              GROUP BY DATE(h.hit_at), h.page_url, h.post_id
              ON DUPLICATE KEY UPDATE
                 unique_visitors = VALUES(unique_visitors),
