@@ -33,7 +33,6 @@ Une page avec 1 vue et 100% d'engagement ne passera jamais devant un pilier de v
 | 🥈 **Enable automatic updates...** | **47** | 14m 54s | 100% | 100% | 0% | — | 1 sess. |
 | 🥉 **How to fully update...** | **47** | -- | -- | -- | -- | -- | -- |
 
-Contrairement aux solutions classiques (comme Yoast SEO ou les trackers GA basiques) qui se contentent de rapporter des données de surface, Always Analytics utilise une ingénierie de données avancée :
 
 Le score est calculé relativement à votre site. Always Analytics détermine la médiane  de vos contenus pour définir ce qu’est une lecture longue. Le score final est une synthèse de Durée (22%) • Scroll (20%) • Engagement (20%) • Fidélité (18%) • Profondeur (12%) • Confiance statistique (8%).
 
