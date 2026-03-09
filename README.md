@@ -27,7 +27,7 @@
 
 ---
 
-## 🎯 Score d'Engagement : La Data Science au service du contenu
+## La Data Science au service du contenu
 
 Statify ne se contente pas de compter les vues. Il **qualifie la lecture** grâce à un algorithme de scoring composite sophistiqué qui identifie vos contenus les plus performants.
 
@@ -39,7 +39,6 @@ Statify ne se contente pas de compter les vues. Il **qualifie la lecture** grâc
 | 🥈 **Enable automatic updates...** | **47** | 14m 54s | 100% | 100% | 0% | — | 1 sess. |
 | 🥉 **How to fully update...** | **47** | -- | -- | -- | -- | -- | -- |
 
-### Une expertise statistique rare sur WordPress
 Contrairement aux solutions classiques (comme Yoast SEO ou les trackers GA basiques) qui se contentent de rapporter des données de surface, Statify utilise une ingénierie de données avancée :
 
 - **Au-delà du simple "clic"** : La plupart des outils considèrent une vue comme un succès. Statify **qualifie** cette vue : un visiteur qui reste 10 minutes mais ne scrolle pas est statistiquement différent d'un lecteur qui parcourt tout l'article en 30 secondes.
