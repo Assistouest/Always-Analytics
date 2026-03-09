@@ -16,20 +16,16 @@
 
 ---
 
-## 🚀 Pourquoi Always Analytics ?
-
 - **0% de perte de données** : Capture chaque visite, même sans consentement.
 - **100% Souverain** : Vos données restent chez vous, sur votre serveur.
 - **Vitesse Éclair** : Script ultra-léger sans impact sur le SEO.
 - **Conformité RGPD Native** : Anonymisation et respect de la vie privée par design.
 
----
+Contrairement à Yoast SEO ou Google Analytics, Always Analytics traite chaque vue avec une intelligence contextuelle.
 
-## 🎯 Score d'Engagement : La Data Science au service du contenu
+Pour éviter l'anomalie des petits nombres, nous appliquons la limite inférieure de l'intervalle de confiance de Wilson :
 
-Always Analytics ne se contente pas de compter les vues. Il **qualifie la lecture** grâce à un algorithme de scoring composite sophistiqué qui identifie vos contenus les plus performants.
-
-### Visualisez la performance réelle de vos pages
+Une page avec 1 vue et 100% d'engagement ne passera jamais devant un pilier de votre site affichant 1000 vues et 80% d'engagement. La stabilité statistique prime sur le pourcentage.
 
 | Page | Score | 🕒 Durée | ⬇ Scroll | ✅ Engag. | 🔁 Retour | 📄 Profond. | 📊 Sessions |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -39,10 +35,7 @@ Always Analytics ne se contente pas de compter les vues. Il **qualifie la lectur
 
 Contrairement aux solutions classiques (comme Yoast SEO ou les trackers GA basiques) qui se contentent de rapporter des données de surface, Always Analytics utilise une ingénierie de données avancée :
 
-- **Au-delà du simple "clic"** : La plupart des outils considèrent une vue comme un succès. Always Analytics **qualifie** cette vue : un visiteur qui reste 10 minutes mais ne scrolle pas est statistiquement différent d'un lecteur qui parcourt tout l'article en 30 secondes.
-- **Réduction du bruit (Loi de Wilson)** : C'est là que Always Analytics se distingue. En utilisant la limite inférieure de l'intervalle de confiance de Wilson, nous éliminons l'anomalie des "petits nombres" (une page avec 1 vue et 100% d'engagement ne passera jamais devant un pilier de votre site avec 1000 vues et 80% d'engagement).
-- **Intelligence contextuelle** : Le score est **relatif à votre site**. Nous calculons la médiane réelle de vos contenus pour définir ce qu'est une lecture de "longue durée", là où les autres imposent des seuils arbitraires.
-- **Pondération Scientifique** : Le score final est une synthèse équilibrée : Durée (22%) • Scroll (20%) • Engagement (20%) • Fidélité (18%) • Profondeur (12%) • Confiance statistique (8%).
+Le score est calculé relativement à votre site. Always Analytics détermine la médiane  de vos contenus pour définir ce qu’est une lecture longue. Le score final est une synthèse de Durée (22%) • Scroll (20%) • Engagement (20%) • Fidélité (18%) • Profondeur (12%) • Confiance statistique (8%).
 
 ---
 
