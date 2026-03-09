@@ -149,7 +149,7 @@ Si `null` est retourné, le hit est envoyé sans `visitorId`. Le serveur détect
 
 ---
 
-### Mode 3 — Cookie sans bannière (debug)
+### Mode 3 — Cookie sans bannière (pour les développeurs)
 
 Cookie visitorId posé immédiatement, durée 395 jours. Tracking complet dès le premier chargement. Identité persistante garantie. À utiliser en environnement de développement uniquement.
 
