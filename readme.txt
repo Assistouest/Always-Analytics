@@ -1,4 +1,4 @@
-=== Advanced Stats ===
+=== Always Analytics ===
 Contributors: adrien
 Tags: analytics, statistics, tracking, privacy, GDPR
 Requires at least: 5.8
@@ -12,7 +12,7 @@ Statistiques avancées auto-hébergées, légères et respectueuses de la vie pr
 
 == Description ==
 
-Advanced Stats est un plugin de statistiques complet pour WordPress qui remplace Google Analytics ou Matomo. Toutes les données restent sur votre serveur.
+Always Analytics est un plugin de statistiques complet pour WordPress qui remplace Google Analytics ou Matomo. Toutes les données restent sur votre serveur.
 
 **Fonctionnalités principales :**
 
