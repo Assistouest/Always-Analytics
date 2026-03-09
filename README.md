@@ -27,6 +27,27 @@
 
 ---
 
+## 🎯 Score d'Engagement : La Data Science au service du contenu
+
+Statify ne se contente pas de compter les vues. Il **qualifie la lecture** grâce à un algorithme de scoring composite sophistiqué qui identifie vos contenus les plus performants.
+
+### Visualisez la performance réelle de vos pages
+
+| Page | Score | 🕒 Durée | ⬇ Scroll | ✅ Engag. | 🔁 Retour | 📄 Profond. | 📊 Sessions |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 🥇 **Mettre à jour Ubuntu...** | **53** | 14m 54s | 100% | 100% | 0% | 3 p. | 1 sess. |
+| 🥈 **Enable automatic updates...** | **47** | 14m 54s | 100% | 100% | 0% | — | 1 sess. |
+| 🥉 **How to fully update...** | **47** | -- | -- | -- | -- | -- | -- |
+
+### Une approche mathématique de haut niveau
+Le score (0 à 100) est une fusion intelligente de 6 signaux pondérés, traitée pour éliminer le "bruit" et les faux positifs :
+
+- **Loi de Wilson (Lower Bound)** : Le taux d'engagement est corrigé statistiquement pour éviter que les pages à faible volume ne faussent vos analyses.
+- **Normalisation par Médiane Relative** : La durée de lecture est comparée à la performance réelle de *votre* site, s'adaptant automatiquement à votre style éditorial.
+- **Algorithme de Pondération** : Durée (22%) • Scroll (20%) • Engagement (20%) • Fidélité/Retour (18%) • Profondeur de navigation (12%) • Confiance statistique (8%).
+
+---
+
 ## L'algorithme de collecte résiliente
 
 La plupart des analytics conditionnent le tracking au consentement : pas de cookie accepté = visite perdue. Statify fonctionne à l'envers.
