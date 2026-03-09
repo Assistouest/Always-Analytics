@@ -2,7 +2,7 @@
 /**
  * Top Pages full view — Advanced Stats.
  *
- * @package Statify
+ * @package Always_Analytics
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -22,7 +22,7 @@ if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $to ) ) {
 }
 
 global $wpdb;
-$table = $wpdb->prefix . 'statify_hits';
+$table = $wpdb->prefix . 'aa_hits';
 
 // Conversion fuseau horaire du site — identique à la REST API
 $tz_offset_seconds = (int) ( get_option( 'gmt_offset' ) * HOUR_IN_SECONDS );
@@ -73,75 +73,75 @@ $label_from = wp_date( 'd/m/Y', strtotime( $from ) );
 $label_to   = wp_date( 'd/m/Y', strtotime( $to ) );
 $period_label = ( $from === $to ) ? $label_from : $label_from . ' → ' . $label_to;
 ?>
-<div class="wrap statify-wrap">
+<div class="wrap aa-wrap">
 
     <!-- Header -->
-    <div class="statify-header" style="margin-bottom:24px;">
+    <div class="aa-header" style="margin-bottom:24px;">
         <div style="display:flex;align-items:center;gap:12px;">
-            <a href="<?php echo esc_url( admin_url( 'admin.php?page=statify&from=' . urlencode( $from ) . '&to=' . urlencode( $to ) ) ); ?>" class="statify-back-btn">
-                ← <?php esc_html_e( 'Tableau de bord', 'statify' ); ?>
+            <a href="<?php echo esc_url( admin_url( 'admin.php?page=always-analytics&from=' . urlencode( $from ) . '&to=' . urlencode( $to ) ) ); ?>" class="aa-back-btn">
+                ← <?php esc_html_e( 'Tableau de bord', 'always-analytics' ); ?>
             </a>
             <div>
                 <h1 style="margin:0;font-size:22px;font-weight:700;color:#0f172a;display:flex;align-items:center;gap:8px;">
-                    🔝 <?php esc_html_e( 'Top Pages', 'statify' ); ?>
+                    🔝 <?php esc_html_e( 'Top Pages', 'always-analytics' ); ?>
                 </h1>
                 <p style="margin:4px 0 0;color:#64748b;font-size:13px;">
                     <?php echo esc_html( $period_label ); ?> &middot;
-                    <strong><?php echo count( $rows ); ?></strong> <?php esc_html_e( 'pages', 'statify' ); ?>
+                    <strong><?php echo count( $rows ); ?></strong> <?php esc_html_e( 'pages', 'always-analytics' ); ?>
                 </p>
             </div>
         </div>
 
         <!-- Inline date filter -->
-        <div class="statify-detail-date-filter">
+        <div class="aa-detail-date-filter">
             <input type="date" id="tp-from" value="<?php echo esc_attr( $from ); ?>" />
             <span style="color:#94a3b8;">→</span>
             <input type="date" id="tp-to" value="<?php echo esc_attr( $to ); ?>" />
-            <button id="tp-apply" class="button button-primary"><?php esc_html_e( 'Appliquer', 'statify' ); ?></button>
+            <button id="tp-apply" class="button button-primary"><?php esc_html_e( 'Appliquer', 'always-analytics' ); ?></button>
         </div>
     </div>
 
     <!-- Summary KPIs -->
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;">
-        <div class="statify-kpi-card" style="text-align:center;">
-            <div class="statify-kpi-icon">📄</div>
-            <div class="statify-kpi-value"><?php echo number_format_i18n( $total_views ); ?></div>
-            <div class="statify-kpi-label"><?php esc_html_e( 'Pages vues totales', 'statify' ); ?></div>
+        <div class="aa-kpi-card" style="text-align:center;">
+            <div class="aa-kpi-icon">📄</div>
+            <div class="aa-kpi-value"><?php echo number_format_i18n( $total_views ); ?></div>
+            <div class="aa-kpi-label"><?php esc_html_e( 'Pages vues totales', 'always-analytics' ); ?></div>
         </div>
-        <div class="statify-kpi-card" style="text-align:center;">
-            <div class="statify-kpi-icon">👁️</div>
-            <div class="statify-kpi-value"><?php echo number_format_i18n( $total_visitors ); ?></div>
-            <div class="statify-kpi-label"><?php esc_html_e( 'Visiteurs uniques', 'statify' ); ?></div>
+        <div class="aa-kpi-card" style="text-align:center;">
+            <div class="aa-kpi-icon">👁️</div>
+            <div class="aa-kpi-value"><?php echo number_format_i18n( $total_visitors ); ?></div>
+            <div class="aa-kpi-label"><?php esc_html_e( 'Visiteurs uniques', 'always-analytics' ); ?></div>
         </div>
-        <div class="statify-kpi-card" style="text-align:center;">
-            <div class="statify-kpi-icon">📋</div>
-            <div class="statify-kpi-value"><?php echo number_format_i18n( count( $rows ) ); ?></div>
-            <div class="statify-kpi-label"><?php esc_html_e( 'Pages distinctes', 'statify' ); ?></div>
+        <div class="aa-kpi-card" style="text-align:center;">
+            <div class="aa-kpi-icon">📋</div>
+            <div class="aa-kpi-value"><?php echo number_format_i18n( count( $rows ) ); ?></div>
+            <div class="aa-kpi-label"><?php esc_html_e( 'Pages distinctes', 'always-analytics' ); ?></div>
         </div>
     </div>
 
     <!-- Search + Table -->
-    <div class="statify-card">
-        <div class="statify-card-header" style="gap:12px;flex-wrap:wrap;">
-            <h2 style="margin:0;"><?php esc_html_e( 'Toutes les pages', 'statify' ); ?></h2>
-            <input type="search" id="tp-search" placeholder="<?php esc_attr_e( 'Rechercher une page…', 'statify' ); ?>"
+    <div class="aa-card">
+        <div class="aa-card-header" style="gap:12px;flex-wrap:wrap;">
+            <h2 style="margin:0;"><?php esc_html_e( 'Toutes les pages', 'always-analytics' ); ?></h2>
+            <input type="search" id="tp-search" placeholder="<?php esc_attr_e( 'Rechercher une page…', 'always-analytics' ); ?>"
                    style="padding:6px 12px;border:1px solid #e2e4e7;border-radius:8px;font-size:13px;width:260px;margin-left:auto;" />
         </div>
-        <div class="statify-card-body" style="padding:0;">
+        <div class="aa-card-body" style="padding:0;">
             <?php if ( empty( $rows ) ) : ?>
-                <p class="statify-no-data" style="padding:40px;text-align:center;">
-                    <?php esc_html_e( 'Aucune donnée pour cette période.', 'statify' ); ?>
+                <p class="aa-no-data" style="padding:40px;text-align:center;">
+                    <?php esc_html_e( 'Aucune donnée pour cette période.', 'always-analytics' ); ?>
                 </p>
             <?php else : ?>
-            <table class="statify-table statify-full-table" id="tp-table">
+            <table class="aa-table aa-full-table" id="tp-table">
                 <thead>
                     <tr>
                         <th style="width:40px;">#</th>
-                        <th><?php esc_html_e( 'Page', 'statify' ); ?></th>
-                        <th style="text-align:right;width:120px;"><?php esc_html_e( 'Vues', 'statify' ); ?></th>
-                        <th style="text-align:right;width:130px;"><?php esc_html_e( 'Visiteurs uniques', 'statify' ); ?></th>
-                        <th style="text-align:right;width:110px;"><?php esc_html_e( 'Sessions', 'statify' ); ?></th>
-                        <th style="width:160px;"><?php esc_html_e( 'Popularité', 'statify' ); ?></th>
+                        <th><?php esc_html_e( 'Page', 'always-analytics' ); ?></th>
+                        <th style="text-align:right;width:120px;"><?php esc_html_e( 'Vues', 'always-analytics' ); ?></th>
+                        <th style="text-align:right;width:130px;"><?php esc_html_e( 'Visiteurs uniques', 'always-analytics' ); ?></th>
+                        <th style="text-align:right;width:110px;"><?php esc_html_e( 'Sessions', 'always-analytics' ); ?></th>
+                        <th style="width:160px;"><?php esc_html_e( 'Popularité', 'always-analytics' ); ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -191,8 +191,8 @@ $period_label = ( $from === $to ) ? $label_from : $label_from . ' → ' . $label
         </div>
     </div>
 
-    <div class="statify-footer">
-        <p>Statify v<?php echo esc_html( STATIFY_VERSION ); ?></p>
+    <div class="aa-footer">
+        <p>Always Analytics v<?php echo esc_html( AA_VERSION ); ?></p>
     </div>
 </div>
 
@@ -205,7 +205,7 @@ $period_label = ( $from === $to ) ? $label_from : $label_from . ' → ' . $label
             var from = document.getElementById('tp-from').value;
             var to   = document.getElementById('tp-to').value;
             if (from && to) {
-                window.location.href = '<?php echo esc_js( admin_url( 'admin.php?page=statify-top-pages' ) ); ?>&from=' + encodeURIComponent(from) + '&to=' + encodeURIComponent(to);
+                window.location.href = '<?php echo esc_js( admin_url( 'admin.php?page=always-analytics-top-pages' ) ); ?>&from=' + encodeURIComponent(from) + '&to=' + encodeURIComponent(to);
             }
         });
     }

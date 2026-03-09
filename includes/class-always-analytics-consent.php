@@ -1,5 +1,5 @@
 <?php
-namespace Statify;
+namespace Always_Analytics;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -9,13 +9,13 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Consent banner — RGPD cookie consent management.
  * Active only when tracking_mode is 'cookie' and consent_enabled is true.
  */
-class Statify_Consent {
+class Always_Analytics_Consent {
 
     /**
      * Render the consent banner in the footer.
      */
     public function render_banner() {
-        $options = get_option( 'statify_options', array() );
+        $options = get_option( 'always_analytics_options', array() );
 
         // Only show banner if cookie mode + consent is enabled
         if ( empty( $options['consent_enabled'] ) ) {
@@ -36,14 +36,14 @@ class Statify_Consent {
             }
         }
 
-        $message     = isset( $options['consent_message'] ) ? $options['consent_message'] : __( 'Ce site utilise des cookies pour analyser le trafic. Acceptez-vous ?', 'statify' );
-        $accept_text = isset( $options['consent_accept'] ) ? $options['consent_accept'] : __( 'Accepter', 'statify' );
-        $decline_text = isset( $options['consent_decline'] ) ? $options['consent_decline'] : __( 'Refuser', 'statify' );
+        $message     = isset( $options['consent_message'] ) ? $options['consent_message'] : __( 'Ce site utilise des cookies pour analyser le trafic. Acceptez-vous ?', 'always-analytics' );
+        $accept_text = isset( $options['consent_accept'] ) ? $options['consent_accept'] : __( 'Accepter', 'always-analytics' );
+        $decline_text = isset( $options['consent_decline'] ) ? $options['consent_decline'] : __( 'Refuser', 'always-analytics' );
         $bg_color    = isset( $options['consent_bg_color'] ) ? $options['consent_bg_color'] : '#1a1a2e';
         $text_color  = isset( $options['consent_text_color'] ) ? $options['consent_text_color'] : '#ffffff';
         $btn_color   = isset( $options['consent_btn_color'] ) ? $options['consent_btn_color'] : '#6c63ff';
         ?>
-        <div id="statify-consent-banner"
+        <div id="aa-consent-banner"
              style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:999999;padding:20px 24px;
                     background:<?php echo esc_attr( $bg_color ); ?>;color:<?php echo esc_attr( $text_color ); ?>;
                     font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;
@@ -53,14 +53,14 @@ class Statify_Consent {
                     <?php echo esc_html( $message ); ?>
                 </p>
                 <div style="display:flex;gap:10px;flex-shrink:0;">
-                    <button id="statify-consent-decline"
+                    <button id="aa-consent-decline"
                             style="padding:10px 20px;border:1px solid <?php echo esc_attr( $text_color ); ?>;
                                    background:transparent;color:<?php echo esc_attr( $text_color ); ?>;
                                    border-radius:6px;cursor:pointer;font-size:14px;font-weight:500;
                                    transition:opacity .2s;">
                         <?php echo esc_html( $decline_text ); ?>
                     </button>
-                    <button id="statify-consent-accept"
+                    <button id="aa-consent-accept"
                             style="padding:10px 24px;border:none;
                                    background:<?php echo esc_attr( $btn_color ); ?>;color:#ffffff;
                                    border-radius:6px;cursor:pointer;font-size:14px;font-weight:600;
@@ -73,40 +73,42 @@ class Statify_Consent {
         </div>
         <script>
         (function(){
-            var COOKIE_NAME = 'statify_consent';
-            var banner = document.getElementById('statify-consent-banner');
+            var COOKIE_NAME = 'aa_consent';
+            var banner = document.getElementById('aa-consent-banner');
             if (!banner) return;
 
             // Check if consent already given
             var consent = getCookie(COOKIE_NAME);
             if (consent) {
                 // Consent already stored — notify tracker
-                window.statifyConsentStatus = consent;
+                window.alwaysAnalyticsConsentStatus = consent;
                 return;
             }
 
             // Show banner
             banner.style.display = 'block';
 
-            document.getElementById('statify-consent-accept').addEventListener('click', function(){
+            document.getElementById('aa-consent-accept').addEventListener('click', function(){
                 setCookie(COOKIE_NAME, 'granted', 182);
-                window.statifyConsentStatus = 'granted';
+                window.alwaysAnalyticsConsentStatus = 'granted';
                 banner.style.display = 'none';
                 // Trigger tracking if it was waiting for consent
-                if (window.statifyOnConsent) window.statifyOnConsent('granted');
+                if (window.alwaysAnalyticsOnConsent) window.alwaysAnalyticsOnConsent('granted');
             });
 
-            document.getElementById('statify-consent-decline').addEventListener('click', function(){
+            document.getElementById('aa-consent-decline').addEventListener('click', function(){
                 setCookie(COOKIE_NAME, 'denied', 182);
-                window.statifyConsentStatus = 'denied';
+                window.alwaysAnalyticsConsentStatus = 'denied';
                 banner.style.display = 'none';
-                if (window.statifyOnConsent) window.statifyOnConsent('denied');
+                if (window.alwaysAnalyticsOnConsent) window.alwaysAnalyticsOnConsent('denied');
             });
 
             function setCookie(name, value, days) {
                 var d = new Date();
                 d.setTime(d.getTime() + (days * 86400000));
-                document.cookie = name + '=' + value + ';expires=' + d.toUTCString() + ';path=/;SameSite=Lax';
+                var c = name + '=' + value + ';expires=' + d.toUTCString() + ';path=/;SameSite=Lax';
+                if (window.location.protocol === 'https:') c += ';Secure';
+                document.cookie = c;
             }
 
             function getCookie(name) {

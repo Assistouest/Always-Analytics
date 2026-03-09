@@ -1,5 +1,5 @@
 <?php
-namespace Statify;
+namespace Always_Analytics;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -8,13 +8,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Plugin deactivator — cleans up scheduled tasks.
  */
-class Statify_Deactivator {
+class Always_Analytics_Deactivator {
 
     public static function deactivate() {
         // Clear current cron hooks
-        wp_clear_scheduled_hook( 'statify_daily_aggregate' );
-        wp_clear_scheduled_hook( 'statify_daily_purge' );
-        wp_clear_scheduled_hook( 'statify_expire_sessions' );
+        wp_clear_scheduled_hook( 'aa_daily_aggregate' );
+        wp_clear_scheduled_hook( 'aa_daily_purge' );
+        wp_clear_scheduled_hook( 'always_analytics_expire_sessions' );
 
         // Clear legacy cron hooks (advstats_ prefix) in case they still exist
         wp_clear_scheduled_hook( 'advstats_daily_aggregate' );

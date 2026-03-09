@@ -1,5 +1,5 @@
 <?php
-namespace Statify;
+namespace Always_Analytics;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -8,7 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Export handler — generates CSV and JSON reports.
  */
-class Statify_Export {
+class Always_Analytics_Export {
 
     /**
      * Generate an export based on the given parameters.
@@ -20,7 +20,7 @@ class Statify_Export {
     public static function generate( $params, $format = 'csv' ) {
         global $wpdb;
 
-        $table = $wpdb->prefix . 'statify_hits';
+        $table = $wpdb->prefix . 'aa_hits';
         $where = array( '1=1' );
         $args  = array();
 
@@ -79,7 +79,7 @@ class Statify_Export {
          * @param array  $results The result data.
          * @param string $format  The format (csv/json).
          */
-        $results = apply_filters( 'statify_export_data', $results, $format );
+        $results = apply_filters( 'always_analytics_export_data', $results, $format );
 
         if ( 'json' === $format ) {
             return self::to_json( $results );
@@ -128,7 +128,7 @@ class Statify_Export {
         $content   = self::generate( $params, $format );
         $extension = ( 'json' === $format ) ? 'json' : 'csv';
         $mime_type = ( 'json' === $format ) ? 'application/json' : 'text/csv';
-        $filename  = 'statify-export-' . gmdate( 'Y-m-d-His' ) . '.' . $extension;
+        $filename  = 'aa-export-' . gmdate( 'Y-m-d-His' ) . '.' . $extension;
 
         header( 'Content-Type: ' . $mime_type . '; charset=utf-8' );
         header( 'Content-Disposition: attachment; filename="' . $filename . '"' );

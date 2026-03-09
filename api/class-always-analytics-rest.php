@@ -1,5 +1,5 @@
 <?php
-namespace Statify;
+namespace Always_Analytics;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -8,77 +8,70 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * REST API — zéro cache, données live depuis la DB à chaque appel.
  */
-class Statify_Rest {
+class Always_Analytics_Rest {
 
-    const NAMESPACE = 'statify/v1';
+    const NAMESPACE = 'always-analytics/v1';
 
     /**
-     * Envoie les headers HTTP qui empêchent TOUT cache :
-     * navigateur, LiteSpeed, WP Rocket, Varnish, Cloudflare, Redis, OPCache proxy.
+     * Resolve the best IP address to use for rate-limiting.
+     *
+     * Uses REMOTE_ADDR as the authoritative source. If the site is configured
+     * with trusted proxies (same setting as the tracker), the first entry of
+     * X-Forwarded-For is used instead — but only when REMOTE_ADDR is itself
+     * in the trusted-proxy list, preventing trivial header spoofing.
+     *
+     * Falls back to '0.0.0.0' for invalid values so the rate-limit bucket
+     * still works (all invalid clients share one bucket rather than bypassing).
+     *
+     * @param \WP_REST_Request $request
+     * @return string Validated IP string.
      */
+    private static function get_rate_limit_ip( $request ) {
+        $remote_addr = isset( $_SERVER['REMOTE_ADDR'] )
+            ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) )
+            : '0.0.0.0';
+
+        if ( ! filter_var( $remote_addr, FILTER_VALIDATE_IP ) ) {
+            return '0.0.0.0';
+        }
+
+        $options = get_option( 'always_analytics_options', array() );
+        $mode    = isset( $options['trusted_proxy_mode'] ) ? $options['trusted_proxy_mode'] : 'none';
+
+        if ( 'custom' === $mode && ! empty( $options['trusted_proxies'] ) ) {
+            $trusted = array_filter( array_map( 'trim', explode( "\n", $options['trusted_proxies'] ) ) );
+            if ( Always_Analytics_Tracker::is_ip_in_range( $remote_addr, $trusted ) ) {
+                $forwarded = $request->get_header( 'x-forwarded-for' );
+                if ( $forwarded ) {
+                    $first = trim( explode( ',', $forwarded )[0] );
+                    if ( filter_var( $first, FILTER_VALIDATE_IP ) ) {
+                        return $first;
+                    }
+                }
+            }
+        }
+
+        return $remote_addr;
+    }
+
     private static function no_cache_headers() {
         if ( headers_sent() ) {
             return;
         }
-        // Supprime les headers de cache posés par d'autres plugins
-        header_remove( 'X-LiteSpeed-Cache' );
-        header_remove( 'X-Cache' );
-        header_remove( 'X-Cache-Status' );
-        header_remove( 'ETag' );
-        header_remove( 'Last-Modified' );
-
-        // No-cache complet
-        header( 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0, s-maxage=0, proxy-revalidate', true );
+        header( 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0', true );
         header( 'Pragma: no-cache', true );
         header( 'Expires: Thu, 01 Jan 1970 00:00:01 GMT', true );
-        // LiteSpeed Cache plugin
-        header( 'X-LiteSpeed-Cache-Control: no-cache, no-store', true );
-        // Varnish / Fastly
-        header( 'Surrogate-Control: no-store', true );
-        // Cloudflare
-        header( 'CDN-Cache-Control: no-store', true );
-        header( 'Cloudflare-CDN-Cache-Control: no-store', true );
-        // Vary wildcard pour casser tous les caches intermédiaires
-        header( 'Vary: *', true );
     }
 
     public static function register_routes() {
 
-        // Headers no-cache sur CHAQUE réponse statify dès que WP les envoie
+        // Headers no-cache sur CHAQUE réponse always-analytics dès que WP les envoie
         add_filter( 'rest_pre_serve_request', function ( $served, $result, $request ) {
-            if ( strpos( $request->get_route(), '/statify/' ) !== false ) {
+            if ( strpos( $request->get_route(), '/always-analytics/' ) !== false ) {
                 self::no_cache_headers();
             }
             return $served;
         }, 1, 3 );
-
-        // Purge proactive du cache objet WP (Redis/Memcached) pour nos clés
-        // et du cache interne $wpdb AVANT que les callbacks ne lisent la DB
-        add_action( 'rest_api_init', function () {
-            $uri = isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '';
-            if ( strpos( $uri, '/statify/' ) === false ) {
-                return;
-            }
-            // Invalide les entrées d'options dans le cache objet
-            wp_cache_delete( 'statify_options', 'options' );
-            wp_cache_delete( 'alloptions', 'options' );
-            // Invalide toutes nos clés statify dans le cache objet
-            if ( wp_using_ext_object_cache() ) {
-                wp_cache_flush_group( 'statify' ); // WP 6.1+
-                // Fallback pour les versions antérieures
-                wp_cache_delete( 'statify_overview',       'statify' );
-                wp_cache_delete( 'statify_chart',          'statify' );
-                wp_cache_delete( 'statify_top_pages',      'statify' );
-                wp_cache_delete( 'statify_top_refs',       'statify' );
-                wp_cache_delete( 'statify_countries',      'statify' );
-                wp_cache_delete( 'statify_devices',        'statify' );
-                wp_cache_delete( 'statify_visitors',       'statify' );
-                wp_cache_delete( 'statify_recent_visitors','statify' );
-            }
-            // Vide également le cache interne $wpdb
-            global $wpdb;
-            $wpdb->flush();
-        }, 1 );
 
         // ── Endpoint public : enregistrement d'un hit ──────────────────────────
         register_rest_route( self::NAMESPACE, '/hit', array(
@@ -182,14 +175,38 @@ class Statify_Rest {
         // ── Session ID : toujours depuis le body ───────────────────────────────
         $session_id = isset( $data['sessionId'] ) ? sanitize_text_field( $data['sessionId'] ) : '';
 
-        // ── Rate-limit : 1 hit/s par session (sauf pings/scroll) ──────────────
+        // ── Rate-limit ─────────────────────────────────────────────────
+        // Two complementary layers for non-ping/scroll actions:
+        //
+        // 1. Per-session  : 1 hit / 2 s  — stops repeated submits from same tab.
+        // 2. Per-IP       : 60 hits / 60 s — stops DDoS via sessionId rotation
+        //                   without being harsh enough to penalise shared IPs
+        //                   (VPNs, NAT, office networks).
         $action = isset( $data['action'] ) ? $data['action'] : '';
-        if ( $session_id && ! in_array( $action, array( 'ping', 'scroll' ), true ) ) {
-            $rate_key = 'statify_rl_' . md5( $session_id );
-            if ( false !== get_transient( $rate_key ) ) {
+        if ( ! in_array( $action, array( 'ping', 'scroll' ), true ) ) {
+
+            // Layer 1 — session cooldown (unchanged behaviour).
+            if ( $session_id ) {
+                $rate_key = 'aa_rl_' . md5( $session_id );
+                if ( false !== get_transient( $rate_key ) ) {
+                    return new \WP_REST_Response( null, 429 );
+                }
+                set_transient( $rate_key, 1, 2 );
+            }
+
+            // Layer 2 — per-IP counter, threshold 60 req / 60 s.
+            $client_ip = self::get_rate_limit_ip( $request );
+            $ip_key    = 'aa_rl_ip_' . md5( $client_ip );
+            $ip_hits   = (int) get_transient( $ip_key );
+            if ( $ip_hits >= 60 ) {
                 return new \WP_REST_Response( null, 429 );
             }
-            set_transient( $rate_key, 1, 2 ); // 2 secondes de cooldown
+            // Increment; set TTL only on first hit to keep a fixed 60-s window.
+            if ( 0 === $ip_hits ) {
+                set_transient( $ip_key, 1, 60 );
+            } else {
+                set_transient( $ip_key, $ip_hits + 1, 60 );
+            }
         }
 
         // ── Dispatch selon action ──────────────────────────────────────────────
@@ -198,14 +215,14 @@ class Statify_Rest {
                 $scroll_depth    = isset( $data['scrollDepth'] )    ? absint( $data['scrollDepth'] )    : null;
                 $client_duration = isset( $data['clientDuration'] ) ? absint( $data['clientDuration'] ) : null;
                 $engagement_time = isset( $data['engagementTime'] ) ? absint( $data['engagementTime'] ) : null;
-                Statify_Session::ping_session( $session_id, $scroll_depth, $client_duration, $engagement_time );
+                Always_Analytics_Session::ping_session( $session_id, $scroll_depth, $client_duration, $engagement_time );
             }
             return new \WP_REST_Response( null, 204 );
         }
 
         if ( 'scroll' === $action ) {
             if ( $session_id ) {
-                Statify_Tracker::handle_scroll( $data );
+                Always_Analytics_Tracker::handle_scroll( $data );
             }
             return new \WP_REST_Response( null, 204 );
         }
@@ -217,7 +234,7 @@ class Statify_Rest {
         // un hit complet arrive avec preConsentSessionId → fusion via upgrade_pre_consent().
         if ( 'pre_consent' === $action ) {
             $data['hitSource'] = 'pre_consent';
-            Statify_Tracker::track( $data );
+            Always_Analytics_Tracker::track( $data );
             return new \WP_REST_Response( null, 204 );
         }
 
@@ -228,7 +245,7 @@ class Statify_Rest {
             ? sanitize_text_field( $data['preConsentSessionId'] )
             : '';
 
-        $hit_id = Statify_Tracker::track( $data );
+        $hit_id = Always_Analytics_Tracker::track( $data );
 
         // Fusion post-consentement uniquement si :
         //   1. Le hit complet a bien été inséré (track() retourne un ID > 0)
@@ -236,7 +253,7 @@ class Statify_Rest {
         //   3. Un visitorId est présent pour reconstruire le visitor_hash définitif
         if ( $hit_id && $pre_consent_sid && ! empty( $data['visitorId'] ) ) {
             $new_visitor_hash = hash( 'sha256', sanitize_text_field( $data['visitorId'] ) );
-            Statify_Tracker::upgrade_pre_consent( $pre_consent_sid, $new_visitor_hash );
+            Always_Analytics_Tracker::upgrade_pre_consent( $pre_consent_sid, $new_visitor_hash );
         }
 
         return new \WP_REST_Response( null, 204 );
@@ -249,7 +266,7 @@ class Statify_Rest {
      * Appelé par la balise <noscript><img> — uniquement quand JS est désactivé.
      *
      * Toujours en mode cookieless (IP anonymisée, aucun cookie écrit/lu).
-     * Déduplication intégrée dans Statify_Tracker::track_noscript().
+     * Déduplication intégrée dans Always_Analytics_Tracker::track_noscript().
      */
     public static function handle_noscript( $request ) {
         // ── Vérification du domaine ───────────────────────────────────────────
@@ -262,7 +279,7 @@ class Statify_Rest {
         }
 
         // ── Disable tracking check ────────────────────────────────────────────
-        $options = get_option( 'statify_options', array() );
+        $options = get_option( 'always_analytics_options', array() );
         if ( ! empty( $options['disable_tracking'] ) ) {
             self::output_transparent_gif();
         }
@@ -286,14 +303,14 @@ class Statify_Rest {
         }
 
         // Rate-limit : 1 requête / 10s par IP (protège contre les crawlers sans UA bot)
-        $ip       = Statify_Tracker::get_client_ip();
-        $rl_key   = 'statify_noscript_rl_' . md5( $ip );
+        $ip       = Always_Analytics_Tracker::get_client_ip();
+        $rl_key   = 'aa_noscript_rl_' . md5( $ip );
         if ( false !== get_transient( $rl_key ) ) {
             self::output_transparent_gif();
         }
         set_transient( $rl_key, 1, 10 );
 
-        Statify_Tracker::track_noscript( $data );
+        Always_Analytics_Tracker::track_noscript( $data );
 
         self::output_transparent_gif();
     }
@@ -322,8 +339,8 @@ class Statify_Rest {
         self::no_cache_headers();
 
         $params = self::get_date_params( $request );
-        $table  = $wpdb->prefix . 'statify_hits';
-        $t_sess = $wpdb->prefix . 'statify_sessions';
+        $table  = $wpdb->prefix . 'aa_hits';
+        $t_sess = $wpdb->prefix . 'aa_sessions';
 
         $args  = array();
         $where = self::build_where( $params, $args );
@@ -343,7 +360,7 @@ class Statify_Rest {
         $sess_args = array( $params['from_utc'], $params['to_utc'] );
 
         // Durée et engagement filtrés via les sessions liées aux hits de la période
-        // (JOIN sur statify_hits pour rester cohérent avec le filtre hit_at + is_superseded = 0).
+        // (JOIN sur aa_hits pour rester cohérent avec le filtre hit_at + is_superseded = 0).
         // Sessions à 0s (visiteurs non-traçables) exclues des moyennes uniquement.
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery
         $avg_duration = $wpdb->get_var( $wpdb->prepare(
@@ -412,7 +429,7 @@ class Statify_Rest {
         self::no_cache_headers();
 
         $params = self::get_date_params( $request );
-        $table  = $wpdb->prefix . 'statify_hits';
+        $table  = $wpdb->prefix . 'aa_hits';
         $from   = $params['from_utc'];
         $to     = $params['to_utc'];
 
@@ -497,7 +514,7 @@ class Statify_Rest {
         self::no_cache_headers();
 
         $params = self::get_date_params( $request );
-        $table  = $wpdb->prefix . 'statify_hits';
+        $table  = $wpdb->prefix . 'aa_hits';
         $limit  = absint( $request->get_param( 'limit' ) ?: 20 );
 
         $sql  = "SELECT page_url, page_title, post_id,
@@ -521,7 +538,7 @@ class Statify_Rest {
         self::no_cache_headers();
 
         $params = self::get_date_params( $request );
-        $table  = $wpdb->prefix . 'statify_hits';
+        $table  = $wpdb->prefix . 'aa_hits';
         $limit  = absint( $request->get_param( 'limit' ) ?: 20 );
 
         $sql    = "SELECT referrer_domain, COUNT(*) as hits, COUNT(DISTINCT visitor_hash) as unique_visitors
@@ -542,7 +559,7 @@ class Statify_Rest {
         self::no_cache_headers();
 
         $params = self::get_date_params( $request );
-        $table  = $wpdb->prefix . 'statify_hits';
+        $table  = $wpdb->prefix . 'aa_hits';
         $limit  = absint( $request->get_param( 'limit' ) ?: 100 );
 
         $args  = array();
@@ -573,7 +590,7 @@ class Statify_Rest {
         self::no_cache_headers();
 
         $params    = self::get_date_params( $request );
-        $table     = $wpdb->prefix . 'statify_hits';
+        $table     = $wpdb->prefix . 'aa_hits';
         $base_args = array( $params['from_utc'], $params['to_utc'] );
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -597,7 +614,7 @@ class Statify_Rest {
         self::no_cache_headers();
 
         $params = self::get_date_params( $request );
-        $table  = $wpdb->prefix . 'statify_hits';
+        $table  = $wpdb->prefix . 'aa_hits';
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery
         $result = $wpdb->get_row( $wpdb->prepare(
@@ -620,13 +637,13 @@ class Statify_Rest {
         self::no_cache_headers();
 
         $params  = self::get_date_params( $request );
-        $t_hits  = $wpdb->prefix . 'statify_hits';
-        $t_sess  = $wpdb->prefix . 'statify_sessions';
+        $t_hits  = $wpdb->prefix . 'aa_hits';
+        $t_sess  = $wpdb->prefix . 'aa_sessions';
         $limit   = absint( $request->get_param( 'limit' ) ?: 15 );
 
-        // Source primaire : statify_hits (hit_at + is_superseded = 0), identique aux autres endpoints.
+        // Source primaire : aa_hits (hit_at + is_superseded = 0), identique aux autres endpoints.
         // On sélectionne les sessions qui ont au moins un hit dans la période demandée,
-        // puis on enrichit avec statify_sessions pour durée/page_count/etc.
+        // puis on enrichit avec aa_sessions pour durée/page_count/etc.
         $args  = array( $params['from_utc'], $params['to_utc'] );
         $extra = '';
         if ( ! empty( $params['device'] ) )  { $extra .= ' AND h.device_type = %s';  $args[] = $params['device']; }
@@ -657,7 +674,7 @@ class Statify_Rest {
         self::no_cache_headers();
         $params = self::get_date_params( $request );
         $format = sanitize_key( $request->get_param( 'format' ) ?: 'csv' );
-        Statify_Export::download( $params, $format );
+        Always_Analytics_Export::download( $params, $format );
     }
 
     // ── /engagement ───────────────────────────────────────────────────────────
@@ -667,9 +684,9 @@ class Statify_Rest {
         self::no_cache_headers();
 
         $params   = self::get_date_params( $request );
-        $t_hits   = $wpdb->prefix . 'statify_hits';
-        $t_sess   = $wpdb->prefix . 'statify_sessions';
-        $t_scroll = $wpdb->prefix . 'statify_scroll';
+        $t_hits   = $wpdb->prefix . 'aa_hits';
+        $t_sess   = $wpdb->prefix . 'aa_sessions';
+        $t_scroll = $wpdb->prefix . 'aa_scroll';
         $from     = $params['from_utc'];
         $to       = $params['to_utc'];
         $is_today = $params['is_today'];
@@ -691,8 +708,8 @@ class Statify_Rest {
         }
 
         // ── KPIs ───────────────────────────────────────────────────────────────
-        // Source primaire : statify_hits (toujours alimentée si le tracker marche)
-        // Source secondaire : statify_sessions (enrichit durée, bounce, scroll)
+        // Source primaire : aa_hits (toujours alimentée si le tracker marche)
+        // Source secondaire : aa_sessions (enrichit durée, bounce, scroll)
         if ( $has_sess_table && $has_scroll_col ) {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery
             $kpis = $wpdb->get_row( $wpdb->prepare(
@@ -938,9 +955,9 @@ class Statify_Rest {
         self::no_cache_headers();
 
         $params   = self::get_date_params( $request );
-        $t_hits   = $wpdb->prefix . 'statify_hits';
-        $t_sess   = $wpdb->prefix . 'statify_sessions';
-        $t_scroll = $wpdb->prefix . 'statify_scroll';
+        $t_hits   = $wpdb->prefix . 'aa_hits';
+        $t_sess   = $wpdb->prefix . 'aa_sessions';
+        $t_scroll = $wpdb->prefix . 'aa_scroll';
         $from     = $params['from_utc'];
         $to       = $params['to_utc'];
         $limit    = absint( $request->get_param( 'limit' ) ?: 50 );

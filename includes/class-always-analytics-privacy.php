@@ -1,5 +1,5 @@
 <?php
-namespace Statify;
+namespace Always_Analytics;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * L'agrégation journalière consolide les comptages (UV, sessions, etc.)
  * qui ne seraient plus calculables après anonymisation.
  */
-class Statify_Privacy {
+class Always_Analytics_Privacy {
 
     // ── IP anonymisation ──────────────────────────────────────────────────────
 
@@ -79,25 +79,25 @@ class Statify_Privacy {
             '<p>%s</p>' .
             '<h3>%s</h3>' .
             '<p>%s</p>',
-            __( 'Statistiques de visite (Statify)', 'statify' ),
-            __( 'Ce site utilise le plugin Statify pour collecter des statistiques de visite anonymes. Ces données nous aident à comprendre comment le site est utilisé et à améliorer son contenu.', 'statify' ),
-            __( 'Données collectées', 'statify' ),
-            __( 'Lors de votre visite, les informations suivantes peuvent être collectées :', 'statify' ),
-            __( 'Pages visitées et durée de consultation', 'statify' ),
-            __( 'Profondeur de défilement (scroll)', 'statify' ),
-            __( 'Type d\'appareil, navigateur et système d\'exploitation', 'statify' ),
-            __( 'Pays d\'origine (via géolocalisation IP anonymisée)', 'statify' ),
-            __( 'Source de trafic (référent, paramètres UTM)', 'statify' ),
-            __( 'Résolution d\'écran', 'statify' ),
-            __( 'Traitement des données', 'statify' ),
-            __( 'Aucune adresse IP complète n\'est stockée. Les adresses IP sont anonymisées (dernier octet supprimé) avant tout traitement. Un identifiant visiteur non réversible (hash cryptographique) est généré pour compter les visiteurs uniques sans permettre de vous identifier. Les données brutes sont automatiquement anonymisées après la période de rétention configurée, et les statistiques agrégées sont conservées.', 'statify' ),
-            __( 'Cookies', 'statify' ),
-            __( 'En mode « sans cookie », aucun cookie n\'est déposé. En mode « cookie », un cookie d\'identification visiteur peut être déposé avec votre consentement préalable (durée : 13 mois maximum). Un cookie de session temporaire (sessionStorage) est utilisé pour regrouper vos pages vues en une seule visite.', 'statify' ),
-            __( 'Vos droits', 'statify' ),
-            __( 'Vous pouvez demander l\'exportation ou la suppression de vos données de visite via la page « Politique de confidentialité » ou en contactant l\'administrateur du site. Les données seront anonymisées (rendues non identifiables) plutôt que supprimées, afin de préserver les statistiques globales.', 'statify' )
+            __( 'Statistiques de visite (Always Analytics)', 'always-analytics' ),
+            __( 'Ce site utilise le plugin Always Analytics pour collecter des statistiques de visite anonymes. Ces données nous aident à comprendre comment le site est utilisé et à améliorer son contenu.', 'always-analytics' ),
+            __( 'Données collectées', 'always-analytics' ),
+            __( 'Lors de votre visite, les informations suivantes peuvent être collectées :', 'always-analytics' ),
+            __( 'Pages visitées et durée de consultation', 'always-analytics' ),
+            __( 'Profondeur de défilement (scroll)', 'always-analytics' ),
+            __( 'Type d\'appareil, navigateur et système d\'exploitation', 'always-analytics' ),
+            __( 'Pays d\'origine (via géolocalisation IP anonymisée)', 'always-analytics' ),
+            __( 'Source de trafic (référent, paramètres UTM)', 'always-analytics' ),
+            __( 'Résolution d\'écran', 'always-analytics' ),
+            __( 'Traitement des données', 'always-analytics' ),
+            __( 'Aucune adresse IP complète n\'est stockée. Les adresses IP sont anonymisées (dernier octet supprimé) avant tout traitement. Un identifiant visiteur non réversible (hash cryptographique) est généré pour compter les visiteurs uniques sans permettre de vous identifier. Les données brutes sont automatiquement anonymisées après la période de rétention configurée, et les statistiques agrégées sont conservées.', 'always-analytics' ),
+            __( 'Cookies', 'always-analytics' ),
+            __( 'En mode « sans cookie », aucun cookie n\'est déposé. En mode « cookie », un cookie d\'identification visiteur peut être déposé avec votre consentement préalable (durée : 13 mois maximum). Un cookie de session temporaire (sessionStorage) est utilisé pour regrouper vos pages vues en une seule visite.', 'always-analytics' ),
+            __( 'Vos droits', 'always-analytics' ),
+            __( 'Vous pouvez demander l\'exportation ou la suppression de vos données de visite via la page « Politique de confidentialité » ou en contactant l\'administrateur du site. Les données seront anonymisées (rendues non identifiables) plutôt que supprimées, afin de préserver les statistiques globales.', 'always-analytics' )
         );
 
-        wp_add_privacy_policy_content( 'Statify (Advanced Stats)', $content );
+        wp_add_privacy_policy_content( 'Always Analytics (Advanced Stats)', $content );
     }
 
     // ── Purge / Anonymisation automatique ─────────────────────────────────────
@@ -106,19 +106,19 @@ class Statify_Privacy {
      * Anonymise les données brutes plus anciennes que la période de rétention.
      *
      * Flux :
-     * 1. Agrège les stats dans statify_daily (UV, sessions, durée, scroll, bounce)
+     * 1. Agrège les stats dans aa_daily (UV, sessions, durée, scroll, bounce)
      * 2. Anonymise les hits : visitor_hash → hash aléatoire, user_id → 0
      * 3. Anonymise les sessions : visitor_hash → hash aléatoire
      * 4. Anonymise les scroll events : visitor_hash → hash aléatoire
      *
      * Résultat : les données brutes restent exploitables pour les distributions
      * (durées, devices, heures, scroll…) mais ne sont plus liables à un individu.
-     * Les comptages UV/sessions reposent sur statify_daily.
+     * Les comptages UV/sessions reposent sur aa_daily.
      */
     public function purge_old_data() {
         global $wpdb;
 
-        $options        = get_option( 'statify_options', array() );
+        $options        = get_option( 'always_analytics_options', array() );
         $retention_days = isset( $options['retention_days'] ) ? absint( $options['retention_days'] ) : 90;
 
         if ( 0 === $retention_days ) {
@@ -128,12 +128,12 @@ class Statify_Privacy {
         $cutoff_date = gmdate( 'Y-m-d H:i:s', strtotime( "-{$retention_days} days" ) );
         $cutoff_day  = gmdate( 'Y-m-d', strtotime( "-{$retention_days} days" ) );
 
-        do_action( 'statify_before_purge', $cutoff_date );
+        do_action( 'always_analytics_before_purge', $cutoff_date );
 
-        $table_hits     = $wpdb->prefix . 'statify_hits';
-        $table_sessions = $wpdb->prefix . 'statify_sessions';
-        $table_scroll   = $wpdb->prefix . 'statify_scroll';
-        $table_daily    = $wpdb->prefix . 'statify_daily';
+        $table_hits     = $wpdb->prefix . 'aa_hits';
+        $table_sessions = $wpdb->prefix . 'aa_sessions';
+        $table_scroll   = $wpdb->prefix . 'aa_scroll';
+        $table_daily    = $wpdb->prefix . 'aa_daily';
 
         // ── 1. Agrégation enrichie des jours non encore agrégés ───────────────
         // On agrège chaque jour avant le cutoff qui n'a pas encore d'entrée daily.
@@ -205,17 +205,17 @@ class Statify_Privacy {
             ) );
         }
 
-        do_action( 'statify_after_purge', $cutoff_date );
+        do_action( 'always_analytics_after_purge', $cutoff_date );
     }
 
     /**
-     * Agrège un jour donné dans statify_daily.
+     * Agrège un jour donné dans aa_daily.
      */
     private function aggregate_day( $day ) {
         global $wpdb;
-        $table_hits  = $wpdb->prefix . 'statify_hits';
-        $table_daily = $wpdb->prefix . 'statify_daily';
-        $t_sess      = $wpdb->prefix . 'statify_sessions';
+        $table_hits  = $wpdb->prefix . 'aa_hits';
+        $table_daily = $wpdb->prefix . 'aa_daily';
+        $t_sess      = $wpdb->prefix . 'aa_sessions';
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery
         $wpdb->query( $wpdb->prepare(
@@ -258,9 +258,9 @@ class Statify_Privacy {
      */
     private function enrich_daily_aggregates( $cutoff_date ) {
         global $wpdb;
-        $table_hits  = $wpdb->prefix . 'statify_hits';
-        $table_daily = $wpdb->prefix . 'statify_daily';
-        $t_sess      = $wpdb->prefix . 'statify_sessions';
+        $table_hits  = $wpdb->prefix . 'aa_hits';
+        $table_daily = $wpdb->prefix . 'aa_daily';
+        $t_sess      = $wpdb->prefix . 'aa_sessions';
 
         // Met à jour avg_duration et bounce_rate pour les jours avant le cutoff
         // qui ont encore avg_duration = 0 (pas encore enrichis).
@@ -289,8 +289,8 @@ class Statify_Privacy {
     // ── Export de données personnelles (RGPD art. 20) ─────────────────────────
 
     public function register_exporter( $exporters ) {
-        $exporters['statify'] = array(
-            'exporter_friendly_name' => __( 'Statify — Données de visite', 'statify' ),
+        $exporters['always-analytics'] = array(
+            'exporter_friendly_name' => __( 'Always Analytics — Données de visite', 'always-analytics' ),
             'callback'               => array( $this, 'export_personal_data' ),
         );
         return $exporters;
@@ -308,8 +308,8 @@ class Statify_Privacy {
             return array( 'data' => array(), 'done' => true );
         }
 
-        $table_hits = $wpdb->prefix . 'statify_hits';
-        $table_sess = $wpdb->prefix . 'statify_sessions';
+        $table_hits = $wpdb->prefix . 'aa_hits';
+        $table_sess = $wpdb->prefix . 'aa_sessions';
         $limit  = 100;
         $offset = ( $page - 1 ) * $limit;
 
@@ -328,15 +328,15 @@ class Statify_Privacy {
         $data = array();
         foreach ( $hits as $hit ) {
             $item_data = array(
-                array( 'name' => __( 'Page', 'statify' ),       'value' => $hit->page_url ),
-                array( 'name' => __( 'Titre', 'statify' ),      'value' => $hit->page_title ),
-                array( 'name' => __( 'Date', 'statify' ),       'value' => $hit->hit_at ),
-                array( 'name' => __( 'Appareil', 'statify' ),   'value' => $hit->device_type ),
-                array( 'name' => __( 'Navigateur', 'statify' ), 'value' => $hit->browser ),
-                array( 'name' => __( 'OS', 'statify' ),         'value' => $hit->os ),
-                array( 'name' => __( 'Pays', 'statify' ),       'value' => $hit->country_code ),
-                array( 'name' => __( 'Écran', 'statify' ),      'value' => $hit->screen_width . 'x' . $hit->screen_height ),
-                array( 'name' => __( 'Référent', 'statify' ),   'value' => $hit->referrer_domain ),
+                array( 'name' => __( 'Page', 'always-analytics' ),       'value' => $hit->page_url ),
+                array( 'name' => __( 'Titre', 'always-analytics' ),      'value' => $hit->page_title ),
+                array( 'name' => __( 'Date', 'always-analytics' ),       'value' => $hit->hit_at ),
+                array( 'name' => __( 'Appareil', 'always-analytics' ),   'value' => $hit->device_type ),
+                array( 'name' => __( 'Navigateur', 'always-analytics' ), 'value' => $hit->browser ),
+                array( 'name' => __( 'OS', 'always-analytics' ),         'value' => $hit->os ),
+                array( 'name' => __( 'Pays', 'always-analytics' ),       'value' => $hit->country_code ),
+                array( 'name' => __( 'Écran', 'always-analytics' ),      'value' => $hit->screen_width . 'x' . $hit->screen_height ),
+                array( 'name' => __( 'Référent', 'always-analytics' ),   'value' => $hit->referrer_domain ),
             );
             if ( $hit->utm_source ) {
                 $item_data[] = array( 'name' => 'UTM Source',   'value' => $hit->utm_source );
@@ -344,9 +344,9 @@ class Statify_Privacy {
                 $item_data[] = array( 'name' => 'UTM Campaign', 'value' => $hit->utm_campaign );
             }
             $data[] = array(
-                'group_id'    => 'statify-hits',
-                'group_label' => __( 'Statify — Pages visitées', 'statify' ),
-                'item_id'     => 'statify-hit-' . md5( $hit->hit_at . $hit->page_url ),
+                'group_id'    => 'aa-hits',
+                'group_label' => __( 'Always Analytics — Pages visitées', 'always-analytics' ),
+                'item_id'     => 'aa-hit-' . md5( $hit->hit_at . $hit->page_url ),
                 'data'        => $item_data,
             );
         }
@@ -377,17 +377,17 @@ class Statify_Privacy {
                 foreach ( $sessions as $s ) {
                     $dur = $s->engagement_time > 0 ? $s->engagement_time : $s->duration;
                     $data[] = array(
-                        'group_id'    => 'statify-sessions',
-                        'group_label' => __( 'Statify — Sessions de visite', 'statify' ),
-                        'item_id'     => 'statify-sess-' . md5( $s->started_at ),
+                        'group_id'    => 'aa-sessions',
+                        'group_label' => __( 'Always Analytics — Sessions de visite', 'always-analytics' ),
+                        'item_id'     => 'aa-sess-' . md5( $s->started_at ),
                         'data'        => array(
-                            array( 'name' => __( 'Début', 'statify' ),       'value' => $s->started_at ),
-                            array( 'name' => __( 'Durée (s)', 'statify' ),   'value' => $dur ),
-                            array( 'name' => __( 'Pages vues', 'statify' ),  'value' => $s->page_count ),
-                            array( 'name' => __( 'Page d\'entrée', 'statify' ), 'value' => $s->entry_page ),
-                            array( 'name' => __( 'Page de sortie', 'statify' ), 'value' => $s->exit_page ),
-                            array( 'name' => __( 'Scroll max (%)', 'statify' ), 'value' => $s->max_scroll_depth ),
-                            array( 'name' => __( 'Rebond', 'statify' ),      'value' => $s->is_bounce ? __( 'Oui', 'statify' ) : __( 'Non', 'statify' ) ),
+                            array( 'name' => __( 'Début', 'always-analytics' ),       'value' => $s->started_at ),
+                            array( 'name' => __( 'Durée (s)', 'always-analytics' ),   'value' => $dur ),
+                            array( 'name' => __( 'Pages vues', 'always-analytics' ),  'value' => $s->page_count ),
+                            array( 'name' => __( 'Page d\'entrée', 'always-analytics' ), 'value' => $s->entry_page ),
+                            array( 'name' => __( 'Page de sortie', 'always-analytics' ), 'value' => $s->exit_page ),
+                            array( 'name' => __( 'Scroll max (%)', 'always-analytics' ), 'value' => $s->max_scroll_depth ),
+                            array( 'name' => __( 'Rebond', 'always-analytics' ),      'value' => $s->is_bounce ? __( 'Oui', 'always-analytics' ) : __( 'Non', 'always-analytics' ) ),
                         ),
                     );
                 }
@@ -403,8 +403,8 @@ class Statify_Privacy {
     // ── Effacement de données personnelles (RGPD art. 17) ─────────────────────
 
     public function register_eraser( $erasers ) {
-        $erasers['statify'] = array(
-            'eraser_friendly_name' => __( 'Statify — Données de visite', 'statify' ),
+        $erasers['always-analytics'] = array(
+            'eraser_friendly_name' => __( 'Always Analytics — Données de visite', 'always-analytics' ),
             'callback'             => array( $this, 'erase_personal_data' ),
         );
         return $erasers;
@@ -431,9 +431,9 @@ class Statify_Privacy {
             );
         }
 
-        $table_hits   = $wpdb->prefix . 'statify_hits';
-        $table_sess   = $wpdb->prefix . 'statify_sessions';
-        $table_scroll = $wpdb->prefix . 'statify_scroll';
+        $table_hits   = $wpdb->prefix . 'aa_hits';
+        $table_sess   = $wpdb->prefix . 'aa_sessions';
+        $table_scroll = $wpdb->prefix . 'aa_scroll';
 
         // ── Récupère les identifiants liés à cet utilisateur ──────────────────
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -499,7 +499,7 @@ class Statify_Privacy {
         if ( $items_anonymized > 0 ) {
             $messages[] = sprintf(
                 /* translators: %d: number of anonymized records */
-                __( 'Statify : %d enregistrements anonymisés (données statistiques conservées de manière non identifiable).', 'statify' ),
+                __( 'Always Analytics : %d enregistrements anonymisés (données statistiques conservées de manière non identifiable).', 'always-analytics' ),
                 $items_anonymized
             );
         }

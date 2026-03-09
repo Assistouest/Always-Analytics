@@ -1,5 +1,5 @@
 <?php
-namespace Statify;
+namespace Always_Analytics;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -8,7 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Hook/filter loader utility.
  */
-class Statify_Loader {
+class Always_Analytics_Loader {
 
     protected $actions = array();
     protected $filters = array();

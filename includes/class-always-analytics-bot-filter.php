@@ -1,5 +1,5 @@
 <?php
-namespace Statify;
+namespace Always_Analytics;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -8,7 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Bot filter — detects and filters bot traffic.
  */
-class Statify_Bot_Filter {
+class Always_Analytics_Bot_Filter {
 
     /**
      * Common bot User-Agent keywords.
@@ -59,7 +59,7 @@ class Statify_Bot_Filter {
          *
          * @param array $bot_list The bot keywords.
          */
-        $keywords = apply_filters( 'statify_bot_user_agents', self::$bot_keywords );
+        $keywords = apply_filters( 'always_analytics_bot_user_agents', self::$bot_keywords );
 
         if ( 'strict' === $mode ) {
             $keywords = array_merge( $keywords, self::$strict_keywords );

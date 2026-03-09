@@ -1,5 +1,5 @@
 <?php
-namespace Statify;
+namespace Always_Analytics;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -7,9 +7,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Geolocation handler — resolves IP addresses to geographic locations.
- * Supports native (bundled db-ip lite) and MaxMind GeoLite2 providers.
+ * Supports native (bundled ip-country lookup table) and MaxMind GeoLite2 providers.
+ *
+ * External HTTP lookups have been intentionally removed. The plugin relies
+ * exclusively on local data sources (bundled PHP table or a local MaxMind .mmdb
+ * file) to avoid outbound HTTP requests, data leakage, and MitM risks.
  */
-class Statify_Geolocation {
+class Always_Analytics_Geolocation {
 
     private $provider;
     private $options;
@@ -41,8 +45,8 @@ class Statify_Geolocation {
         }
 
         // Check cache first
-        $cache_key = 'statify_geo_' . md5( $ip );
-        $cached    = Statify_Cache::get( $cache_key );
+        $cache_key = 'aa_geo_' . md5( $ip );
+        $cached    = Always_Analytics_Cache::get( $cache_key );
         if ( false !== $cached ) {
             return $cached;
         }
@@ -60,15 +64,16 @@ class Statify_Geolocation {
         }
 
         // Cache for 24 hours (IPs don't change geo often)
-        Statify_Cache::set( $cache_key, $result, DAY_IN_SECONDS );
+        Always_Analytics_Cache::set( $cache_key, $result, DAY_IN_SECONDS );
 
         return $result;
     }
 
     /**
-     * Native geolocation using bundled IP database.
-     * Uses the DB-IP Lite CSV format (free, no key required).
-     * Fallback: country-only via the bundled PHP lookup table.
+     * Native geolocation using the bundled IP-to-country PHP lookup table.
+     *
+     * Returns country code only (no region/city). If the IP is not found in
+     * the table, returns empty strings — no external request is made.
      *
      * @param string $ip The IP address.
      * @return array
@@ -76,26 +81,23 @@ class Statify_Geolocation {
     private function lookup_native( $ip ) {
         $default = array( 'country_code' => '', 'region' => '', 'city' => '' );
 
-        // Try the bundled PHP lookup table for country-level resolution
-        $country_file = STATIFY_PLUGIN_DIR . 'data/ip-country.php';
-        if ( file_exists( $country_file ) ) {
-            $lookup_table = include $country_file;
-            if ( is_array( $lookup_table ) ) {
-                $country = $this->binary_search_country( $ip, $lookup_table );
-                if ( $country ) {
-                    return array(
-                        'country_code' => $country,
-                        'region'       => '',
-                        'city'         => '',
-                    );
-                }
-            }
+        $country_file = AA_PLUGIN_DIR . 'data/ip-country.php';
+        if ( ! file_exists( $country_file ) ) {
+            return $default;
         }
 
-        // Fallback: try ip-api.com (free, no key, cached aggressively)
-        $result = $this->lookup_ip_api( $ip );
-        if ( ! empty( $result['country_code'] ) ) {
-            return $result;
+        $lookup_table = include $country_file;
+        if ( ! is_array( $lookup_table ) ) {
+            return $default;
+        }
+
+        $country = $this->binary_search_country( $ip, $lookup_table );
+        if ( $country ) {
+            return array(
+                'country_code' => $country,
+                'region'       => '',
+                'city'         => '',
+            );
         }
 
         return $default;
@@ -103,6 +105,7 @@ class Statify_Geolocation {
 
     /**
      * Binary search in the IP-to-country lookup table.
+
      *
      * @param string $ip    The IP address.
      * @param array  $table Array of [ 'start' => long, 'end' => long, 'cc' => 'XX' ].
@@ -131,43 +134,6 @@ class Statify_Geolocation {
         return false;
     }
 
-    /**
-     * Fallback: lookup via ip-api.com (free, no registration, 45 req/min).
-     *
-     * @param string $ip The IP address.
-     * @return array
-     */
-    private function lookup_ip_api( $ip ) {
-        $default = array( 'country_code' => '', 'region' => '', 'city' => '' );
-
-        // Rate limit: 1 request per second
-        $rate_key = 'statify_geo_rate';
-        if ( false !== get_transient( $rate_key ) ) {
-            return $default;
-        }
-        set_transient( $rate_key, 1, 2 );
-
-        $url      = 'http://ip-api.com/json/' . rawurlencode( $ip ) . '?fields=status,countryCode,regionName,city';
-        $response = wp_remote_get( $url, array(
-            'timeout'   => 3,
-            'sslverify' => false,
-        ) );
-
-        if ( is_wp_error( $response ) ) {
-            return $default;
-        }
-
-        $body = json_decode( wp_remote_retrieve_body( $response ), true );
-        if ( empty( $body ) || 'success' !== ( $body['status'] ?? '' ) ) {
-            return $default;
-        }
-
-        return array(
-            'country_code' => isset( $body['countryCode'] ) ? sanitize_text_field( $body['countryCode'] ) : '',
-            'region'       => isset( $body['regionName'] ) ? sanitize_text_field( $body['regionName'] ) : '',
-            'city'         => isset( $body['city'] ) ? sanitize_text_field( $body['city'] ) : '',
-        );
-    }
 
     /**
      * MaxMind GeoLite2 lookup.
@@ -180,7 +146,7 @@ class Statify_Geolocation {
 
         $db_path = ! empty( $this->options['maxmind_db_path'] )
             ? $this->options['maxmind_db_path']
-            : STATIFY_PLUGIN_DIR . 'data/GeoLite2-City.mmdb';
+            : AA_PLUGIN_DIR . 'data/GeoLite2-City.mmdb';
 
         if ( ! file_exists( $db_path ) ) {
             // Fallback to native if MaxMind DB not found
@@ -196,7 +162,7 @@ class Statify_Geolocation {
             } else {
                 // Use the PHP pure reader (must be installed via composer)
                 if ( ! class_exists( '\\MaxMind\\Db\\Reader' ) ) {
-                    $autoload = STATIFY_PLUGIN_DIR . 'vendor/autoload.php';
+                    $autoload = AA_PLUGIN_DIR . 'vendor/autoload.php';
                     if ( file_exists( $autoload ) ) {
                         require_once $autoload;
                     } else {

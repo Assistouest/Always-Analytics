@@ -19,7 +19,7 @@
  *     • 0 doublon garanti
  *
  *   Phase 2b — DENIED (visiteur refuse) :
- *     • Cookie statify_vid supprimé s'il existe
+ *     • Cookie aa_vid supprimé s'il existe
  *     • Hit pre_consent reste en base comme visite anonyme (cookieless)
  *
  *   Phase 2c — Page fermée sans décision :
@@ -32,11 +32,11 @@
 (function () {
     'use strict';
 
-    if (typeof statifyConfig === 'undefined') return;
+    if (typeof alwaysAnalyticsConfig === 'undefined') return;
 
-    var config      = statifyConfig;
-    var COOKIE_VID  = 'statify_vid';
-    var COOKIE_CONS = 'statify_consent';
+    var config      = alwaysAnalyticsConfig;
+    var COOKIE_VID  = 'aa_vid';
+    var COOKIE_CONS = 'aa_consent';
     var COOKIE_DAYS = 395;
 
     // ── Chronomètre d'engagement ──────────────────────────────────────────────
@@ -67,10 +67,10 @@
     function consentStatus() {
         if (config.trackingMode !== 'cookie') return 'not_required';
         if (!config.preConsentEnabled)        return 'not_required';
-        if (window.statifyConsentStatus)      return window.statifyConsentStatus;
+        if (window.alwaysAnalyticsConsentStatus)      return window.alwaysAnalyticsConsentStatus;
         var stored = getCookie(COOKIE_CONS);
-        if (stored === 'granted') { window.statifyConsentStatus = 'granted'; return 'granted'; }
-        if (stored === 'denied')  { window.statifyConsentStatus = 'denied';  return 'denied'; }
+        if (stored === 'granted') { window.alwaysAnalyticsConsentStatus = 'granted'; return 'granted'; }
+        if (stored === 'denied')  { window.alwaysAnalyticsConsentStatus = 'denied';  return 'denied'; }
         return 'pending';
     }
 
@@ -92,7 +92,7 @@
         // cs === 'pending' : cookieless avancé immédiatement
         doSendPreConsent();
 
-        window.statifyOnConsent = function (status) {
+        window.alwaysAnalyticsOnConsent = function (status) {
             if (status === 'granted') {
                 onConsentGranted();
             } else {
@@ -184,8 +184,8 @@
             if (p.get('utm_medium'))   data.utmMedium   = p.get('utm_medium');
             if (p.get('utm_campaign')) data.utmCampaign = p.get('utm_campaign');
         } catch(e) {}
-        if (typeof window.statifyBeforeTrack === 'function') {
-            data = window.statifyBeforeTrack(data);
+        if (typeof window.alwaysAnalyticsBeforeTrack === 'function') {
+            data = window.alwaysAnalyticsBeforeTrack(data);
             if (!data) return null;
         }
         return data;
@@ -369,14 +369,14 @@
     // ── Session ID ────────────────────────────────────────────────────────────
 
     function getSessionId() {
-        var KEY = 'statify_sid';
+        var KEY = 'aa_sid';
         var sid;
         try {
             sid = sessionStorage.getItem(KEY);
             if (!sid) { sid = genId(); sessionStorage.setItem(KEY, sid); }
         } catch (e) {
-            if (!window._statifySidFallback) window._statifySidFallback = genId();
-            sid = window._statifySidFallback;
+            if (!window._aaSidFallback) window._aaSidFallback = genId();
+            sid = window._aaSidFallback;
         }
         return sid;
     }
@@ -416,7 +416,9 @@
     }
 
     function deleteVisitorCookie() {
-        document.cookie = COOKIE_VID + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax';
+        var c = COOKIE_VID + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax';
+        if (window.location.protocol === 'https:') c += ';Secure';
+        document.cookie = c;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

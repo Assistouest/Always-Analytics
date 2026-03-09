@@ -2,7 +2,7 @@
 /**
  * Visitor detail view template — Advanced Stats.
  *
- * @package Statify
+ * @package Always_Analytics
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -17,8 +17,8 @@ if ( empty( $session_id ) ) {
 }
 
 global $wpdb;
-$t_sessions = $wpdb->prefix . 'statify_sessions';
-$t_hits     = $wpdb->prefix . 'statify_hits';
+$t_sessions = $wpdb->prefix . 'aa_sessions';
+$t_hits     = $wpdb->prefix . 'aa_hits';
 
 // Fetch Session
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -43,7 +43,7 @@ $hits = $wpdb->get_results( $wpdb->prepare(
 $tz_offset_seconds = (int) ( get_option( 'gmt_offset' ) * HOUR_IN_SECONDS );
 
 // Reusable function to calculate time ago
-function statify_time_ago( $datetime ) {
+function aa_time_ago( $datetime ) {
     $time = strtotime( $datetime . ' UTC' );
     $diff = time() - $time;
     if ( $diff < 60 ) return 'Il y a ' . $diff . ' s';
@@ -52,24 +52,24 @@ function statify_time_ago( $datetime ) {
     return 'Il y a ' . floor( $diff / 86400 ) . ' j';
 }
 ?>
-<div class="wrap statify-wrap">
+<div class="wrap aa-wrap">
     
-    <a href="<?php echo esc_url( admin_url( 'admin.php?page=statify' ) ); ?>" class="button" style="margin-bottom:20px;">
+    <a href="<?php echo esc_url( admin_url( 'admin.php?page=always-analytics' ) ); ?>" class="button" style="margin-bottom:20px;">
         &larr; Retour au tableau de bord
     </a>
 
-    <div class="statify-card">
-        <div class="statify-card-header">
+    <div class="aa-card">
+        <div class="aa-card-header">
             <h2>
                 Visiteur <?php echo esc_html( substr( $session->visitor_hash, 0, 8 ) ); ?>
             </h2>
             <div>
-                <span class="statify-badge"><?php echo esc_html( $session->country_code ?: '🌐' ); ?></span>
-                <span class="statify-badge"><?php echo esc_html( $session->device_type ); ?></span>
+                <span class="aa-badge"><?php echo esc_html( $session->country_code ?: '🌐' ); ?></span>
+                <span class="aa-badge"><?php echo esc_html( $session->device_type ); ?></span>
             </div>
         </div>
         
-        <div class="statify-card-body">
+        <div class="aa-card-body">
             <div style="display:flex;gap:40px;margin-bottom:30px;padding:20px;background:#f8f9fc;border-radius:8px;">
                 <div>
                     <strong style="color:#64748b;display:block;font-size:12px;text-transform:uppercase;">Pages vues</strong>
@@ -91,7 +91,7 @@ function statify_time_ago( $datetime ) {
                 <div>
                     <strong style="color:#64748b;display:block;font-size:12px;text-transform:uppercase;">Dernière activité</strong>
                     <div style="font-size:20px;font-weight:600;color:#0f172a;margin-top:4px;">
-                        <?php echo esc_html( statify_time_ago( $session->ended_at ) ); ?>
+                        <?php echo esc_html( aa_time_ago( $session->ended_at ) ); ?>
                     </div>
                 </div>
             </div>

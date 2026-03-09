@@ -1,13 +1,13 @@
 <div align="center">
 
-<img src="Statify.svg" alt="Statify Logo" width="60" />
+<img src="always-analytics.svg" alt="Always Analytics Logo" width="60" />
 
-# Statify
+# Always Analytics
 ### Reprenez le contrôle de vos analytics. Sans compromis.
 
 **La solution d'analytics WordPress auto-hébergée qui capture 100% de vos visites, tout en respectant scrupuleusement le RGPD.**
 
-[![Version](https://img.shields.io/badge/version-1.2.3-1db954?style=flat-square)](https://github.com/votre-pseudo/statify/releases)
+[![Version](https://img.shields.io/badge/version-1.2.3-1db954?style=flat-square)](https://github.com/votre-pseudo/always-analytics/releases)
 [![WordPress](https://img.shields.io/badge/WordPress-5.8%2B-21759b?style=flat-square&logo=wordpress)](https://wordpress.org)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-777bb4?style=flat-square&logo=php)](https://php.net)
 [![Privacy](https://img.shields.io/badge/RGPD-conforme-1db954?style=flat-square)](#-la-révolution-privacy-first)
@@ -18,7 +18,7 @@
 
 ---
 
-## 🚀 Pourquoi Statify ?
+## 🚀 Pourquoi Always Analytics ?
 
 - **0% de perte de données** : Capture chaque visite, même sans consentement.
 - **100% Souverain** : Vos données restent chez vous, sur votre serveur.
@@ -29,7 +29,7 @@
 
 ## 🎯 Score d'Engagement : La Data Science au service du contenu
 
-Statify ne se contente pas de compter les vues. Il **qualifie la lecture** grâce à un algorithme de scoring composite sophistiqué qui identifie vos contenus les plus performants.
+Always Analytics ne se contente pas de compter les vues. Il **qualifie la lecture** grâce à un algorithme de scoring composite sophistiqué qui identifie vos contenus les plus performants.
 
 ### Visualisez la performance réelle de vos pages
 
@@ -40,7 +40,7 @@ Statify ne se contente pas de compter les vues. Il **qualifie la lecture** grâc
 | 🥉 **How to fully update...** | **47** | -- | -- | -- | -- | -- | -- |
 
 ### Une expertise statistique rare sur WordPress
-Contrairement aux solutions classiques (comme Yoast SEO ou les trackers GA basiques) qui se contentent de rapporter des données de surface, Statify utilise une ingénierie de données avancée :
+Contrairement aux solutions classiques (comme Yoast SEO ou les trackers GA basiques) qui se contentent de rapporter des données de surface, Always Analytics utilise une ingénierie de données avancée :
 
 - **Au-delà du simple "clic"** : La plupart des outils considèrent une vue comme un succès. Statify **qualifie** cette vue : un visiteur qui reste 10 minutes mais ne scrolle pas est statistiquement différent d'un lecteur qui parcourt tout l'article en 30 secondes.
 - **Réduction du bruit (Loi de Wilson)** : C'est là que Statify se distingue. En utilisant la limite inférieure de l'intervalle de confiance de Wilson, nous éliminons l'anomalie des "petits nombres" (une page avec 1 vue et 100% d'engagement ne passera jamais devant un pilier de votre site avec 1000 vues et 80% d'engagement).
@@ -51,7 +51,7 @@ Contrairement aux solutions classiques (comme Yoast SEO ou les trackers GA basiq
 
 ## L'algorithme de collecte résiliente
 
-La plupart des analytics conditionnent le tracking au consentement : pas de cookie accepté = visite perdue. Statify fonctionne à l'envers.
+La plupart des analytics conditionnent le tracking au consentement : pas de cookie accepté = visite perdue. Always Analytics fonctionne à l'envers.
 
 > **Le cookieless est le socle. Le cookie est un enrichissement optionnel.**
 

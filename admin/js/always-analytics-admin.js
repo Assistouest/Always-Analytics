@@ -5,10 +5,10 @@
 (function () {
     'use strict';
 
-    if (typeof statifyAdmin === 'undefined') return;
+    if (typeof alwaysAnalyticsAdmin === 'undefined') return;
 
-    var API_BASE = statifyAdmin.restBase;
-    var NONCE    = statifyAdmin.nonce;
+    var API_BASE = alwaysAnalyticsAdmin.restBase;
+    var NONCE    = alwaysAnalyticsAdmin.nonce;
 
     var state = {
         from: dateOffset(0),
@@ -36,11 +36,11 @@
     // ── Events ────────────────────────────────────────────────────────────────
 
     function bindEvents() {
-        var periodSel = document.getElementById('statify-period');
+        var periodSel = document.getElementById('aa-period');
         if (periodSel) {
             periodSel.addEventListener('change', function () {
                 var v = this.value;
-                var customDiv = document.getElementById('statify-custom-dates');
+                var customDiv = document.getElementById('aa-custom-dates');
                 if (v === 'custom') { if (customDiv) customDiv.style.display = 'flex'; return; }
                 if (customDiv) customDiv.style.display = 'none';
                 var today = dateOffset(0);
@@ -56,27 +56,27 @@
             });
         }
 
-        var applyBtn = document.getElementById('statify-apply-dates');
+        var applyBtn = document.getElementById('aa-apply-dates');
         if (applyBtn) {
             applyBtn.addEventListener('click', function () {
-                var f = document.getElementById('statify-from').value;
-                var t = document.getElementById('statify-to').value;
+                var f = document.getElementById('aa-from').value;
+                var t = document.getElementById('aa-to').value;
                 if (f && t) { state.from = f; state.to = t; loadAllData(); }
             });
         }
 
-        var devSel = document.getElementById('statify-device-filter');
+        var devSel = document.getElementById('aa-device-filter');
         if (devSel) {
             devSel.addEventListener('change', function () {
                 state.device = this.value; loadAllData();
             });
         }
 
-        document.querySelectorAll('.statify-toggle').forEach(function (btn) {
+        document.querySelectorAll('.aa-toggle').forEach(function (btn) {
             btn.addEventListener('click', function () {
-                document.querySelectorAll('.statify-toggle').forEach(function (b) { b.classList.remove('active'); });
+                document.querySelectorAll('.aa-toggle').forEach(function (b) { b.classList.remove('active'); });
                 this.classList.add('active');
-                if (window.StatifyCharts) StatifyCharts.toggleDataset(this.getAttribute('data-dataset'));
+                if (window.AlwaysAnalyticsCharts) AlwaysAnalyticsCharts.toggleDataset(this.getAttribute('data-dataset'));
             });
         });
     }
@@ -113,7 +113,7 @@
             return r.json();
         })
         .then(callback)
-        .catch(function (e) { console.error('[Statify] ' + endpoint, e); });
+        .catch(function (e) { console.error('[Always Analytics] ' + endpoint, e); });
     }
 
     // ── Loaders ───────────────────────────────────────────────────────────────
@@ -142,16 +142,16 @@
 
     function loadChart() {
         apiFetch('chart/visits', null, function (d) {
-            if (window.StatifyCharts) StatifyCharts.renderVisitsChart(d);
+            if (window.AlwaysAnalyticsCharts) AlwaysAnalyticsCharts.renderVisitsChart(d);
         });
     }
 
     function loadRecentVisitors() {
         apiFetch('recent-visitors', 'limit=5', function (data) {
-            var tbody = document.querySelector('#statify-recent-visitors tbody');
+            var tbody = document.querySelector('#aa-recent-visitors tbody');
             if (!tbody) return;
             if (!data || !data.length) {
-                tbody.innerHTML = '<tr><td colspan="4" class="statify-no-data">' + statifyAdmin.i18n.noData + '</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" class="aa-no-data">' + alwaysAnalyticsAdmin.i18n.noData + '</td></tr>';
                 return;
             }
             var now = new Date();
@@ -164,25 +164,25 @@
                 var time   = sec < 60 ? 'En ce moment' : 'Il y a ' + Math.floor(sec / 60) + ' min';
                 return '<tr>'
                     + '<td><strong>Visiteur ' + vid + '</strong><br><small>' + flag + ' ' + device + '</small></td>'
-                    + '<td><span class="statify-time-badge">' + time + '</span><br><small>Durée : ' + fmtDuration(s.engagement_time > 0 ? s.engagement_time : s.duration) + '</small></td>'
-                    + '<td style="text-align:center"><span class="statify-badge">' + parseInt(s.page_count, 10) + '</span></td>'
-                    + '<td style="text-align:right"><a href="?page=statify-visitor&session_id=' + enc(s.session_id) + '" class="button button-small">Voir parcours</a></td>'
+                    + '<td><span class="aa-time-badge">' + time + '</span><br><small>Durée : ' + fmtDuration(s.engagement_time > 0 ? s.engagement_time : s.duration) + '</small></td>'
+                    + '<td style="text-align:center"><span class="aa-badge">' + parseInt(s.page_count, 10) + '</span></td>'
+                    + '<td style="text-align:right"><a href="?page=always-analytics-visitor&session_id=' + enc(s.session_id) + '" class="button button-small">Voir parcours</a></td>'
                     + '</tr>';
             }).join('');
         });
     }
 
     function loadTopPages() {
-        var link = document.getElementById('statify-all-pages-link');
+        var link = document.getElementById('aa-all-pages-link');
         if (link) {
             var base = link.href.split('?')[0];
-            link.href = base + '?page=statify-top-pages&from=' + enc(state.from) + '&to=' + enc(state.to);
+            link.href = base + '?page=always-analytics-top-pages&from=' + enc(state.from) + '&to=' + enc(state.to);
         }
         apiFetch('top-pages', 'limit=8', function (data) {
-            var tbody = document.querySelector('#statify-top-pages tbody');
+            var tbody = document.querySelector('#aa-top-pages tbody');
             if (!tbody) return;
             if (!data || !data.length) {
-                tbody.innerHTML = '<tr><td colspan="3" class="statify-no-data">' + statifyAdmin.i18n.noData + '</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="3" class="aa-no-data">' + alwaysAnalyticsAdmin.i18n.noData + '</td></tr>';
                 return;
             }
             var max = Math.max.apply(null, data.map(function (d) { return +d.views; }));
@@ -191,8 +191,8 @@
                 var title = p.page_title || p.page_url;
                 return '<tr>'
                     + '<td title="' + esc(p.page_url) + '">'
-                    +   '<div class="statify-bar"><span>' + esc(title) + '</span></div>'
-                    +   '<div class="statify-bar-track"><div class="statify-bar-fill" style="width:' + pct + '%"></div></div>'
+                    +   '<div class="aa-bar"><span>' + esc(title) + '</span></div>'
+                    +   '<div class="aa-bar-track"><div class="aa-bar-fill" style="width:' + pct + '%"></div></div>'
                     + '</td>'
                     + '<td style="text-align:right">' + fmt(+p.views) + '</td>'
                     + '<td style="text-align:right">' + fmt(+p.unique_visitors) + '</td>'
@@ -203,10 +203,10 @@
 
     function loadReferrers() {
         apiFetch('top-referrers', 'limit=8', function (data) {
-            var tbody = document.querySelector('#statify-referrers tbody');
+            var tbody = document.querySelector('#aa-referrers tbody');
             if (!tbody) return;
             if (!data || !data.length) {
-                tbody.innerHTML = '<tr><td colspan="3" class="statify-no-data">' + statifyAdmin.i18n.noData + '</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="3" class="aa-no-data">' + alwaysAnalyticsAdmin.i18n.noData + '</td></tr>';
                 return;
             }
             tbody.innerHTML = data.map(function (r) {
@@ -220,16 +220,16 @@
     }
 
     function loadCountries() {
-        var link = document.getElementById('statify-all-countries-link');
+        var link = document.getElementById('aa-all-countries-link');
         if (link) {
             var base = link.href.split('?')[0];
-            link.href = base + '?page=statify-countries&from=' + enc(state.from) + '&to=' + enc(state.to);
+            link.href = base + '?page=always-analytics-countries&from=' + enc(state.from) + '&to=' + enc(state.to);
         }
         apiFetch('countries', 'limit=8', function (data) {
-            var tbody = document.querySelector('#statify-countries tbody');
+            var tbody = document.querySelector('#aa-countries tbody');
             if (!tbody) return;
             if (!data || !data.length) {
-                tbody.innerHTML = '<tr><td colspan="3" class="statify-no-data">' + statifyAdmin.i18n.noData + '</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="3" class="aa-no-data">' + alwaysAnalyticsAdmin.i18n.noData + '</td></tr>';
                 return;
             }
             tbody.innerHTML = data.map(function (c) {
@@ -244,16 +244,16 @@
 
     function loadDevices() {
         apiFetch('devices', null, function (data) {
-            if (data.devices && window.StatifyCharts) StatifyCharts.renderDevicesChart(data.devices);
+            if (data.devices && window.AlwaysAnalyticsCharts) AlwaysAnalyticsCharts.renderDevicesChart(data.devices);
 
-            var bl = document.getElementById('statify-browsers-list');
+            var bl = document.getElementById('aa-browsers-list');
             if (bl && data.browsers) {
                 bl.innerHTML = data.browsers.map(function (b) {
                     return '<li><span>' + esc(b.browser) + '</span><span>' + fmt(+b.count) + '</span></li>';
                 }).join('') || '<li>—</li>';
             }
 
-            var ol = document.getElementById('statify-os-list');
+            var ol = document.getElementById('aa-os-list');
             if (ol && data.os) {
                 ol.innerHTML = data.os.map(function (o) {
                     return '<li><span>' + esc(o.os) + '</span><span>' + fmt(+o.count) + '</span></li>';
@@ -272,9 +272,9 @@
     function setChange(id, v) {
         var el = document.getElementById(id);
         if (!el) return;
-        if (!v) { el.textContent = ''; el.className = 'statify-kpi-change'; return; }
+        if (!v) { el.textContent = ''; el.className = 'aa-kpi-change'; return; }
         el.textContent = (v > 0 ? '+' : '') + v + '%';
-        el.className   = 'statify-kpi-change ' + (v >= 0 ? 'positive' : 'negative');
+        el.className   = 'aa-kpi-change ' + (v >= 0 ? 'positive' : 'negative');
     }
 
     function fmt(n) {
@@ -308,6 +308,58 @@
         if (!code || code.length !== 2) return '🌐';
         return String.fromCodePoint(0x1F1E6 + code.charCodeAt(0) - 65)
              + String.fromCodePoint(0x1F1E6 + code.charCodeAt(1) - 65);
+    }
+
+    // ── Manual anonymization button ──────────────────────────────────────────
+    var purgeBtn = document.getElementById('aa-purge-btn');
+    if (purgeBtn) {
+        purgeBtn.addEventListener('click', function () {
+            var i18n = (alwaysAnalyticsAdmin && alwaysAnalyticsAdmin.i18n) || {};
+            var confirmMsg = i18n.purgeConfirm || 'Lancer l\'anonymisation maintenant ?';
+            if (!window.confirm(confirmMsg)) {
+                return;
+            }
+
+            purgeBtn.disabled = true;
+            purgeBtn.textContent = '⏳ …';
+
+            var result = document.getElementById('aa-purge-result');
+
+            var data = new URLSearchParams();
+            data.append('action', 'always_analytics_manual_purge');
+            data.append('nonce',  alwaysAnalyticsAdmin.purgeNonce);
+
+            fetch(alwaysAnalyticsAdmin.ajaxUrl, {
+                method:      'POST',
+                credentials: 'same-origin',
+                headers:     { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body:        data.toString(),
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (json) {
+                if (result) {
+                    result.style.display = 'inline';
+                    if (json.success) {
+                        result.style.color = 'var(--aa-success, green)';
+                        result.textContent = (i18n.purgeSuccess || json.data.message);
+                    } else {
+                        result.style.color = 'var(--aa-danger, red)';
+                        result.textContent = (i18n.purgeError || 'Erreur.');
+                    }
+                }
+            })
+            .catch(function () {
+                if (result) {
+                    result.style.display = 'inline';
+                    result.style.color   = 'var(--aa-danger, red)';
+                    result.textContent   = i18n.purgeError || 'Erreur réseau.';
+                }
+            })
+            .finally(function () {
+                purgeBtn.disabled    = false;
+                purgeBtn.textContent = '🔄 Lancer l\'anonymisation';
+            });
+        });
     }
 
 })();

@@ -4,7 +4,7 @@
 (function () {
     'use strict';
 
-    window.StatifyCharts = {
+    window.AlwaysAnalyticsCharts = {
         visitsChart: null,
         devicesChart: null,
         visitorsChart: null,
@@ -47,7 +47,7 @@
          * Render the main visits line chart.
          */
         renderVisitsChart: function (data) {
-            var ctx = document.getElementById('statify-visits-chart');
+            var ctx = document.getElementById('aa-visits-chart');
             if (!ctx) return;
 
             if (this.visitsChart) {
@@ -171,7 +171,7 @@
          * Render the devices doughnut chart.
          */
         renderDevicesChart: function (devices) {
-            var ctx = document.getElementById('statify-devices-chart');
+            var ctx = document.getElementById('aa-devices-chart');
             if (!ctx) return;
 
             if (this.devicesChart) {
@@ -229,7 +229,7 @@
          * Render the visitors (new vs returning) doughnut chart.
          */
         renderVisitorsChart: function (data) {
-            var ctx = document.getElementById('statify-visitors-chart');
+            var ctx = document.getElementById('aa-visitors-chart');
             if (!ctx) return;
 
             if (this.visitorsChart) {
@@ -261,14 +261,14 @@
             });
 
             // Update legend
-            var legend = document.getElementById('statify-visitors-legend');
+            var legend = document.getElementById('aa-visitors-legend');
             if (legend) {
                 var total = newV + retV;
                 var newPct = total > 0 ? ((newV / total) * 100).toFixed(1) : 0;
                 var retPct = total > 0 ? ((retV / total) * 100).toFixed(1) : 0;
                 legend.innerHTML =
-                    '<span><span class="statify-legend-dot" style="background:' + this.colors.primary + '"></span> Nouveaux: ' + newV.toLocaleString('fr-FR') + ' (' + newPct + '%)</span>' +
-                    '<span><span class="statify-legend-dot" style="background:' + this.colors.teal + '"></span> Récurrents: ' + retV.toLocaleString('fr-FR') + ' (' + retPct + '%)</span>';
+                    '<span><span class="aa-legend-dot" style="background:' + this.colors.primary + '"></span> Nouveaux: ' + newV.toLocaleString('fr-FR') + ' (' + newPct + '%)</span>' +
+                    '<span><span class="aa-legend-dot" style="background:' + this.colors.teal + '"></span> Récurrents: ' + retV.toLocaleString('fr-FR') + ' (' + retPct + '%)</span>';
             }
         },
 
@@ -309,6 +309,6 @@
 
     // Initialize defaults on load
     if (typeof Chart !== 'undefined') {
-        StatifyCharts.defaults();
+        AlwaysAnalyticsCharts.defaults();
     }
 })();

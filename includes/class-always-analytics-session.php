@@ -1,5 +1,5 @@
 <?php
-namespace Statify;
+namespace Always_Analytics;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -11,14 +11,14 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Un "hit" = une page vue. Une "session" = un groupe de hits liés.
  * Engagement = page_count > 1 OU durée >= 10 s.
  */
-class Statify_Session {
+class Always_Analytics_Session {
 
     /**
      * Crée ou met à jour une session à chaque hit de page.
      */
     public static function update_session( $session_id, $hit_data ) {
         global $wpdb;
-        $table = $wpdb->prefix . 'statify_sessions';
+        $table = $wpdb->prefix . 'aa_sessions';
         $now   = current_time( 'mysql', true ); // UTC
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -82,7 +82,7 @@ class Statify_Session {
      */
     public static function ping_session( $session_id, $scroll_depth = null, $client_duration = null, $engagement_time = null ) {
         global $wpdb;
-        $table = $wpdb->prefix . 'statify_sessions';
+        $table = $wpdb->prefix . 'aa_sessions';
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery
         $existing = $wpdb->get_row( $wpdb->prepare(
@@ -159,8 +159,8 @@ class Statify_Session {
      */
     public static function expire_stale_sessions() {
         global $wpdb;
-        $table_sess = $wpdb->prefix . 'statify_sessions';
-        $table_hits = $wpdb->prefix . 'statify_hits';
+        $table_sess = $wpdb->prefix . 'aa_sessions';
+        $table_hits = $wpdb->prefix . 'aa_hits';
         $cutoff     = gmdate( 'Y-m-d H:i:s', strtotime( '-30 minutes' ) );
 
         // Sessions orphelines : duration=0, aucun ping reçu, plus de 30 min d'ancienneté.

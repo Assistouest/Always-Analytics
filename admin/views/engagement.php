@@ -2,102 +2,102 @@
 /**
  * Engagement — vue complète.
  *
- * @package Statify
+ * @package Always_Analytics
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-$back_url = admin_url( 'admin.php?page=statify' );
+$back_url = admin_url( 'admin.php?page=always-analytics' );
 ?>
-<div class="wrap statify-wrap">
+<div class="wrap aa-wrap">
 
     <!-- Header -->
-    <div class="statify-header">
+    <div class="aa-header">
         <h1>
-            <img src="<?php echo esc_url( STATIFY_PLUGIN_URL . 'Statify.svg' ); ?>" alt="" style="width:28px;height:28px;vertical-align:middle;margin-right:6px;">
-            <?php esc_html_e( 'Engagement', 'statify' ); ?>
-            <a href="<?php echo esc_url( $back_url ); ?>" class="statify-back-btn" style="font-size:13px;margin-left:16px;">
-                ← <?php esc_html_e( 'Retour', 'statify' ); ?>
+            <img src="<?php echo esc_url( AA_PLUGIN_URL . 'always-analytics.svg' ); ?>" alt="" style="width:28px;height:28px;vertical-align:middle;margin-right:6px;">
+            <?php esc_html_e( 'Engagement', 'always-analytics' ); ?>
+            <a href="<?php echo esc_url( $back_url ); ?>" class="aa-back-btn" style="font-size:13px;margin-left:16px;">
+                ← <?php esc_html_e( 'Retour', 'always-analytics' ); ?>
             </a>
         </h1>
-        <div class="statify-header-actions">
-            <div class="statify-date-filter">
+        <div class="aa-header-actions">
+            <div class="aa-date-filter">
                 <select id="eng-period">
-                    <option value="today"  selected><?php esc_html_e( "Aujourd'hui", 'statify' ); ?></option>
-                    <option value="7days"><?php esc_html_e( '7 derniers jours', 'statify' ); ?></option>
-                    <option value="30days"><?php esc_html_e( '30 derniers jours', 'statify' ); ?></option>
-                    <option value="90days"><?php esc_html_e( '90 derniers jours', 'statify' ); ?></option>
-                    <option value="year"><?php esc_html_e( 'Cette année', 'statify' ); ?></option>
-                    <option value="custom"><?php esc_html_e( 'Personnalisé', 'statify' ); ?></option>
+                    <option value="today"  selected><?php esc_html_e( "Aujourd'hui", 'always-analytics' ); ?></option>
+                    <option value="7days"><?php esc_html_e( '7 derniers jours', 'always-analytics' ); ?></option>
+                    <option value="30days"><?php esc_html_e( '30 derniers jours', 'always-analytics' ); ?></option>
+                    <option value="90days"><?php esc_html_e( '90 derniers jours', 'always-analytics' ); ?></option>
+                    <option value="year"><?php esc_html_e( 'Cette année', 'always-analytics' ); ?></option>
+                    <option value="custom"><?php esc_html_e( 'Personnalisé', 'always-analytics' ); ?></option>
                 </select>
                 <div id="eng-custom-dates" style="display:none;align-items:center;gap:6px;flex-wrap:wrap;">
                     <input type="date" id="eng-from">
                     <span>→</span>
                     <input type="date" id="eng-to">
-                    <button id="eng-apply" class="button"><?php esc_html_e( 'Appliquer', 'statify' ); ?></button>
+                    <button id="eng-apply" class="button"><?php esc_html_e( 'Appliquer', 'always-analytics' ); ?></button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- KPI Cards -->
-    <div class="statify-kpis" id="eng-kpis">
-        <div class="statify-kpi-card">
-            <div class="statify-kpi-value" id="eng-kpi-rate">—</div>
-            <div class="statify-kpi-label">Taux d'engagement</div>
+    <div class="aa-kpis" id="eng-kpis">
+        <div class="aa-kpi-card">
+            <div class="aa-kpi-value" id="eng-kpi-rate">—</div>
+            <div class="aa-kpi-label">Taux d'engagement</div>
         </div>
-        <div class="statify-kpi-card">
-            <div class="statify-kpi-value" id="eng-kpi-duration">—</div>
-            <div class="statify-kpi-label">Durée moy. session</div>
+        <div class="aa-kpi-card">
+            <div class="aa-kpi-value" id="eng-kpi-duration">—</div>
+            <div class="aa-kpi-label">Durée moy. session</div>
         </div>
-        <div class="statify-kpi-card">
-            <div class="statify-kpi-value" id="eng-kpi-pages">—</div>
-            <div class="statify-kpi-label">Pages / session</div>
+        <div class="aa-kpi-card">
+            <div class="aa-kpi-value" id="eng-kpi-pages">—</div>
+            <div class="aa-kpi-label">Pages / session</div>
         </div>
-        <div class="statify-kpi-card">
-            <div class="statify-kpi-value" id="eng-kpi-scroll">—</div>
-            <div class="statify-kpi-label">Scroll moyen</div>
+        <div class="aa-kpi-card">
+            <div class="aa-kpi-value" id="eng-kpi-scroll">—</div>
+            <div class="aa-kpi-label">Scroll moyen</div>
         </div>
-        <div class="statify-kpi-card">
-            <div class="statify-kpi-value" id="eng-kpi-deepread">—</div>
-            <div class="statify-kpi-label">Lecteurs profonds ≥ 75%</div>
+        <div class="aa-kpi-card">
+            <div class="aa-kpi-value" id="eng-kpi-deepread">—</div>
+            <div class="aa-kpi-label">Lecteurs profonds ≥ 75%</div>
         </div>
     </div>
 
     <!-- Graphique temporel -->
-    <div class="statify-card statify-chart-card" style="margin-bottom:24px;">
-        <div class="statify-card-header">
+    <div class="aa-card aa-chart-card" style="margin-bottom:24px;">
+        <div class="aa-card-header">
             <h2>Engagement dans le temps</h2>
-            <div class="statify-chart-toggles">
-                <button class="statify-toggle active" data-eng-dataset="engaged">Sessions engagées</button>
-                <button class="statify-toggle" data-eng-dataset="avg_dur">Durée moy.</button>
-                <button class="statify-toggle" data-eng-dataset="avg_scroll">Scroll moyen</button>
+            <div class="aa-chart-toggles">
+                <button class="aa-toggle active" data-eng-dataset="engaged">Sessions engagées</button>
+                <button class="aa-toggle" data-eng-dataset="avg_dur">Durée moy.</button>
+                <button class="aa-toggle" data-eng-dataset="avg_scroll">Scroll moyen</button>
             </div>
         </div>
-        <div class="statify-chart-container">
+        <div class="aa-chart-container">
             <canvas id="eng-chart"></canvas>
         </div>
     </div>
 
     <!-- 2 colonnes : Scroll distribution + Répartition sessions -->
-    <div class="statify-grid" style="margin-bottom:24px;">
+    <div class="aa-grid" style="margin-bottom:24px;">
 
         <!-- Funnel scroll -->
-        <div class="statify-card">
-            <div class="statify-card-header">
+        <div class="aa-card">
+            <div class="aa-card-header">
                 <h2>Profondeur de scroll</h2>
             </div>
-            <div class="statify-card-body" id="eng-scroll-dist" style="padding:20px;">
+            <div class="aa-card-body" id="eng-scroll-dist" style="padding:20px;">
                 <!-- rempli par JS -->
-                <div class="statify-skeleton" style="height:180px;border-radius:8px;"></div>
+                <div class="aa-skeleton" style="height:180px;border-radius:8px;"></div>
             </div>
         </div>
 
         <!-- Distribution durée sessions -->
-        <div class="statify-card">
-            <div class="statify-card-header">
+        <div class="aa-card">
+            <div class="aa-card-header">
                 <h2>Durée des sessions</h2>
             </div>
-            <div class="statify-card-body" style="padding:20px;">
+            <div class="aa-card-body" style="padding:20px;">
                 <canvas id="eng-duration-chart" style="max-height:200px;"></canvas>
             </div>
         </div>
@@ -105,12 +105,12 @@ $back_url = admin_url( 'admin.php?page=statify' );
     </div>
 
     <!-- Tableau pages avec score d'engagement -->
-    <div class="statify-card">
-        <div class="statify-card-header">
+    <div class="aa-card">
+        <div class="aa-card-header">
             <h2>Score d'engagement par page</h2>
         </div>
-        <div class="statify-card-body" style="padding:0;">
-            <table class="statify-full-table" id="eng-pages-table">
+        <div class="aa-card-body" style="padding:0;">
+            <table class="aa-full-table" id="eng-pages-table">
                 <thead>
                     <tr>
                         <th style="width:30%">Page</th>
@@ -128,7 +128,7 @@ $back_url = admin_url( 'admin.php?page=statify' );
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td colspan="3" class="statify-no-data">Chargement…</td></tr>
+                    <tr><td colspan="3" class="aa-no-data">Chargement…</td></tr>
                 </tbody>
             </table>
         </div>
@@ -141,19 +141,19 @@ $back_url = admin_url( 'admin.php?page=statify' );
     'use strict';
 
     function waitForConfig(cb) {
-        if (typeof statifyAdmin !== 'undefined') {
+        if (typeof alwaysAnalyticsAdmin !== 'undefined') {
             cb();
         } else {
-            // statifyAdmin n'est pas encore disponible (script chargé de façon asynchrone)
+            // alwaysAnalyticsAdmin n'est pas encore disponible (script chargé de façon asynchrone)
             var attempts = 0;
             var interval = setInterval(function () {
                 attempts++;
-                if (typeof statifyAdmin !== 'undefined') {
+                if (typeof alwaysAnalyticsAdmin !== 'undefined') {
                     clearInterval(interval);
                     cb();
                 } else if (attempts > 20) {
                     clearInterval(interval);
-                    console.warn('[Statify] statifyAdmin introuvable — vérifiez que le script admin est bien chargé.');
+                    console.warn('[Always Analytics] alwaysAnalyticsAdmin introuvable — vérifiez que le script admin est bien chargé.');
                 }
             }, 100);
         }
@@ -161,8 +161,8 @@ $back_url = admin_url( 'admin.php?page=statify' );
 
     waitForConfig(function () {
 
-    var API   = statifyAdmin.restBase;
-    var NONCE = statifyAdmin.nonce;
+    var API   = alwaysAnalyticsAdmin.restBase;
+    var NONCE = alwaysAnalyticsAdmin.nonce;
 
     var state = { from: dateOff(0), to: dateOff(0) };
 
@@ -417,7 +417,7 @@ $back_url = admin_url( 'admin.php?page=statify' );
         if (!tbody) return;
 
         if (!data || !data.length) {
-            tbody.innerHTML = '<tr><td colspan="3" class="statify-no-data">Aucune donnée pour cette période</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="3" class="aa-no-data">Aucune donnée pour cette période</td></tr>';
             return;
         }
 

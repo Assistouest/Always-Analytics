@@ -2,7 +2,7 @@
 /**
  * Countries full view — Advanced Stats.
  *
- * @package Statify
+ * @package Always_Analytics
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -16,7 +16,7 @@ if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $from ) ) $from = wp_date( 'Y-m-d' )
 if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $to ) )   $to   = wp_date( 'Y-m-d' );
 
 global $wpdb;
-$table = $wpdb->prefix . 'statify_hits';
+$table = $wpdb->prefix . 'aa_hits';
 
 // Conversion fuseau horaire du site — identique à la REST API
 $tz_offset_seconds = (int) ( get_option( 'gmt_offset' ) * HOUR_IN_SECONDS );
@@ -60,7 +60,7 @@ $country_names = array(
     'RO'=>'Roumanie','UA'=>'Ukraine','GR'=>'Grèce','HR'=>'Croatie',
 );
 
-function statify_country_flag_php( $code ) {
+function aa_country_flag_php( $code ) {
     if ( ! $code || strlen( $code ) !== 2 ) return '🌐';
     $code = strtoupper( $code );
     $c1 = mb_chr( 0x1F1E6 + ( ord( $code[0] ) - 65 ), 'UTF-8' );
@@ -73,58 +73,58 @@ $label_from   = wp_date( 'd/m/Y', strtotime( $from ) );
 $label_to     = wp_date( 'd/m/Y', strtotime( $to ) );
 $period_label = ( $from === $to ) ? $label_from : $label_from . ' → ' . $label_to;
 ?>
-<div class="wrap statify-wrap">
+<div class="wrap aa-wrap">
 
     <!-- Header -->
-    <div class="statify-header" style="margin-bottom:24px;">
+    <div class="aa-header" style="margin-bottom:24px;">
         <div style="display:flex;align-items:center;gap:12px;">
-            <a href="<?php echo esc_url( admin_url( 'admin.php?page=statify&from=' . urlencode( $from ) . '&to=' . urlencode( $to ) ) ); ?>" class="statify-back-btn">
-                ← <?php esc_html_e( 'Tableau de bord', 'statify' ); ?>
+            <a href="<?php echo esc_url( admin_url( 'admin.php?page=always-analytics&from=' . urlencode( $from ) . '&to=' . urlencode( $to ) ) ); ?>" class="aa-back-btn">
+                ← <?php esc_html_e( 'Tableau de bord', 'always-analytics' ); ?>
             </a>
             <div>
                 <h1 style="margin:0;font-size:22px;font-weight:700;color:#0f172a;display:flex;align-items:center;gap:8px;">
-                    🌍 <?php esc_html_e( 'Pays', 'statify' ); ?>
+                    🌍 <?php esc_html_e( 'Pays', 'always-analytics' ); ?>
                 </h1>
                 <p style="margin:4px 0 0;color:#64748b;font-size:13px;">
                     <?php echo esc_html( $period_label ); ?> &middot;
-                    <strong><?php echo count( $rows ); ?></strong> <?php esc_html_e( 'pays', 'statify' ); ?>
+                    <strong><?php echo count( $rows ); ?></strong> <?php esc_html_e( 'pays', 'always-analytics' ); ?>
                 </p>
             </div>
         </div>
 
-        <div class="statify-detail-date-filter">
+        <div class="aa-detail-date-filter">
             <input type="date" id="co-from" value="<?php echo esc_attr( $from ); ?>" />
             <span style="color:#94a3b8;">→</span>
             <input type="date" id="co-to" value="<?php echo esc_attr( $to ); ?>" />
-            <button id="co-apply" class="button button-primary"><?php esc_html_e( 'Appliquer', 'statify' ); ?></button>
+            <button id="co-apply" class="button button-primary"><?php esc_html_e( 'Appliquer', 'always-analytics' ); ?></button>
         </div>
     </div>
 
     <!-- KPIs -->
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;">
-        <div class="statify-kpi-card" style="text-align:center;">
-            <div class="statify-kpi-icon">🌍</div>
-            <div class="statify-kpi-value"><?php echo count( $rows ); ?></div>
-            <div class="statify-kpi-label"><?php esc_html_e( 'Pays distincts', 'statify' ); ?></div>
+        <div class="aa-kpi-card" style="text-align:center;">
+            <div class="aa-kpi-icon">🌍</div>
+            <div class="aa-kpi-value"><?php echo count( $rows ); ?></div>
+            <div class="aa-kpi-label"><?php esc_html_e( 'Pays distincts', 'always-analytics' ); ?></div>
         </div>
-        <div class="statify-kpi-card" style="text-align:center;">
-            <div class="statify-kpi-icon">📊</div>
-            <div class="statify-kpi-value"><?php echo number_format_i18n( $total_hits ); ?></div>
-            <div class="statify-kpi-label"><?php esc_html_e( 'Visites totales', 'statify' ); ?></div>
+        <div class="aa-kpi-card" style="text-align:center;">
+            <div class="aa-kpi-icon">📊</div>
+            <div class="aa-kpi-value"><?php echo number_format_i18n( $total_hits ); ?></div>
+            <div class="aa-kpi-label"><?php esc_html_e( 'Visites totales', 'always-analytics' ); ?></div>
         </div>
-        <div class="statify-kpi-card" style="text-align:center;">
-            <div class="statify-kpi-icon">🏆</div>
-            <div class="statify-kpi-value" style="font-size:22px;">
+        <div class="aa-kpi-card" style="text-align:center;">
+            <div class="aa-kpi-icon">🏆</div>
+            <div class="aa-kpi-value" style="font-size:22px;">
                 <?php
                 if ( ! empty( $rows ) ) {
                     $top = $rows[0];
-                    echo esc_html( statify_country_flag_php( $top->country_code ) . ' ' . ( $country_names[ $top->country_code ] ?? $top->country_code ) );
+                    echo esc_html( aa_country_flag_php( $top->country_code ) . ' ' . ( $country_names[ $top->country_code ] ?? $top->country_code ) );
                 } else {
                     echo '—';
                 }
                 ?>
             </div>
-            <div class="statify-kpi-label"><?php esc_html_e( 'Pays principal', 'statify' ); ?></div>
+            <div class="aa-kpi-label"><?php esc_html_e( 'Pays principal', 'always-analytics' ); ?></div>
         </div>
     </div>
 
@@ -132,34 +132,34 @@ $period_label = ( $from === $to ) ? $label_from : $label_from . ' → ' . $label
     <div style="display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start;">
 
         <!-- Table -->
-        <div class="statify-card">
-            <div class="statify-card-header" style="flex-wrap:wrap;gap:12px;">
-                <h2 style="margin:0;"><?php esc_html_e( 'Tous les pays', 'statify' ); ?></h2>
-                <input type="search" id="co-search" placeholder="<?php esc_attr_e( 'Rechercher…', 'statify' ); ?>"
+        <div class="aa-card">
+            <div class="aa-card-header" style="flex-wrap:wrap;gap:12px;">
+                <h2 style="margin:0;"><?php esc_html_e( 'Tous les pays', 'always-analytics' ); ?></h2>
+                <input type="search" id="co-search" placeholder="<?php esc_attr_e( 'Rechercher…', 'always-analytics' ); ?>"
                        style="padding:6px 12px;border:1px solid #e2e4e7;border-radius:8px;font-size:13px;width:220px;margin-left:auto;" />
             </div>
-            <div class="statify-card-body" style="padding:0;">
+            <div class="aa-card-body" style="padding:0;">
                 <?php if ( empty( $rows ) ) : ?>
-                    <p class="statify-no-data" style="padding:40px;text-align:center;">
-                        <?php esc_html_e( 'Aucune donnée pour cette période.', 'statify' ); ?>
+                    <p class="aa-no-data" style="padding:40px;text-align:center;">
+                        <?php esc_html_e( 'Aucune donnée pour cette période.', 'always-analytics' ); ?>
                     </p>
                 <?php else : ?>
-                <table class="statify-table statify-full-table" id="co-table">
+                <table class="aa-table aa-full-table" id="co-table">
                     <thead>
                         <tr>
                             <th style="width:40px;">#</th>
-                            <th><?php esc_html_e( 'Pays', 'statify' ); ?></th>
-                            <th style="text-align:right;width:100px;"><?php esc_html_e( 'Visites', 'statify' ); ?></th>
-                            <th style="text-align:right;width:130px;"><?php esc_html_e( 'Visiteurs uniques', 'statify' ); ?></th>
+                            <th><?php esc_html_e( 'Pays', 'always-analytics' ); ?></th>
+                            <th style="text-align:right;width:100px;"><?php esc_html_e( 'Visites', 'always-analytics' ); ?></th>
+                            <th style="text-align:right;width:130px;"><?php esc_html_e( 'Visiteurs uniques', 'always-analytics' ); ?></th>
                             <th style="text-align:right;width:70px;">%</th>
-                            <th style="width:140px;"><?php esc_html_e( 'Part', 'statify' ); ?></th>
+                            <th style="width:140px;"><?php esc_html_e( 'Part', 'always-analytics' ); ?></th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ( $rows as $i => $row ) :
                             $pct  = $total_hits > 0 ? round( ( $row->hits / $total_hits ) * 100, 1 ) : 0;
                             $bar  = $max_hits > 0  ? round( ( $row->hits / $max_hits )  * 100 )      : 0;
-                            $flag = statify_country_flag_php( $row->country_code );
+                            $flag = aa_country_flag_php( $row->country_code );
                             $name = $country_names[ $row->country_code ] ?? $row->country_code;
                             $rank = $i + 1;
                             $medal = $rank === 1 ? '🥇' : ( $rank === 2 ? '🥈' : ( $rank === 3 ? '🥉' : '' ) );
@@ -198,14 +198,14 @@ $period_label = ( $from === $to ) ? $label_from : $label_from . ' → ' . $label
         <!-- Side: Top 5 visual podium -->
         <?php if ( ! empty( $rows ) ) : ?>
         <div style="display:flex;flex-direction:column;gap:16px;">
-            <div class="statify-card">
-                <div class="statify-card-header">
-                    <h2 style="margin:0;font-size:15px;">🏆 <?php esc_html_e( 'Top 5', 'statify' ); ?></h2>
+            <div class="aa-card">
+                <div class="aa-card-header">
+                    <h2 style="margin:0;font-size:15px;">🏆 <?php esc_html_e( 'Top 5', 'always-analytics' ); ?></h2>
                 </div>
-                <div class="statify-card-body" style="padding:12px 16px;">
+                <div class="aa-card-body" style="padding:12px 16px;">
                     <?php foreach ( array_slice( $rows, 0, 5 ) as $i => $row ) :
                         $pct  = $total_hits > 0 ? round( ( $row->hits / $total_hits ) * 100, 1 ) : 0;
-                        $flag = statify_country_flag_php( $row->country_code );
+                        $flag = aa_country_flag_php( $row->country_code );
                         $name = $country_names[ $row->country_code ] ?? $row->country_code;
                         $colors = array('#6c63ff','#3b82f6','#10b981','#f59e0b','#ef4444');
                         $color  = $colors[ $i ] ?? '#6c63ff';
@@ -245,11 +245,11 @@ $period_label = ( $from === $to ) ? $label_from : $label_from . ' → ' . $label
             arsort( $cont_totals );
             ?>
             <?php if ( ! empty( $cont_totals ) ) : ?>
-            <div class="statify-card">
-                <div class="statify-card-header">
-                    <h2 style="margin:0;font-size:15px;">🗺️ <?php esc_html_e( 'Par continent', 'statify' ); ?></h2>
+            <div class="aa-card">
+                <div class="aa-card-header">
+                    <h2 style="margin:0;font-size:15px;">🗺️ <?php esc_html_e( 'Par continent', 'always-analytics' ); ?></h2>
                 </div>
-                <div class="statify-card-body" style="padding:12px 16px;">
+                <div class="aa-card-body" style="padding:12px 16px;">
                     <?php $cont_max = reset( $cont_totals ); ?>
                     <?php foreach ( $cont_totals as $cont => $hits ) :
                         $cpct = $cont_max > 0 ? round( ( $hits / $cont_max ) * 100 ) : 0;
@@ -272,8 +272,8 @@ $period_label = ( $from === $to ) ? $label_from : $label_from . ' → ' . $label
         <?php endif; ?>
     </div>
 
-    <div class="statify-footer" style="margin-top:24px;">
-        <p>Statify v<?php echo esc_html( STATIFY_VERSION ); ?></p>
+    <div class="aa-footer" style="margin-top:24px;">
+        <p>Always Analytics v<?php echo esc_html( AA_VERSION ); ?></p>
     </div>
 </div>
 
@@ -285,7 +285,7 @@ $period_label = ( $from === $to ) ? $label_from : $label_from . ' → ' . $label
             var from = document.getElementById('co-from').value;
             var to   = document.getElementById('co-to').value;
             if (from && to) {
-                window.location.href = '<?php echo esc_js( admin_url( 'admin.php?page=statify-countries' ) ); ?>&from=' + encodeURIComponent(from) + '&to=' + encodeURIComponent(to);
+                window.location.href = '<?php echo esc_js( admin_url( 'admin.php?page=always-analytics-countries' ) ); ?>&from=' + encodeURIComponent(from) + '&to=' + encodeURIComponent(to);
             }
         });
     }
