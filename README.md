@@ -57,7 +57,7 @@ Aucun cookie. Aucune bannière. Démarre immédiatement.
 Chaque visiteur est identifié par un hash journalier calculé côté serveur :
 
 ```
-SHA-256( IP_anonymisée + User-Agent + Accept-Language + date_UTC )
+SHA256(IP_anon + UA + Accept-Language + YYYY-MM + site_salt)
 ```
 
 Le hash change chaque nuit à minuit UTC. Le même visiteur produit un hash identique toute la journée, et un hash différent le lendemain. Il n'est jamais persisté sur l'appareil du visiteur.
