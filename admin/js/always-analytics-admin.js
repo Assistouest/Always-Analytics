@@ -162,11 +162,14 @@
                 var ended  = new Date(s.ended_at + 'Z');
                 var sec    = Math.floor((now - ended) / 1000);
                 var time   = sec < 60 ? 'En ce moment' : 'Il y a ' + Math.floor(sec / 60) + ' min';
+                var pages  = parseInt(s.total_pages, 10) || parseInt(s.last_page_count, 10) || 0;
+                var dur    = parseInt(s.total_duration, 10) || 0;
+                var sessions_label = parseInt(s.session_count, 10) > 1 ? ' <small style="color:#64748b">(' + s.session_count + ' visites)</small>' : '';
                 return '<tr>'
-                    + '<td><strong>Visiteur ' + vid + '</strong><br><small>' + flag + ' ' + device + '</small></td>'
-                    + '<td><span class="aa-time-badge">' + time + '</span><br><small>Durée : ' + fmtDuration(s.engagement_time > 0 ? s.engagement_time : s.duration) + '</small></td>'
-                    + '<td style="text-align:center"><span class="aa-badge">' + parseInt(s.page_count, 10) + '</span></td>'
-                    + '<td style="text-align:right"><a href="?page=always-analytics-visitor&session_id=' + enc(s.session_id) + '" class="button button-small">Voir parcours</a></td>'
+                    + '<td><strong>Visiteur ' + vid + '</strong>' + sessions_label + '<br><small>' + flag + ' ' + device + '</small></td>'
+                    + '<td><span class="aa-time-badge">' + time + '</span><br><small>Durée : ' + fmtDuration(dur) + '</small></td>'
+                    + '<td style="text-align:center"><span class="aa-badge">' + pages + '</span></td>'
+                    + '<td style="text-align:right"><a href="?page=always-analytics-visitor&visitor_hash=' + enc(s.visitor_hash) + '" class="button button-small">Voir parcours</a></td>'
                     + '</tr>';
             }).join('');
         });

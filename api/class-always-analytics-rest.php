@@ -641,9 +641,8 @@ class Always_Analytics_Rest {
         $t_sess  = $wpdb->prefix . 'aa_sessions';
         $limit   = absint( $request->get_param( 'limit' ) ?: 15 );
 
-        // Source primaire : aa_hits (hit_at + is_superseded = 0), identique aux autres endpoints.
-        // On sélectionne les sessions qui ont au moins un hit dans la période demandée,
-        // puis on enrichit avec aa_sessions pour durée/page_count/etc.
+        // On regroupe par visitor_hash pour éviter les doublons dans la liste.
+        // Pour chaque visiteur, on affiche la session la plus récente + les totaux agrégés.
         $args  = array( $params['from_utc'], $params['to_utc'] );
         $extra = '';
         if ( ! empty( $params['device'] ) )  { $extra .= ' AND h.device_type = %s';  $args[] = $params['device']; }
@@ -652,15 +651,28 @@ class Always_Analytics_Rest {
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $results = $wpdb->get_results( $wpdb->prepare(
-            "SELECT s.session_id, s.visitor_hash, s.started_at, s.ended_at,
-                    s.duration, s.engagement_time, s.page_count, s.device_type, s.country_code
+            "SELECT
+                s.visitor_hash,
+                MAX(s.ended_at)                         AS ended_at,
+                MAX(s.started_at)                       AS last_started_at,
+                SUM(CASE WHEN s.engagement_time > 0 THEN s.engagement_time ELSE s.duration END) AS total_duration,
+                SUM(s.page_count)                       AS total_pages,
+                COUNT(s.session_id)                     AS session_count,
+                MAX(s.device_type)                      AS device_type,
+                MAX(s.country_code)                     AS country_code,
+                -- Session la plus récente (pour le lien Voir parcours)
+                SUBSTRING_INDEX(GROUP_CONCAT(s.session_id ORDER BY s.ended_at DESC), ',', 1) AS last_session_id,
+                -- Durée de la dernière session uniquement
+                MAX(CASE WHEN s.ended_at = (SELECT MAX(s2.ended_at) FROM {$t_sess} s2 WHERE s2.visitor_hash = s.visitor_hash) THEN CASE WHEN s.engagement_time > 0 THEN s.engagement_time ELSE s.duration END END) AS last_duration,
+                MAX(CASE WHEN s.ended_at = (SELECT MAX(s2.ended_at) FROM {$t_sess} s2 WHERE s2.visitor_hash = s.visitor_hash) THEN s.page_count END) AS last_page_count
              FROM {$t_sess} s
              INNER JOIN (
                  SELECT DISTINCT session_id
                  FROM {$t_hits} h
                  WHERE h.hit_at >= %s AND h.hit_at <= %s AND h.is_superseded = 0{$extra}
              ) h ON h.session_id = s.session_id
-             ORDER BY s.ended_at DESC
+             GROUP BY s.visitor_hash
+             ORDER BY MAX(s.ended_at) DESC
              LIMIT %d",
             ...$args
         ) );
@@ -714,7 +726,7 @@ class Always_Analytics_Rest {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery
             $kpis = $wpdb->get_row( $wpdb->prepare(
                 "SELECT
-                    COUNT(DISTINCT h.session_id)                                          AS total_sessions,
+                    COUNT(DISTINCT CASE WHEN (s.duration > 0 OR s.engagement_time > 0) THEN h.session_id END) AS total_sessions,
                     COUNT(DISTINCT CASE WHEN s.is_bounce = 0 AND (s.duration > 0 OR s.engagement_time > 0) THEN h.session_id END) AS engaged_sessions,
                     ROUND(AVG(CASE WHEN s.engagement_time > 0 THEN s.engagement_time WHEN s.duration > 0 THEN s.duration ELSE NULL END))   AS avg_duration,
                     ROUND(AVG(CASE WHEN (s.duration > 0 OR s.engagement_time > 0) THEN s.page_count ELSE NULL END), 2) AS avg_pages,
@@ -729,7 +741,7 @@ class Always_Analytics_Rest {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery
             $kpis = $wpdb->get_row( $wpdb->prepare(
                 "SELECT
-                    COUNT(DISTINCT h.session_id)                                          AS total_sessions,
+                    COUNT(DISTINCT CASE WHEN (s.duration > 0 OR s.engagement_time > 0) THEN h.session_id END) AS total_sessions,
                     COUNT(DISTINCT CASE WHEN s.is_bounce = 0 AND (s.duration > 0 OR s.engagement_time > 0) THEN h.session_id END) AS engaged_sessions,
                     ROUND(AVG(CASE WHEN s.engagement_time > 0 THEN s.engagement_time WHEN s.duration > 0 THEN s.duration ELSE NULL END))   AS avg_duration,
                     ROUND(AVG(CASE WHEN (s.duration > 0 OR s.engagement_time > 0) THEN s.page_count ELSE NULL END), 2) AS avg_pages,
@@ -845,7 +857,7 @@ class Always_Analytics_Rest {
                 // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
                 $chart_raw = $wpdb->get_results( $wpdb->prepare(
                     "SELECT HOUR(h.hit_at) AS hour_utc,
-                            COUNT(DISTINCT h.session_id) AS sessions,
+                            COUNT(DISTINCT CASE WHEN (s.duration > 0 OR s.engagement_time > 0) THEN h.session_id END) AS sessions,
                             {$eng_col} AS engaged,
                             {$dur_col} AS avg_dur,
                             {$scroll_col} AS avg_scroll
@@ -890,7 +902,7 @@ class Always_Analytics_Rest {
                 // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
                 $chart_raw = $wpdb->get_results( $wpdb->prepare(
                     "SELECT DATE(CONVERT_TZ(h.hit_at, '+00:00', %s)) AS date,
-                            COUNT(DISTINCT h.session_id) AS sessions,
+                            COUNT(DISTINCT CASE WHEN (s.duration > 0 OR s.engagement_time > 0) THEN h.session_id END) AS sessions,
                             {$eng_col} AS engaged,
                             {$dur_col} AS avg_dur,
                             {$scroll_col} AS avg_scroll
@@ -993,7 +1005,7 @@ class Always_Analytics_Rest {
                     END                             AS page_url,
                     MAX(h.page_title)               AS page_title,
                     MAX(h.post_id)                  AS post_id,
-                    COUNT(DISTINCT h.session_id)    AS total_sessions,
+                    COUNT(DISTINCT CASE WHEN (s.duration > 0 OR s.engagement_time > 0) THEN h.session_id END) AS total_sessions,
                     COUNT(*)                        AS page_views,
                     COUNT(DISTINCT h.visitor_hash)  AS unique_visitors,
                     COALESCE(ROUND(AVG(CASE WHEN s.engagement_time > 0 THEN s.engagement_time WHEN s.duration > 0 THEN s.duration ELSE NULL END)), 0) AS avg_duration,
@@ -1038,7 +1050,7 @@ class Always_Analytics_Rest {
                     END                             AS page_url,
                     MAX(h.page_title)               AS page_title,
                     MAX(h.post_id)                  AS post_id,
-                    COUNT(DISTINCT h.session_id)    AS total_sessions,
+                    COUNT(DISTINCT CASE WHEN (s.duration > 0 OR s.engagement_time > 0) THEN h.session_id END) AS total_sessions,
                     COUNT(*)                        AS page_views,
                     COUNT(DISTINCT h.visitor_hash)  AS unique_visitors,
                     COALESCE(ROUND(AVG(CASE WHEN s.engagement_time > 0 THEN s.engagement_time WHEN s.duration > 0 THEN s.duration ELSE NULL END)), 0) AS avg_duration,
