@@ -42,7 +42,7 @@ Le score est calculé relativement à votre site. Always Analytics détermine la
 
 La plupart des analytics conditionnent le tracking au consentement : pas de cookie accepté = visite perdue. Always Analytics fonctionne à l'envers.
 
-> **Le cookieless est le socle. Le cookie est un enrichissement optionnel.**
+> **Le suivi sans cookie constitue la base, le cookie n’intervient qu’en option.**
 
 Peu importe ce que fait le visiteur (accepter, refuser, fermer la bannière, bloquer les cookies, désactiver JS) une visite est toujours enregistrée. Le consentement ne décide pas si la visite est comptée. Il décide uniquement si le visiteur peut être reconnu lors de sa prochaine visite.
 
