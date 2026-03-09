@@ -25,13 +25,7 @@
 - **Vitesse Éclair** : Script ultra-léger sans impact sur le SEO.
 - **Conformité RGPD Native** : Anonymisation et respect de la vie privée par design.
 
----
-
-## La Data Science au service du contenu
-
 Statify ne se contente pas de compter les vues. Il **qualifie la lecture** grâce à un algorithme de scoring composite sophistiqué qui identifie vos contenus les plus performants.
-
-### Visualisez la performance réelle de vos pages
 
 | Page | Score | 🕒 Durée | ⬇ Scroll | ✅ Engag. | 🔁 Retour | 📄 Profond. | 📊 Sessions |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -43,8 +37,7 @@ Statify cherche à comprendre comment vos contenus sont  consommés. Là où la 
 
 Pour y parvenir, Statify ne considère pas toutes les visites de la même manière. Un visiteur qui reste dix minutes sur une page sans faire défiler le contenu ne représente pas le même type de lecture qu’un lecteur qui parcourt l’article jusqu’au bout en quelques dizaines de secondes. En combinant plusieurs signaux comportementaux (durée de lecture, profondeur de scroll, engagement actif, fidélité des visiteurs et navigation au sein du site) Statify construit une vision beaucoup plus nuancée de la performance de chaque contenu.
 
-- **Réduction du bruit (Loi de Wilson)** 
-L’un des défis majeurs de l’analyse de données est le biais lié aux petits volumes. Une page qui reçoit une seule visite avec un engagement parfait pourrait apparaître artificiellement comme la meilleure page du site. Pour éviter ce type d’anomalie statistique, Statify applique la borne inférieure de l’intervalle de confiance de Wilson. Cette méthode réduit l’impact des petits échantillons et privilégie les contenus qui démontrent une performance solide sur un volume de données plus significatif.
+**Réduction du bruit (Loi de Wilson)** : L’un des défis majeurs de l’analyse de données est le biais lié aux petits volumes. Une page qui reçoit une seule visite avec un engagement parfait pourrait apparaître artificiellement comme la meilleure page du site. Pour éviter ce type d’anomalie statistique, Statify applique la borne inférieure de l’intervalle de confiance de Wilson. Cette méthode réduit l’impact des petits échantillons et privilégie les contenus qui démontrent une performance solide sur un volume de données plus significatif.
 
 Le score est **relatif à votre site**. Nous calculons la médiane de vos contenus pour définir ce qu'est une lecture de longue durée, là où les autres imposent des seuils arbitraires. Les sessions sont ensuite évaluées par rapport à ces repères afin de produire un score plus pertinent.
 
