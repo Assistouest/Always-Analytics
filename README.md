@@ -62,9 +62,26 @@ SHA-256( IP_anonymisée + User-Agent + Accept-Language + date_UTC )
 
 Le hash change chaque nuit à minuit UTC. Le même visiteur produit un hash identique toute la journée, et un hash différent le lendemain. Il n'est jamais persisté sur l'appareil du visiteur.
 
-**Données collectées :** URL, titre, Post ID, référent, UTM, device/navigateur/OS, résolution, géolocalisation pays/région, profondeur de scroll (paliers 25/50/75/100%), durée de session, temps d'engagement (page visible uniquement), sessions multi-pages, nouveau visiteur du jour, utilisateur WordPress connecté.
+## Données collectées
 
-**Limite :** la rétention inter-jours est impossible par nature — le hash change chaque jour.
+- URL de la page
+- Titre de la page
+- Post ID (identifiant du contenu)
+- Référent (source de la visite)
+- Paramètres UTM
+- Type d’appareil
+- Navigateur
+- Système d’exploitation
+- Résolution d’écran
+- Géolocalisation (pays / région)
+- Profondeur de scroll (paliers : 25 %, 50 %, 75 %, 100 %)
+- Durée de session
+- Temps d’engagement (uniquement lorsque la page est visible)
+- Sessions multi-pages
+- Indicateur de nouveau visiteur du jour
+- Utilisateur WordPress connecté (si applicable)
+
+**Limite :** la rétention inter-jours est impossible par nature, le hash change chaque jour.
 
 ---
 
