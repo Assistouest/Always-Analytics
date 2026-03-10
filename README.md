@@ -55,9 +55,6 @@ La plupart des analytics conditionnent le tracking au consentement : pas de cook
 
 Peu importe ce que fait le visiteur (accepter, refuser, fermer la bannière, bloquer les cookies, désactiver JS) une visite est toujours enregistrée. Le consentement ne décide pas si la visite est comptée. Il décide uniquement si le visiteur peut être reconnu lors de sa prochaine visite.
 
----
-
-## Les trois modes
 
 ### Mode 1. Cookieless
 Aucun cookie. Aucune bannière. Démarre immédiatement.
