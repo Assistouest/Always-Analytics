@@ -39,11 +39,11 @@ Pour obtenir le **Score Final ($S_{final}$)**, nous appliquons la correction de 
 $$S_{final} = \frac{P + \frac{z^2}{2n} - z \sqrt{\frac{P(1-P)}{n} + \frac{z^2}{4n^2}}}{1 + \frac{z^2}{n}}$$
 
 *Où :*
-* **$P$** est la performance brute (synthèse des 6 indicateurs ci dessous).
+* **$P$** est la performance brute (synthèse pondérée des 5 signaux ci-dessous).
 * **$n$** est le nombre de sessions (taille de l'échantillon).
 * **$z$** est le niveau de confiance (1.96 pour 95%).
 
-Le score est calculé relativement à votre site. Always Analytics détermine la médiane  de vos contenus pour définir ce qu’est une lecture longue. Le score final est une synthèse de Durée (22%) • Scroll (20%) • Engagement (20%) • Fidélité (18%) • Profondeur (12%) • Confiance statistique (8%).
+Le score est calculé relativement à votre site. Always Analytics détermine la médiane de vos contenus pour définir ce qu'est une lecture longue. Le score final est une synthèse de Durée (~24%) • Scroll (~22%) • Engagement (~22%) • Fidélité (~20%) • Profondeur (~13%).
 
 ---
 
