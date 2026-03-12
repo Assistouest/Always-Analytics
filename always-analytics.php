@@ -3,7 +3,7 @@
  * Plugin Name:       Always Analytics
  * Plugin URI:        https://example.com/always-analytics
  * Description:       Statistiques avancées auto-hébergées, légères et respectueuses de la vie privée pour WordPress.
- * Version:           2.3.0
+ * Version:           2.4.0
  * Author:            Adrien
  * Author URI:        https://assistouest.fr
  * License:           GPL-2.0+
@@ -12,6 +12,11 @@
  * Domain Path:       /languages
  * Requires PHP:      7.4
  * Requires at least: 5.8
+ *
+ * == Bibliothèques tierces ==
+ * flag-icons (SVG drapeaux) — MIT License — https://github.com/lipis/flag-icons
+ *   Fichiers embarqués localement dans /assets/flags/ — aucune requête externe.
+ * Chart.js — MIT License — https://github.com/chartjs/Chart.js
  */
 
 if (!defined('ABSPATH')) {
@@ -19,7 +24,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('AA_VERSION', '2.3.0');
+define('AA_VERSION', '2.4.0');
 define('AA_PLUGIN_FILE', __FILE__);
 define('AA_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('AA_PLUGIN_URL', plugin_dir_url(__FILE__));

@@ -147,7 +147,7 @@ class Always_Analytics_Settings
 
         // Selects
         $output['tracking_mode'] = isset($input['tracking_mode']) && in_array($input['tracking_mode'], array('cookieless', 'cookie'), true) ? $input['tracking_mode'] : 'cookieless';
-        $output['bot_filter_mode'] = isset($input['bot_filter_mode']) && in_array($input['bot_filter_mode'], array('strict', 'normal', 'off'), true) ? $input['bot_filter_mode'] : 'normal';
+        $output['bot_filter_mode'] = isset($input['bot_filter_mode']) && in_array($input['bot_filter_mode'], array('normal', 'off'), true) ? $input['bot_filter_mode'] : 'normal';
         $output['export_format'] = isset($input['export_format']) && in_array($input['export_format'], array('csv', 'json'), true) ? $input['export_format'] : 'csv';
         $output['cookieless_window'] = isset($input['cookieless_window']) && in_array($input['cookieless_window'], array('daily', 'session'), true) ? $input['cookieless_window'] : 'daily';
 
@@ -341,12 +341,18 @@ class Always_Analytics_Settings
     {
         $options = get_option('always_analytics_options', array());
         $mode = isset($options['bot_filter_mode']) ? $options['bot_filter_mode'] : 'normal';
+        // Former 'strict' value is treated as 'normal'.
+        if ( 'off' !== $mode ) {
+            $mode = 'normal';
+        }
 ?>
         <select name="always_analytics_options[bot_filter_mode]">
-            <option value="normal" <?php selected($mode, 'normal'); ?>><?php esc_html_e('Normal', 'always-analytics'); ?></option>
-            <option value="strict" <?php selected($mode, 'strict'); ?>><?php esc_html_e('Strict', 'always-analytics'); ?></option>
-            <option value="off" <?php selected($mode, 'off'); ?>><?php esc_html_e('Désactivé', 'always-analytics'); ?></option>
+            <option value="normal" <?php selected($mode, 'normal'); ?>><?php esc_html_e('Activé', 'always-analytics'); ?></option>
+            <option value="off"    <?php selected($mode, 'off'); ?>><?php esc_html_e('Désactivé', 'always-analytics'); ?></option>
         </select>
+        <p class="description">
+            <?php esc_html_e('Activé : filtre les bots connus, les outils de performance (Lighthouse, PageSpeed…) et les URLs suspectes. Désactivé : tout enregistrer.', 'always-analytics'); ?>
+        </p>
         <?php
     }
 

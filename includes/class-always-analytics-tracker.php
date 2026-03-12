@@ -29,7 +29,7 @@ class Always_Analytics_Tracker
             : '';
 
         $bot_mode = isset($options['bot_filter_mode']) ? $options['bot_filter_mode'] : 'normal';
-        if ('off' !== $bot_mode && Always_Analytics_Bot_Filter::is_bot($ua_string, $bot_mode)) {
+        if ('off' !== $bot_mode && Always_Analytics_Bot_Filter::is_bot($ua_string)) {
             return false;
         }
 
@@ -92,6 +92,17 @@ class Always_Analytics_Tracker
             if ($referrer_domain && $strip_www($referrer_domain) === $strip_www($site_host)) {
                 $referrer = '';
                 $referrer_domain = '';
+            }
+        }
+
+        // ── URL params & spam referrer filter ────────────────────────────────
+        if ('off' !== $bot_mode) {
+            $page_url_raw = isset($data['url']) ? $data['url'] : '';
+            if (Always_Analytics_Bot_Filter::has_suspicious_query_params($page_url_raw)) {
+                return false;
+            }
+            if (Always_Analytics_Bot_Filter::is_spam_referrer($referrer_domain)) {
+                return false;
             }
         }
 
@@ -187,7 +198,7 @@ class Always_Analytics_Tracker
             : '';
 
         $bot_mode = isset($options['bot_filter_mode']) ? $options['bot_filter_mode'] : 'normal';
-        if ('off' !== $bot_mode && Always_Analytics_Bot_Filter::is_bot($ua_string, $bot_mode)) {
+        if ('off' !== $bot_mode && Always_Analytics_Bot_Filter::is_bot($ua_string)) {
             return false;
         }
 

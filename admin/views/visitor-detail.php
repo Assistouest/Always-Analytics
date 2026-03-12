@@ -78,8 +78,44 @@ $last_session   = reset( $sessions );
                 Visiteur <?php echo esc_html( substr( $visitor_hash, 0, 8 ) ); ?>
             </h2>
             <div>
-                <span class="aa-badge"><?php echo esc_html( $last_session->country_code ?: '🌐' ); ?></span>
-                <span class="aa-badge"><?php echo esc_html( $last_session->device_type ); ?></span>
+                <?php
+                // Même rendu que la card "Pays" — utilise aa_country_flag_php() si dispo,
+                // sinon reproduit le même appel direct via AA_PLUGIN_URL / file_exists.
+                $cc = $last_session->country_code ?: '';
+                if ( $cc && strlen( $cc ) === 2 ) {
+                    if ( function_exists( 'aa_country_flag_php' ) ) {
+                        $flag_html = aa_country_flag_php( $cc, 18 );
+                    } else {
+                        $lc        = strtolower( $cc );
+                        $uc        = strtoupper( $cc );
+                        $file_path = AA_PLUGIN_DIR . 'assets/flags/' . $lc . '.webp';
+                        if ( file_exists( $file_path ) ) {
+                            $url       = AA_PLUGIN_URL . 'assets/flags/' . $lc . '.webp';
+                            $flag_html = '<img src="' . esc_url( $url ) . '" alt="' . esc_attr( $uc ) . '" title="' . esc_attr( $uc ) . '" width="24" height="18" style="vertical-align:middle;border-radius:2px;object-fit:cover;" loading="lazy">';
+                        } else {
+                            $flag_html = '<span style="display:inline-block;padding:0 4px;height:18px;line-height:18px;background:#e2e8f0;border-radius:2px;font-size:10px;color:#475569;font-weight:700;vertical-align:middle;">' . esc_html( $uc ) . '</span>';
+                        }
+                    }
+                    echo '<span class="aa-badge" style="padding:2px 6px;display:inline-flex;align-items:center;">'
+                        . wp_kses( $flag_html, array( 'img' => array( 'src' => array(), 'alt' => array(), 'title' => array(), 'width' => array(), 'height' => array(), 'style' => array(), 'loading' => array() ), 'span' => array( 'style' => array() ) ) )
+                        . '</span>';
+                } else {
+                    echo '<span class="aa-badge">🌐</span>';
+                }
+                ?>
+                <?php
+                $device = $last_session->device_type ?? '';
+                if ( $device === 'mobile' ) {
+                    $device_icon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="17" r="1"/></svg>';
+                } elseif ( $device === 'tablet' ) {
+                    $device_icon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><rect x="3" y="2" width="18" height="20" rx="2"/><circle cx="12" cy="17" r="1"/></svg>';
+                } else {
+                    $device_icon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 20h8M12 18v2"/></svg>';
+                }
+                echo '<span class="aa-badge" style="padding:2px 6px;display:inline-flex;align-items:center;" title="' . esc_attr( $device ?: 'desktop' ) . '">'
+                   . wp_kses( $device_icon, array( 'svg' => array( 'xmlns' => array(), 'width' => array(), 'height' => array(), 'viewBox' => array(), 'fill' => array(), 'stroke' => array(), 'stroke-width' => array(), 'stroke-linecap' => array(), 'stroke-linejoin' => array(), 'style' => array() ), 'rect' => array( 'x' => array(), 'y' => array(), 'width' => array(), 'height' => array(), 'rx' => array() ), 'circle' => array( 'cx' => array(), 'cy' => array(), 'r' => array() ), 'path' => array( 'd' => array() ) ) )
+                   . '</span>';
+                ?>
                 <span class="aa-badge"><?php echo count( $sessions ); ?> visite(s)</span>
             </div>
         </div>
@@ -162,9 +198,24 @@ $last_session   = reset( $sessions );
                                     </a>
                                 </div>
 
-                                <?php if ( $index === 0 && ! empty( $hit->referrer ) ) : ?>
-                                    <div style="margin-top:12px;padding-top:12px;border-top:1px dashed #e2e8f0;color:#64748b;font-size:13px;">
-                                        <span class="dashicons dashicons-external" style="font-size:14px;line-height:1;width:14px;height:14px;margin-right:4px;"></span>
+                                <?php if ( $index === 0 && ! empty( $hit->referrer ) ) :
+                                    $ref_domain = '';
+                                    $parsed_ref = wp_parse_url( $hit->referrer );
+                                    if ( ! empty( $parsed_ref['host'] ) ) {
+                                        $ref_domain = $parsed_ref['host'];
+                                    }
+                                ?>
+                                    <div style="margin-top:12px;padding-top:12px;border-top:1px dashed #e2e8f0;color:#64748b;font-size:13px;display:flex;align-items:center;gap:6px;">
+                                        <?php if ( $ref_domain ) : ?>
+                                            <img src="https://www.google.com/s2/favicons?domain=<?php echo esc_attr( urlencode( $ref_domain ) ); ?>&sz=32"
+                                                 width="14" height="14"
+                                                 alt=""
+                                                 loading="lazy"
+                                                 style="border-radius:2px;flex-shrink:0;"
+                                                 onerror="this.style.display='none'">
+                                        <?php else : ?>
+                                            <span class="dashicons dashicons-external" style="font-size:14px;line-height:1;width:14px;height:14px;"></span>
+                                        <?php endif; ?>
                                         Source : <?php echo esc_html( $hit->referrer ); ?>
                                     </div>
                                 <?php endif; ?>

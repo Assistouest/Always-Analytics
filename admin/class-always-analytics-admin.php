@@ -148,6 +148,7 @@ class Always_Analytics_Admin {
 
         wp_localize_script( 'always-analytics-admin', 'alwaysAnalyticsAdmin', array(
             'restBase'        => esc_url_raw( rest_url( 'always-analytics/v1/' ) ),
+            'flagsUrl'        => esc_url_raw( AA_PLUGIN_URL . 'assets/flags/' ),
             'nonce'           => wp_create_nonce( 'wp_rest' ),
             'exportNonce'     => wp_create_nonce( 'always_analytics_export' ),
             'purgeNonce'      => wp_create_nonce( 'always_analytics_manual_purge' ),

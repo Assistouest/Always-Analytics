@@ -78,19 +78,19 @@ if ($ret_warn) {
 $rgpd_ok = empty($rgpd_issues);
 ?>
     <div class="as-status-banner">
-        <span class="as-status-banner__icon"><?php echo $rgpd_ok ? '🛡️' : ('cookie' === $mode ? '🍪' : '⚙️'); ?></span>
+        <span class="as-status-banner__icon"><?php echo $rgpd_ok ? '<svg class="as-banner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>' : '<svg class="as-banner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'; ?></span>
         <div class="as-status-banner__body">
             <strong><?php esc_html_e('Statut RGPD', 'always-analytics'); ?></strong>
             <span><?php echo 'cookie' === $mode ? esc_html__('Mode cookie', 'always-analytics') : esc_html__('Mode sans cookie', 'always-analytics'); ?></span>
         </div>
         <div class="as-status-banner__chips">
             <?php if ($rgpd_ok): ?>
-                <span class="as-chip mod-ok">✓ <?php esc_html_e('Conforme RGPD', 'always-analytics'); ?></span>
+                <span class="as-chip mod-ok"><svg class="as-chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> <?php esc_html_e('Conforme RGPD', 'always-analytics'); ?></span>
             <?php
 else: ?>
                 <?php foreach ($rgpd_issues as $issue): ?>
                     <a href="#" class="as-chip <?php echo esc_attr($issue['mod']); ?> aa-settings-tab-link" data-tab="<?php echo esc_attr($issue['tab']); ?>">
-                        ⚠ <?php echo esc_html($issue['label']); ?>
+                        <svg class="as-chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> <?php echo esc_html($issue['label']); ?>
                     </a>
                 <?php
     endforeach; ?>
@@ -101,14 +101,13 @@ endif; ?>
 
     <!-- Tab bar -->
     <div class="as-tabs">
-        <button class="as-tab active" data-tab="tracking">📊 <?php esc_html_e('Tracking', 'always-analytics'); ?></button>
-        <button class="as-tab" data-tab="privacy">🔐 <?php esc_html_e('Confidentialité', 'always-analytics'); ?></button>
-        <button class="as-tab <?php echo $need_consent ? 'mod-alert' : ''; ?>" data-tab="consent">✋ <?php esc_html_e('Consentement', 'always-analytics'); ?><?php if ($need_consent): ?><span class="as-tab-dot"></span><?php
+        <button class="as-tab active" data-tab="tracking"><svg class="as-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> <?php esc_html_e('Tracking', 'always-analytics'); ?></button>
+        <button class="as-tab" data-tab="privacy"><svg class="as-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> <?php esc_html_e('Confidentialité', 'always-analytics'); ?></button>
+        <button class="as-tab <?php echo $need_consent ? 'mod-alert' : ''; ?>" data-tab="consent"><svg class="as-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg> <?php esc_html_e('Consentement', 'always-analytics'); ?><?php if ($need_consent): ?><span class="as-tab-dot"></span><?php
 endif; ?></button>
-        <button class="as-tab" data-tab="geo">🌍 <?php esc_html_e('Géolocalisation', 'always-analytics'); ?></button>
-        <button class="as-tab" data-tab="performance">⚡ <?php esc_html_e('Performance', 'always-analytics'); ?></button>
-        <button class="as-tab" data-tab="maintenance">🗄️ <?php esc_html_e('Maintenance', 'always-analytics'); ?></button>
-        <button class="as-tab" data-tab="rgpd">📋 <?php esc_html_e('Conformité RGPD', 'always-analytics'); ?></button>
+        <button class="as-tab" data-tab="performance"><svg class="as-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> <?php esc_html_e('Performance', 'always-analytics'); ?></button>
+        <button class="as-tab" data-tab="maintenance"><svg class="as-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg> <?php esc_html_e('Maintenance', 'always-analytics'); ?></button>
+        <button class="as-tab" data-tab="rgpd"><svg class="as-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> <?php esc_html_e('Conformité RGPD', 'always-analytics'); ?></button>
     </div>
 
     <form method="post" action="options.php" id="aa-settings-form">
@@ -120,7 +119,7 @@ endif; ?></button>
         <div class="as-panel active" data-panel="tracking">
             <div class="as-card">
                 <div class="as-card__head">
-                    <h2>📊 <?php esc_html_e('Tracking', 'always-analytics'); ?></h2>
+                    <h2><svg class="as-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> <?php esc_html_e('Tracking', 'always-analytics'); ?></h2>
                     <p><?php esc_html_e('Contrôlez si et comment Always Analytics collecte les données de vos visiteurs.', 'always-analytics'); ?></p>
                 </div>
 
@@ -223,13 +222,27 @@ endforeach; ?>
                     </div>
                 </div>
 
-                <div class="as-row as-row--last">
+                <div class="as-row">
                     <div class="as-row__label">
                         <span class="as-row__title"><?php esc_html_e('IPs des proxys personnalisés', 'always-analytics'); ?></span>
                         <span class="as-row__desc"><?php esc_html_e('Si "Proxy spécifique" est sélectionné. Une IP ou un bloc CIDR par ligne.', 'always-analytics'); ?></span>
                     </div>
                     <div class="as-row__control">
                         <textarea name="always_analytics_options[trusted_proxies]" rows="4" class="as-textarea"><?php echo esc_textarea(as_val($o, 'trusted_proxies')); ?></textarea>
+                    </div>
+                </div>
+
+                <div class="as-row as-row--last">
+                    <div class="as-row__label">
+                        <span class="as-row__title"><?php esc_html_e('Géolocalisation', 'always-analytics'); ?></span>
+                        <span class="as-row__desc"><?php esc_html_e('Résout les IPs en pays/ville lors du tracking pour enrichir vos statistiques.', 'always-analytics'); ?></span>
+                    </div>
+                    <div class="as-row__control">
+                        <label class="as-toggle">
+                            <input type="checkbox" name="always_analytics_options[geo_enabled]" value="1" <?php echo as_checked($o, 'geo_enabled'); ?>>
+                            <span class="as-toggle__track"></span>
+                            <span class="as-toggle__label"><?php esc_html_e('Activer', 'always-analytics'); ?></span>
+                        </label>
                     </div>
                 </div>
             </div>
@@ -241,7 +254,7 @@ endforeach; ?>
         <div class="as-panel" data-panel="privacy">
             <div class="as-card">
                 <div class="as-card__head">
-                    <h2>🔐 <?php esc_html_e('Confidentialité & RGPD', 'always-analytics'); ?></h2>
+                    <h2><svg class="as-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> <?php esc_html_e('Confidentialité & RGPD', 'always-analytics'); ?></h2>
                     <p><?php esc_html_e('Protection des données personnelles et durée de conservation.', 'always-analytics'); ?></p>
                 </div>
 
@@ -325,7 +338,7 @@ endif; ?>
             </div>
 
             <div class="as-note">
-                <span class="as-note__icon">💡</span>
+                <span class="as-note__icon"><svg class="as-note__svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg></span>
                 <div>
                     <strong><?php esc_html_e('Anonymisation, pas suppression', 'always-analytics'); ?></strong>
                     <?php esc_html_e('Après la période de rétention, le visitor_hash est remplacé par un hash aléatoire, le user_id effacé, le referrer réduit au domaine. Les métriques (durée, scroll, device, page) sont conservées indéfiniment pour les statistiques.', 'always-analytics'); ?>
@@ -340,7 +353,7 @@ endif; ?>
             <div class="as-card">
                 <div class="as-card__head">
                     <h2>
-                        ✋ <?php esc_html_e('Bannière de consentement', 'always-analytics'); ?>
+                        <svg class="as-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg> <?php esc_html_e('Bannière de consentement', 'always-analytics'); ?>
                         <?php if ($need_consent): ?>
                             <span class="as-inline-badge mod-danger"><?php esc_html_e('Action requise', 'always-analytics'); ?></span>
                         <?php
@@ -417,38 +430,12 @@ endif; ?>
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════════════
-             TAB — GÉOLOCALISATION
-        ═══════════════════════════════════════════════════════════════════ -->
-        <div class="as-panel" data-panel="geo">
-            <div class="as-card">
-                <div class="as-card__head">
-                    <h2>🌍 <?php esc_html_e('Géolocalisation', 'always-analytics'); ?></h2>
-                    <p><?php esc_html_e('Résolution des adresses IP en localisation géographique pour enrichir vos statistiques.', 'always-analytics'); ?></p>
-                </div>
-
-                <div class="as-row">
-                    <div class="as-row__label">
-                        <span class="as-row__title"><?php esc_html_e('Activer la géolocalisation', 'always-analytics'); ?></span>
-                        <span class="as-row__desc"><?php esc_html_e('Résout les IPs en pays/ville lors du tracking.', 'always-analytics'); ?></span>
-                    </div>
-                    <div class="as-row__control">
-                        <label class="as-toggle">
-                            <input type="checkbox" name="always_analytics_options[geo_enabled]" value="1" <?php echo as_checked($o, 'geo_enabled'); ?>>
-                            <span class="as-toggle__track"></span>
-                            <span class="as-toggle__label"><?php esc_html_e('Activer', 'always-analytics'); ?></span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ═══════════════════════════════════════════════════════════════════
              TAB — PERFORMANCE
         ═══════════════════════════════════════════════════════════════════ -->
         <div class="as-panel" data-panel="performance">
             <div class="as-card">
                 <div class="as-card__head">
-                    <h2>⚡ <?php esc_html_e('Performance & Filtrage', 'always-analytics'); ?></h2>
+                    <h2><svg class="as-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> <?php esc_html_e('Performance & Filtrage', 'always-analytics'); ?></h2>
                     <p><?php esc_html_e('Cache des requêtes, filtrage des bots et format d\'export.', 'always-analytics'); ?></p>
                 </div>
 
@@ -468,12 +455,11 @@ endif; ?>
                 <div class="as-row">
                     <div class="as-row__label">
                         <span class="as-row__title"><?php esc_html_e('Filtrage des bots', 'always-analytics'); ?></span>
-                        <span class="as-row__desc"><?php esc_html_e('Normal : filtre les bots connus. Strict : filtre plus agressif. Désactivé : tout enregistre.', 'always-analytics'); ?></span>
+                        <span class="as-row__desc"><?php esc_html_e('Activé : filtre les bots connus, les outils de performance (Lighthouse, PageSpeed…) et les URLs suspectes. Désactivé : tout enregistrer.', 'always-analytics'); ?></span>
                     </div>
                     <div class="as-row__control">
                         <select name="always_analytics_options[bot_filter_mode]" class="as-select">
-                            <option value="normal" <?php selected(as_val($o, 'bot_filter_mode', 'normal'), 'normal'); ?>><?php esc_html_e('Normal', 'always-analytics'); ?></option>
-                            <option value="strict" <?php selected(as_val($o, 'bot_filter_mode', 'normal'), 'strict'); ?>><?php esc_html_e('Strict', 'always-analytics'); ?></option>
+                            <option value="normal" <?php selected(as_val($o, 'bot_filter_mode', 'normal'), 'normal'); ?>><?php esc_html_e('Activé', 'always-analytics'); ?></option>
                             <option value="off"    <?php selected(as_val($o, 'bot_filter_mode', 'normal'), 'off'); ?>><?php esc_html_e('Désactivé', 'always-analytics'); ?></option>
                         </select>
                     </div>
@@ -515,7 +501,7 @@ endif; ?>
 
         <?php if ($db_anon > 0): ?>
         <div class="as-note" style="margin-bottom:24px;">
-            <span class="as-note__icon">✓</span>
+            <span class="as-note__icon"><svg class="as-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
             <div><?php printf(esc_html__('%s hits anonymisés — statistiques conservées, identité effacée.', 'always-analytics'), '<strong>' . esc_html(number_format_i18n($db_anon)) . '</strong>'); ?></div>
         </div>
         <?php
@@ -523,13 +509,13 @@ endif; ?>
 
         <div class="as-card">
             <div class="as-card__head">
-                <h2>🔄 <?php esc_html_e('Anonymisation manuelle', 'always-analytics'); ?></h2>
+                <h2><svg class="as-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> <?php esc_html_e('Anonymisation manuelle', 'always-analytics'); ?></h2>
                 <p><?php esc_html_e('Déclenche immédiatement l\'anonymisation des données dépassant la période de rétention (normalement géré par wp-cron).', 'always-analytics'); ?></p>
             </div>
             <div class="as-card__body">
                 <button id="aa-purge-btn" class="button button-secondary"
                         style="border-radius:7px;">
-                    🔄 <?php esc_html_e('Lancer l\'anonymisation', 'always-analytics'); ?>
+                    <svg class="as-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> <?php esc_html_e('Lancer l\'anonymisation', 'always-analytics'); ?>
                 </button>
                 <span id="aa-purge-result" style="margin-left:12px;display:none;"></span>
             </div>
@@ -542,7 +528,7 @@ endif; ?>
     <div class="as-panel" data-panel="rgpd">
         <div class="as-card">
             <div class="as-card__head">
-                <h2>📋 <?php esc_html_e('Conformité RGPD', 'always-analytics'); ?></h2>
+                <h2><svg class="as-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> <?php esc_html_e('Conformité RGPD', 'always-analytics'); ?></h2>
                 <p><?php esc_html_e('Vérification automatique des points de conformité selon les recommandations CNIL.', 'always-analytics'); ?></p>
             </div>
             <div class="as-checklist">
@@ -587,13 +573,7 @@ $rows = array(
         'badge' => __('Conforme', 'always-analytics'),
         'bmod' => '',
     ),
-        array(
-        'ok' => true,
-        'label' => __('Politique de confidentialité', 'always-analytics'),
-        'detail' => __('Texte suggéré dans Réglages → Confidentialité WP.', 'always-analytics'),
-        'badge' => __('Conforme', 'always-analytics'),
-        'bmod' => '',
-    ),
+
         array(
         'ok' => $consent_ok,
         'label' => __('Consentement', 'always-analytics'),
@@ -614,7 +594,7 @@ $rows = array(
 foreach ($rows as $r):
 ?>
                 <div class="as-checklist__row">
-                    <span class="as-checklist__icon"><?php echo $r['ok'] ? '✓' : '✕'; ?></span>
+                    <span class="as-checklist__icon"><?php echo $r['ok'] ? '<svg class="as-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : '<svg class="as-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'; ?></span>
                     <div class="as-checklist__body">
                         <span class="as-checklist__label"><?php echo esc_html($r['label']); ?></span>
                         <span class="as-checklist__detail"><?php echo esc_html($r['detail']); ?></span>
@@ -623,6 +603,23 @@ foreach ($rows as $r):
                 </div>
                 <?php
 endforeach; ?>
+
+                <!-- Ligne spéciale : Politique de confidentialité avec lien -->
+                <div class="as-checklist__row as-checklist__row--info">
+                    <span class="as-checklist__icon as-checklist__icon--info">
+                        <svg class="as-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    </span>
+                    <div class="as-checklist__body">
+                        <span class="as-checklist__label"><?php esc_html_e('Politique de confidentialité', 'always-analytics'); ?></span>
+                        <span class="as-checklist__detail">
+                            <?php esc_html_e('Texte suggéré à insérer dans votre politique :', 'always-analytics'); ?>
+                            <a href="<?php echo esc_url(admin_url('options-privacy.php?tab=policyguide')); ?>" class="as-checklist__link" target="_blank">
+                                <?php esc_html_e('Réglages → Confidentialité → Guide', 'always-analytics'); ?>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;vertical-align:middle;margin-left:2px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                            </a>
+                        </span>
+                    </div>
+                </div>
 
             </div>
         </div>
@@ -964,7 +961,7 @@ a.as-chip:hover { opacity: .8; }
     var tabs   = document.querySelectorAll('.as-tab');
     var panels = document.querySelectorAll('.as-panel');
     var savebar = document.getElementById('aa-save-bar');
-    var formTabs = ['tracking','privacy','consent','geo','performance'];
+    var formTabs = ['tracking','privacy','consent','performance'];
 
     function show(tab) {
         tabs.forEach(function(t)   { t.classList.toggle('active', t.dataset.tab === tab); });

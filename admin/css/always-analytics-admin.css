@@ -1123,3 +1123,705 @@
     .aa-wrap .aa-devices-card .aa-dev-tabs { flex-wrap: wrap !important; }
     .aa-wrap .aa-devices-card .aa-dev-tab  { font-size: 11px !important; padding: 4px 9px !important; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Mode Campagne — Bouton, Modal, Tooltip, Annotations
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Bouton "+ Événement" dans le header du graphique ─────────────────────── */
+.aa-wrap .aa-btn-campaign {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    padding: 5px 12px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: var(--aa-primary, #6c63ff) !important;
+    background: rgba(108, 99, 255, 0.08) !important;
+    border: 1px solid rgba(108, 99, 255, 0.25) !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    transition: background 0.18s, border-color 0.18s !important;
+    white-space: nowrap !important;
+    margin-left: auto !important;
+}
+.aa-wrap .aa-btn-campaign:hover {
+    background: rgba(108, 99, 255, 0.15) !important;
+    border-color: rgba(108, 99, 255, 0.4) !important;
+}
+.aa-wrap .aa-btn-campaign svg {
+    flex-shrink: 0 !important;
+}
+
+/* ── Modal ──────────────────────────────────────────────────────────────────── */
+.aa-modal {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 99999 !important;
+    display: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+.aa-modal.aa-modal--open {
+    display: flex !important;
+}
+.aa-modal-overlay {
+    position: absolute !important;
+    inset: 0 !important;
+    background: rgba(0,0,0,0.45) !important;
+    backdrop-filter: blur(2px) !important;
+}
+.aa-modal-box {
+    position: relative !important;
+    z-index: 1 !important;
+    background: var(--aa-card, #fff) !important;
+    border-radius: 14px !important;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.18) !important;
+    width: 100% !important;
+    max-width: 440px !important;
+    margin: 16px !important;
+    overflow: hidden !important;
+    animation: aa-modal-in 0.22s cubic-bezier(.34,1.56,.64,1) !important;
+}
+@keyframes aa-modal-in {
+    from { opacity: 0; transform: scale(0.92) translateY(10px); }
+    to   { opacity: 1; transform: scale(1)   translateY(0); }
+}
+.aa-modal-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 18px 20px 14px !important;
+    border-bottom: 1px solid var(--aa-border, #f0f0f0) !important;
+}
+.aa-modal-header h3 {
+    margin: 0 !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    color: var(--aa-text, #1d2327) !important;
+}
+.aa-modal-close {
+    background: none !important;
+    border: none !important;
+    cursor: pointer !important;
+    font-size: 16px !important;
+    color: var(--aa-text-secondary, #6b7280) !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    line-height: 1 !important;
+    transition: color 0.15s !important;
+}
+.aa-modal-close:hover { color: var(--aa-text, #1d2327) !important; }
+.aa-modal-body {
+    padding: 18px 20px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+}
+.aa-field {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 5px !important;
+}
+.aa-field label {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: var(--aa-text, #1d2327) !important;
+}
+.aa-req { color: #ef4444 !important; }
+.aa-field input[type="text"],
+.aa-field input[type="date"],
+.aa-field textarea {
+    width: 100% !important;
+    padding: 8px 10px !important;
+    font-size: 13px !important;
+    border: 1px solid var(--aa-border, #dcdcde) !important;
+    border-radius: 7px !important;
+    background: var(--aa-bg, #f6f7f7) !important;
+    color: var(--aa-text, #1d2327) !important;
+    box-sizing: border-box !important;
+    transition: border-color 0.15s !important;
+    font-family: inherit !important;
+    resize: vertical !important;
+}
+.aa-field input:focus, .aa-field textarea:focus {
+    outline: none !important;
+    border-color: var(--aa-primary, #6c63ff) !important;
+    background: #fff !important;
+}
+.aa-field small { font-size: 11px !important; color: var(--aa-text-secondary, #6b7280) !important; }
+
+/* Color swatches */
+.aa-color-swatches {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+}
+.aa-swatch {
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 50% !important;
+    cursor: pointer !important;
+    border: 2px solid transparent !important;
+    transition: transform 0.15s, border-color 0.15s !important;
+    display: inline-block !important;
+}
+.aa-swatch:hover { transform: scale(1.15) !important; }
+.aa-swatch--active {
+    border-color: var(--aa-text, #1d2327) !important;
+    transform: scale(1.15) !important;
+}
+.aa-color-custom {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 50% !important;
+    border: 2px solid var(--aa-border, #dcdcde) !important;
+    padding: 0 !important;
+    cursor: pointer !important;
+    overflow: hidden !important;
+    background: none !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+}
+.aa-color-custom::-webkit-color-swatch-wrapper { padding: 0 !important; }
+.aa-color-custom::-webkit-color-swatch { border: none !important; border-radius: 50% !important; }
+
+.aa-camp-error {
+    padding: 8px 12px !important;
+    background: #fef2f2 !important;
+    border: 1px solid #fecaca !important;
+    border-radius: 6px !important;
+    color: #ef4444 !important;
+    font-size: 12px !important;
+}
+.aa-modal-footer {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 14px 20px 18px !important;
+    border-top: 1px solid var(--aa-border, #f0f0f0) !important;
+}
+
+/* ── Tooltip campagne sur le graphique ─────────────────────────────────────── */
+.aa-camp-tooltip {
+    position: absolute !important;
+    z-index: 9999 !important;
+    background: var(--aa-card, #fff) !important;
+    border: 2px solid #6c63ff !important;
+    border-radius: 10px !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15) !important;
+    min-width: 190px !important;
+    max-width: 240px !important;
+    padding: 10px 12px !important;
+    pointer-events: auto !important;
+    font-size: 12px !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+.aa-camp-tooltip-header {
+    padding-left: 8px !important;
+    margin-bottom: 4px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+}
+.aa-camp-tooltip-header strong {
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: var(--aa-text, #1d2327) !important;
+    display: block !important;
+}
+.aa-camp-tooltip-date {
+    font-size: 11px !important;
+    color: var(--aa-text-secondary, #6b7280) !important;
+}
+.aa-camp-tooltip-desc {
+    font-size: 12px !important;
+    color: var(--aa-text, #1d2327) !important;
+    margin-top: 6px !important;
+    opacity: 0.8 !important;
+    line-height: 1.45 !important;
+    border-top: 1px solid var(--aa-border, #f0f0f0) !important;
+    padding-top: 6px !important;
+}
+.aa-camp-tooltip-del {
+    position: absolute !important;
+    top: 6px !important;
+    right: 8px !important;
+    background: none !important;
+    border: none !important;
+    cursor: pointer !important;
+    font-size: 11px !important;
+    color: #9ca3af !important;
+    padding: 2px 4px !important;
+    border-radius: 4px !important;
+    line-height: 1 !important;
+}
+.aa-camp-tooltip-del:hover {
+    color: #ef4444 !important;
+    background: #fef2f2 !important;
+}
+
+/* S'assurer que le header du chart est bien flex pour aligner le bouton */
+.aa-wrap .aa-chart-card .aa-card-header {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    flex-wrap: wrap !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Grid Visiteurs + Événements
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.aa-wrap .aa-grid--visitors-campaigns {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 24px !important;
+    margin-bottom: 24px !important;
+    align-items: stretch !important;
+}
+
+@media (max-width: 900px) {
+    .aa-wrap .aa-grid--visitors-campaigns {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* ── Tableau visiteurs compact ─────────────────────────────────────────────── */
+.aa-wrap .aa-table--compact td,
+.aa-wrap .aa-table--compact th {
+    padding: 10px 12px !important;
+}
+.aa-wrap .aa-table--compact td:first-child {
+    width: 60% !important;
+}
+
+.aa-wrap .aa-visitor-link {
+    color: var(--aa-text, #1d2327) !important;
+    text-decoration: none !important;
+    font-weight: 600 !important;
+    transition: color 0.15s !important;
+}
+.aa-wrap .aa-visitor-link:hover {
+    color: var(--aa-primary, #6c63ff) !important;
+    text-decoration: underline !important;
+}
+
+/* ── Card événements ───────────────────────────────────────────────────────── */
+.aa-btn-campaign--sm {
+    font-size: 11px !important;
+    padding: 4px 10px !important;
+    gap: 4px !important;
+}
+
+.aa-camp-row {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+    padding: 10px 0 !important;
+    border-bottom: 1px solid var(--aa-border, #f0f0f0) !important;
+}
+.aa-camp-row:last-child {
+    border-bottom: none !important;
+}
+
+.aa-camp-dot {
+    flex-shrink: 0 !important;
+    width: 10px !important;
+    height: 10px !important;
+    border-radius: 50% !important;
+    margin-top: 4px !important;
+    display: inline-block !important;
+}
+
+.aa-camp-info {
+    flex: 1 !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+}
+
+.aa-camp-name {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: var(--aa-text, #1d2327) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.aa-camp-date {
+    font-size: 11px !important;
+    color: var(--aa-text-secondary, #6b7280) !important;
+}
+
+.aa-camp-desc-preview {
+    font-size: 11px !important;
+    color: var(--aa-text-secondary, #6b7280) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    opacity: 0.8 !important;
+}
+
+.aa-camp-actions {
+    display: flex !important;
+    gap: 4px !important;
+    flex-shrink: 0 !important;
+}
+
+.aa-camp-edit,
+.aa-camp-del {
+    background: none !important;
+    border: none !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    padding: 3px 5px !important;
+    border-radius: 5px !important;
+    opacity: 0.5 !important;
+    transition: opacity 0.15s, background 0.15s !important;
+    line-height: 1 !important;
+}
+.aa-camp-edit:hover { opacity: 1 !important; background: rgba(108,99,255,0.08) !important; }
+.aa-camp-del:hover  { opacity: 1 !important; background: rgba(239,68,68,0.08) !important; }
+
+
+/* ── Hauteur égale + scroll dans la card événements ────────────────────────── */
+
+/* stretch = les deux cards s'étirent à la hauteur de la plus grande */
+.aa-wrap .aa-grid--visitors-campaigns {
+    align-items: stretch !important;
+}
+
+/* Les deux cards sont flex-column pour que le body puisse grandir */
+.aa-wrap .aa-grid--visitors-campaigns > .aa-card {
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+/* Le body des visiteurs : hauteur naturelle, pas de scroll forcé */
+.aa-wrap .aa-grid--visitors-campaigns > .aa-card:first-child .aa-card-body {
+    flex: 1 !important;
+}
+
+/* La card événements : le body prend toute la hauteur restante et scrolle */
+.aa-wrap #aa-campaigns-card {
+    min-height: 0 !important;
+}
+.aa-wrap #aa-campaigns-card .aa-card-body {
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    padding-right: 4px !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: rgba(108,99,255,0.3) transparent !important;
+}
+.aa-wrap #aa-campaigns-card .aa-card-body::-webkit-scrollbar {
+    width: 5px !important;
+}
+.aa-wrap #aa-campaigns-card .aa-card-body::-webkit-scrollbar-track {
+    background: transparent !important;
+}
+.aa-wrap #aa-campaigns-card .aa-card-body::-webkit-scrollbar-thumb {
+    background: rgba(108,99,255,0.3) !important;
+    border-radius: 99px !important;
+}
+.aa-wrap #aa-campaigns-card .aa-card-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(108,99,255,0.55) !important;
+}
+
+/* ── Lucide SVG icons ─────────────────────────────────────────────────────── */
+.aa-wrap .aa-icon {
+    display: inline-block !important;
+    width: 14px !important;
+    height: 14px !important;
+    vertical-align: middle !important;
+    margin-top: -2px !important;
+    flex-shrink: 0 !important;
+    color: inherit !important;
+}
+
+/* Icônes dans les boutons edit/del campagnes : taille ajustée */
+.aa-camp-edit .aa-icon,
+.aa-camp-del .aa-icon {
+    width: 13px !important;
+    height: 13px !important;
+}
+
+/* Icônes dans les onglets appareils */
+.aa-wrap .aa-dev-tab .aa-icon {
+    width: 13px !important;
+    height: 13px !important;
+    margin-right: 3px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Lucide SVG icons — Settings page
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Tab icons */
+.as-tab-icon {
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    vertical-align: middle;
+    margin-top: -2px;
+    flex-shrink: 0;
+    stroke: currentColor;
+}
+
+/* Banner icon (shield) */
+.as-banner-icon {
+    display: block;
+    width: 22px;
+    height: 22px;
+    stroke: currentColor;
+    flex-shrink: 0;
+}
+.as-status-banner__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: rgba(108, 99, 255, 0.08);
+    color: var(--aa-primary);
+    flex-shrink: 0;
+}
+
+/* Card h2 icons */
+.as-card__head h2 svg {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    vertical-align: middle;
+    margin-top: -2px;
+    flex-shrink: 0;
+    stroke: var(--aa-primary);
+    opacity: 0.85;
+}
+
+/* Note icon */
+.as-note__icon {
+    display: flex;
+    align-items: flex-start;
+    padding-top: 2px;
+    flex-shrink: 0;
+}
+.as-note__svg {
+    width: 16px;
+    height: 16px;
+    stroke: var(--aa-primary);
+    opacity: 0.7;
+}
+
+/* Checklist check/x icon */
+.as-check-icon {
+    width: 12px;
+    height: 12px;
+    display: block;
+    stroke: currentColor;
+}
+
+/* Chip icon */
+.as-chip-icon {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    vertical-align: middle;
+    margin-top: -1px;
+    stroke: currentColor;
+    flex-shrink: 0;
+}
+
+/* Small action icon (refresh button) */
+.as-icon-sm {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    vertical-align: middle;
+    margin-top: -2px;
+    stroke: currentColor;
+    flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Typography Harmonization
+   Dashboard / Engagement → Settings: cohérence des tailles de police
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Base body text — unified across all pages */
+.aa-wrap {
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/* Page title — same on all pages */
+.aa-header h1 {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+/* Card headers — unified */
+.aa-card-header h2,
+.as-card__head h2 {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.01em;
+}
+
+/* KPI values: slightly reduced from 32px for tighter look */
+.aa-kpi-value {
+    font-size: 28px;
+    font-weight: 800;
+}
+
+/* KPI labels */
+.aa-kpi-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+}
+
+/* Table cells — uniform */
+.aa-table tbody td,
+.aa-full-table tbody td {
+    font-size: 13px;
+}
+.aa-table thead th,
+.aa-full-table thead th {
+    font-size: 11px;
+}
+
+/* Settings rows — slightly bigger for readability */
+.as-row__title {
+    font-size: 13px;
+    font-weight: 600;
+}
+.as-row__desc {
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+/* Settings tab bar — readable */
+.as-tab {
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Settings card head description */
+.as-card__head p {
+    font-size: 13px;
+}
+
+/* Radio / checkbox labels */
+.as-radio span:last-child strong {
+    font-size: 13px;
+}
+.as-radio span:last-child small {
+    font-size: 12px;
+}
+.as-checkbox {
+    font-size: 13px;
+}
+
+/* Form inputs — same as dashboard */
+.as-input, .as-input-full, .as-textarea, .as-select, .as-input-number {
+    font-size: 13px;
+}
+
+/* Toggle label */
+.as-toggle__label {
+    font-size: 13px;
+}
+
+/* Note text */
+.as-note {
+    font-size: 13px;
+}
+
+/* Checklist */
+.as-checklist__label {
+    font-size: 13px;
+}
+.as-checklist__detail {
+    font-size: 12px;
+}
+
+/* No data placeholder */
+.aa-no-data {
+    font-size: 13px;
+}
+
+/* Footer */
+.aa-footer {
+    font-size: 12px;
+}
+
+@media (max-width: 480px) {
+    .aa-kpi-value {
+        font-size: 22px;
+    }
+    .aa-header h1 {
+        font-size: 17px;
+    }
+}
+
+
+/* ── Note avec lien (politique de confidentialité) ───────────────────────── */
+.as-note--link {
+    background: rgba(108, 99, 255, 0.04);
+    border-color: rgba(108, 99, 255, 0.2);
+}
+.as-note__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--aa-primary) !important;
+    text-decoration: none;
+    font-weight: 600;
+    margin-top: 4px;
+    transition: opacity 0.15s;
+}
+.as-note__link:hover {
+    opacity: 0.75;
+    text-decoration: underline;
+}
+.as-note__link-icon {
+    width: 12px;
+    height: 12px;
+    stroke: currentColor;
+    flex-shrink: 0;
+    margin-top: -1px;
+}
+
+/* ── Checklist row — info (politique de confidentialité) ─────────────────── */
+.as-checklist__row--info {
+    background: rgba(108, 99, 255, 0.03);
+}
+.as-checklist__row--info:hover {
+    background: rgba(108, 99, 255, 0.06);
+}
+.as-checklist__icon--info {
+    background: rgba(108, 99, 255, 0.1);
+    color: var(--aa-primary);
+}
+.as-checklist__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    color: var(--aa-primary) !important;
+    font-weight: 600;
+    text-decoration: none;
+    transition: opacity 0.15s;
+}
+.as-checklist__link:hover {
+    opacity: 0.75;
+    text-decoration: underline;
+}

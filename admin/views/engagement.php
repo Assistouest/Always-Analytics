@@ -236,9 +236,15 @@ $back_url = admin_url( 'admin.php?page=always-analytics' );
 
     // ── Load ──────────────────────────────────────────────────────────────────
 
+    var _overviewPageViews = 0;
+
     function loadAll() {
         apiFetch('engagement', null, renderMain);
         apiFetch('engagement/pages', 'limit=50', renderPages);
+        apiFetch('overview', null, function(d) {
+            _overviewPageViews = d.page_views || 0;
+            if (window._lastScrollDist) renderScrollDist(window._lastScrollDist, _overviewPageViews);
+        });
     }
 
     // ── Render KPIs + charts principaux ──────────────────────────────────────
@@ -255,7 +261,7 @@ $back_url = admin_url( 'admin.php?page=always-analytics' );
 
         _chartData = d.chart || [];
         renderEngChart(_chartData);
-        renderScrollDist(d.scroll_distribution || {});
+        renderScrollDist(d.scroll_distribution || {}, _overviewPageViews);
         renderDurationChart(d.chart || []);
     }
 
@@ -331,35 +337,52 @@ $back_url = admin_url( 'admin.php?page=always-analytics' );
     }
 
     // ── Funnel scroll ─────────────────────────────────────────────────────────
+    // L'API retourne maintenant le seuil MAXIMUM atteint par session (tranches exclusives).
+    // 25 = s'est arrêté entre 25–49%, 50 = entre 50–74%, 75 = entre 75–99%, 100 = jusqu'au bout.
+    // La somme des 4 tranches = sessions avec scroll mesuré.
 
-    function renderScrollDist(dist) {
+    function renderScrollDist(dist, totalPageViews) {
+        window._lastScrollDist = dist;
+        window._lastTotalPV    = totalPageViews || 0;
         var container = document.getElementById('eng-scroll-dist');
         if (!container) return;
 
-        var thresholds = [25, 50, 75, 100];
-        var colors     = ['#6c63ff', '#10b981', '#f59e0b', '#ef4444'];
-        var labels     = ['25%', '50%', '75%', '100%'];
-        var max        = Math.max.apply(null, thresholds.map(function (t) { return dist[t] || 0; })) || 1;
+        var measured   = (dist[25] || 0) + (dist[50] || 0) + (dist[75] || 0) + (dist[100] || 0);
+        var grandTotal = totalPageViews > 0 ? totalPageViews : measured;
+        var noScroll   = Math.max(0, grandTotal - measured);
+
+        var buckets = [
+            { label: 'Non mesuré (< 25%)', val: noScroll,       color: '#d1d5db', faded: true  },
+            { label: '25–49%',             val: dist[25]  || 0, color: '#6c63ff', faded: false },
+            { label: '50–74%',             val: dist[50]  || 0, color: '#10b981', faded: false },
+            { label: '75–99%',             val: dist[75]  || 0, color: '#f59e0b', faded: false },
+            { label: '100%',               val: dist[100] || 0, color: '#ef4444', faded: false },
+        ];
+
+        var max = Math.max.apply(null, buckets.map(function (b) { return b.val; })) || 1;
 
         var html = '<div style="display:flex;flex-direction:column;gap:14px;">';
-        thresholds.forEach(function (t, i) {
-            var val = dist[t] || 0;
-            var pct = Math.round((val / max) * 100);
+        buckets.forEach(function (b) {
+            var pct        = Math.round((b.val / max) * 100);
+            var sharePct   = grandTotal > 0 ? ' (' + Math.round(b.val / grandTotal * 100) + '%)' : '';
+            var labelStyle = b.faded ? 'font-weight:500;color:#9ca3af;font-style:italic;' : 'font-weight:600;color:#1d2327;';
+            var valStyle   = b.faded ? 'color:#b0b8c1;' : 'color:#646970;font-weight:500;';
+            var barOpacity = b.faded ? 'opacity:0.45;' : '';
             html += '<div>'
                   + '<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:13px;">'
-                  + '<span style="font-weight:600;color:#1d2327;">Scroll ' + labels[i] + '</span>'
-                  + '<span style="color:#646970;font-weight:500;">' + val.toLocaleString('fr-FR') + ' sessions</span>'
+                  + '<span style="' + labelStyle + '">' + b.label + '</span>'
+                  + '<span style="' + valStyle + '">' + b.val.toLocaleString('fr-FR') + ' pages vues' + sharePct + '</span>'
                   + '</div>'
                   + '<div style="background:#f0f2f5;border-radius:6px;height:10px;overflow:hidden;">'
-                  + '<div style="height:100%;width:' + pct + '%;background:' + colors[i] + ';border-radius:6px;transition:width .5s ease;"></div>'
+                  + '<div style="height:100%;width:' + pct + '%;background:' + b.color + ';border-radius:6px;transition:width .5s ease;' + barOpacity + '"></div>'
                   + '</div>'
                   + '</div>';
         });
         html += '</div>';
 
-        // Légende explication
-        html += '<p style="margin-top:18px;font-size:12px;color:#9ca3af;line-height:1.5;">'
-              + '⬇ Lecture : chaque barre = nombre de sessions ayant atteint ce seuil de scroll sur la période.'
+        html += '<p style="margin-top:16px;font-size:12px;color:#9ca3af;line-height:1.6;">'
+              + 'Chaque page vue est comptée <strong>une seule fois</strong> dans la tranche la plus haute atteinte.'
+              + (grandTotal > 0 ? ' Total : <strong>' + grandTotal.toLocaleString('fr-FR') + ' pages vues</strong> dont <strong>' + measured.toLocaleString('fr-FR') + '</strong> avec scroll mesuré.' : '')
               + '</p>';
 
         container.innerHTML = html;

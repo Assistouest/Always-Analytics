@@ -47,6 +47,22 @@ Toutes les données sont stockées dans votre base de données WordPress, dans 3
 = Le plugin ralentit-il mon site ? =
 Le script de tracking fait moins de 5 Ko et utilise `sendBeacon` pour un envoi non-bloquant. L'impact sur les performances est minimal.
 
+== Bibliothèques tierces ==
+
+Ce plugin inclut les bibliothèques open source suivantes, servies localement (aucune requête externe) :
+
+= flag-icons =
+* Auteur : Panayiotis Lipiridis
+* Source : https://github.com/lipis/flag-icons
+* Licence : MIT — https://github.com/lipis/flag-icons/blob/main/LICENSE
+* Usage : Icônes de drapeaux SVG affichées dans le tableau de bord (statistiques par pays). Les fichiers SVG sont embarqués dans le plugin sous `/assets/flags/` et servis depuis votre propre serveur.
+
+= Chart.js =
+* Auteur : Chart.js Contributors
+* Source : https://github.com/chartjs/Chart.js
+* Licence : MIT — https://github.com/chartjs/Chart.js/blob/master/LICENSE.md
+* Usage : Rendu des graphiques dans le tableau de bord.
+
 == Changelog ==
 
 = 1.0.0 =

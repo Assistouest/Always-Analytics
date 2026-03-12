@@ -89,29 +89,138 @@ if ( ! defined( 'ABSPATH' ) ) {
                 <button class="aa-toggle" data-dataset="page_views"><?php esc_html_e( 'Pages vues', 'always-analytics' ); ?></button>
                 <button class="aa-toggle" data-dataset="sessions"><?php esc_html_e( 'Sessions', 'always-analytics' ); ?></button>
             </div>
+            <button id="aa-add-campaign-btn" class="aa-btn-campaign" title="<?php esc_attr_e( 'Ajouter un événement', 'always-analytics' ); ?>">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                <?php esc_html_e( 'Événement', 'always-analytics' ); ?>
+            </button>
         </div>
         <div class="aa-chart-container">
             <canvas id="aa-visits-chart"></canvas>
         </div>
     </div>
 
-    <!-- Recent Visitors -->
-    <div class="aa-card" style="margin-bottom: 24px;">
-        <div class="aa-card-header">
-            <h2><?php esc_html_e( 'Derniers visiteurs', 'always-analytics' ); ?></h2>
+    <!-- Modal Campagne -->
+    <div id="aa-campaign-modal" class="aa-modal" aria-modal="true" role="dialog">
+        <div class="aa-modal-overlay"></div>
+        <div class="aa-modal-box">
+            <div class="aa-modal-header">
+                <h3><?php esc_html_e( 'Ajouter un événement', 'always-analytics' ); ?></h3>
+                <button class="aa-modal-close" aria-label="<?php esc_attr_e( 'Fermer', 'always-analytics' ); ?>">✕</button>
+            </div>
+            <div class="aa-modal-body">
+                <div class="aa-field">
+                    <label for="aa-camp-date"><?php esc_html_e( 'Date', 'always-analytics' ); ?> <span class="aa-req">*</span></label>
+                    <input type="date" id="aa-camp-date" />
+                    <small><?php esc_html_e( 'Maximum 1 événement par jour.', 'always-analytics' ); ?></small>
+                </div>
+                <div class="aa-field">
+                    <label for="aa-camp-label"><?php esc_html_e( 'Label', 'always-analytics' ); ?> <span class="aa-req">*</span></label>
+                    <input type="text" id="aa-camp-label" placeholder="<?php esc_attr_e( 'Ex : Campagne backlinks, Refonte header…', 'always-analytics' ); ?>" maxlength="100" />
+                </div>
+                <div class="aa-field">
+                    <label for="aa-camp-desc"><?php esc_html_e( 'Description (optionnel)', 'always-analytics' ); ?></label>
+                    <textarea id="aa-camp-desc" rows="2" placeholder="<?php esc_attr_e( 'Détails, URL, notes…', 'always-analytics' ); ?>"></textarea>
+                </div>
+                <div class="aa-field aa-field--color">
+                    <label><?php esc_html_e( 'Couleur', 'always-analytics' ); ?></label>
+                    <div class="aa-color-swatches">
+                        <span class="aa-swatch aa-swatch--active" data-color="#6c63ff" style="background:#6c63ff;" title="Violet"></span>
+                        <span class="aa-swatch" data-color="#10b981" style="background:#10b981;" title="Vert"></span>
+                        <span class="aa-swatch" data-color="#f59e0b" style="background:#f59e0b;" title="Orange"></span>
+                        <span class="aa-swatch" data-color="#ef4444" style="background:#ef4444;" title="Rouge"></span>
+                        <span class="aa-swatch" data-color="#3b82f6" style="background:#3b82f6;" title="Bleu"></span>
+                        <span class="aa-swatch" data-color="#ec4899" style="background:#ec4899;" title="Rose"></span>
+                        <input type="color" id="aa-camp-color" value="#6c63ff" class="aa-color-custom" title="<?php esc_attr_e( 'Couleur personnalisée', 'always-analytics' ); ?>" />
+                    </div>
+                </div>
+                <div id="aa-camp-error" class="aa-camp-error" style="display:none;"></div>
+            </div>
+            <div class="aa-modal-footer">
+                <button id="aa-camp-save" class="button button-primary"><?php esc_html_e( 'Enregistrer', 'always-analytics' ); ?></button>
+                <button class="button aa-modal-cancel"><?php esc_html_e( 'Annuler', 'always-analytics' ); ?></button>
+            </div>
         </div>
-        <div class="aa-card-body">
-            <table class="aa-table" id="aa-recent-visitors">
-                <thead>
-                    <tr>
-                        <th><?php esc_html_e( 'Visiteur', 'always-analytics' ); ?></th>
-                        <th><?php esc_html_e( 'Action', 'always-analytics' ); ?></th>
-                        <th style="text-align:center"><?php esc_html_e( 'Pages vues', 'always-analytics' ); ?></th>
-                        <th style="text-align:right"><?php esc_html_e( 'Détails', 'always-analytics' ); ?></th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+    </div>
+
+    <!-- Grid: Derniers visiteurs + Événements -->
+    <div class="aa-grid aa-grid--visitors-campaigns">
+
+        <!-- Recent Visitors -->
+        <div class="aa-card">
+            <div class="aa-card-header">
+                <h2><?php esc_html_e( 'Derniers visiteurs', 'always-analytics' ); ?></h2>
+            </div>
+            <div class="aa-card-body">
+                <table class="aa-table aa-table--compact" id="aa-recent-visitors">
+                    <thead>
+                        <tr>
+                            <th><?php esc_html_e( 'Visiteur', 'always-analytics' ); ?></th>
+                            <th style="text-align:right"><?php esc_html_e( 'Action', 'always-analytics' ); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Événements campagne -->
+        <div class="aa-card" id="aa-campaigns-card">
+            <div class="aa-card-header">
+                <h2><?php esc_html_e( 'Événements', 'always-analytics' ); ?></h2>
+                <button id="aa-add-campaign-btn2" class="aa-btn-campaign aa-btn-campaign--sm" title="<?php esc_attr_e( 'Ajouter un événement', 'always-analytics' ); ?>">
+                    <svg width="11" height="11" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    <?php esc_html_e( 'Ajouter', 'always-analytics' ); ?>
+                </button>
+            </div>
+            <div class="aa-card-body">
+                <div id="aa-campaigns-list">
+                    <p class="aa-no-data" style="display:none;"><?php esc_html_e( 'Aucun événement enregistré.', 'always-analytics' ); ?></p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal édition événement -->
+    <div id="aa-campaign-edit-modal" class="aa-modal" aria-modal="true" role="dialog">
+        <div class="aa-modal-overlay"></div>
+        <div class="aa-modal-box">
+            <div class="aa-modal-header">
+                <h3><?php esc_html_e( 'Modifier l\'événement', 'always-analytics' ); ?></h3>
+                <button class="aa-modal-close" aria-label="Fermer">✕</button>
+            </div>
+            <div class="aa-modal-body">
+                <input type="hidden" id="aa-edit-camp-id" value="" />
+                <div class="aa-field">
+                    <label for="aa-edit-camp-date"><?php esc_html_e( 'Date', 'always-analytics' ); ?> <span class="aa-req">*</span></label>
+                    <input type="date" id="aa-edit-camp-date" />
+                </div>
+                <div class="aa-field">
+                    <label for="aa-edit-camp-label"><?php esc_html_e( 'Label', 'always-analytics' ); ?> <span class="aa-req">*</span></label>
+                    <input type="text" id="aa-edit-camp-label" maxlength="100" />
+                </div>
+                <div class="aa-field">
+                    <label for="aa-edit-camp-desc"><?php esc_html_e( 'Description', 'always-analytics' ); ?></label>
+                    <textarea id="aa-edit-camp-desc" rows="2"></textarea>
+                </div>
+                <div class="aa-field aa-field--color">
+                    <label><?php esc_html_e( 'Couleur', 'always-analytics' ); ?></label>
+                    <div class="aa-color-swatches" id="aa-edit-swatches">
+                        <span class="aa-swatch" data-color="#6c63ff" style="background:#6c63ff;"></span>
+                        <span class="aa-swatch" data-color="#10b981" style="background:#10b981;"></span>
+                        <span class="aa-swatch" data-color="#f59e0b" style="background:#f59e0b;"></span>
+                        <span class="aa-swatch" data-color="#ef4444" style="background:#ef4444;"></span>
+                        <span class="aa-swatch" data-color="#3b82f6" style="background:#3b82f6;"></span>
+                        <span class="aa-swatch" data-color="#ec4899" style="background:#ec4899;"></span>
+                        <input type="color" id="aa-edit-camp-color" value="#6c63ff" class="aa-color-custom" />
+                    </div>
+                </div>
+                <div id="aa-edit-camp-error" class="aa-camp-error" style="display:none;"></div>
+            </div>
+            <div class="aa-modal-footer">
+                <button id="aa-edit-camp-save" class="button button-primary"><?php esc_html_e( 'Enregistrer', 'always-analytics' ); ?></button>
+                <button class="button aa-modal-cancel"><?php esc_html_e( 'Annuler', 'always-analytics' ); ?></button>
+            </div>
         </div>
     </div>
 
@@ -164,7 +273,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     <div class="aa-grid">
         <div class="aa-card aa-referrers-card">
             <div class="aa-card-header aa-ref-header">
-                <h2><?php esc_html_e( 'Référents', 'always-analytics' ); ?></h2>
+                <h2><?php esc_html_e( 'Réfrents', 'always-analytics' ); ?></h2>
                 <div class="aa-ref-tabs" role="tablist">
                     <span class="aa-ref-tab aa-ref-tab--active" data-cat="all"    role="tab" tabindex="0"><?php esc_html_e( 'Tous', 'always-analytics' ); ?></span>
                     <span class="aa-ref-tab" data-cat="search" role="tab" tabindex="0"><?php esc_html_e( 'Moteurs', 'always-analytics' ); ?></span>
@@ -180,12 +289,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 
         <div class="aa-card aa-devices-card">
             <div class="aa-card-header aa-dev-header">
-                <h2><?php esc_html_e( 'Appareils & Navigateurs', 'always-analytics' ); ?></h2>
+                <h2><?php esc_html_e( 'Appareils', 'always-analytics' ); ?></h2>
                 <div class="aa-dev-tabs" role="tablist">
                     <span class="aa-dev-tab aa-dev-tab--active" data-device="all"     role="tab" tabindex="0"><?php esc_html_e( 'Tous', 'always-analytics' ); ?></span>
-                    <span class="aa-dev-tab" data-device="desktop" role="tab" tabindex="0">🖥 <?php esc_html_e( 'Desktop', 'always-analytics' ); ?></span>
-                    <span class="aa-dev-tab" data-device="mobile"  role="tab" tabindex="0">📱 <?php esc_html_e( 'Mobile', 'always-analytics' ); ?></span>
-                    <span class="aa-dev-tab" data-device="tablet"  role="tab" tabindex="0">⬜ <?php esc_html_e( 'Tablette', 'always-analytics' ); ?></span>
+                    <span class="aa-dev-tab" data-device="desktop" role="tab" tabindex="0">
+                        <svg class="aa-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 20h8M12 18v2"/></svg>
+                        <?php esc_html_e( 'Desktop', 'always-analytics' ); ?>
+                    </span>
+                    <span class="aa-dev-tab" data-device="mobile"  role="tab" tabindex="0">
+                        <svg class="aa-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="17" r="1"/></svg>
+                        <?php esc_html_e( 'Mobile', 'always-analytics' ); ?>
+                    </span>
+                    <span class="aa-dev-tab" data-device="tablet"  role="tab" tabindex="0">
+                        <svg class="aa-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="2" width="18" height="20" rx="2"/><circle cx="12" cy="17" r="1"/></svg>
+                        <?php esc_html_e( 'Tablette', 'always-analytics' ); ?>
+                    </span>
                 </div>
             </div>
             <div class="aa-dev-body">

@@ -60,12 +60,39 @@ $country_names = array(
     'RO'=>'Roumanie','UA'=>'Ukraine','GR'=>'Grèce','HR'=>'Croatie',
 );
 
-function aa_country_flag_php( $code ) {
-    if ( ! $code || strlen( $code ) !== 2 ) return '🌐';
-    $code = strtoupper( $code );
-    $c1 = mb_chr( 0x1F1E6 + ( ord( $code[0] ) - 65 ), 'UTF-8' );
-    $c2 = mb_chr( 0x1F1E6 + ( ord( $code[1] ) - 65 ), 'UTF-8' );
-    return $c1 . $c2;
+/**
+ * Retourne une balise <img> avec le drapeau du pays.
+ * Les SVG sont servis localement depuis /assets/flags/ (lipis/flag-icons, licence MIT).
+ * Aucune requête externe — compatible avec la politique de confidentialité du plugin.
+ *
+ * @param string $code  Code ISO 3166-1 alpha-2 (ex: "US", "FR").
+ * @param int    $size  Taille en pixels (hauteur). Défaut : 16px.
+ * @return string       Balise HTML <img> ou fallback texte.
+ */
+function aa_country_flag_php( $code, $size = 16 ) {
+    if ( ! $code || strlen( $code ) !== 2 ) {
+        return '<span style="display:inline-block;width:' . ( $size * 1.5 ) . 'px;height:' . $size . 'px;'
+             . 'line-height:' . $size . 'px;text-align:center;background:#e2e8f0;border-radius:2px;'
+             . 'font-size:11px;color:#64748b;font-weight:600;">?</span>';
+    }
+
+    $code_lower = strtolower( $code );
+    $file_path  = AA_PLUGIN_DIR . 'assets/flags/' . $code_lower . '.webp';
+
+    // Fallback : si le fichier SVG n'existe pas encore, affiche le code pays en badge
+    if ( ! file_exists( $file_path ) ) {
+        return '<span style="display:inline-block;padding:0 4px;height:' . $size . 'px;line-height:' . $size . 'px;'
+             . 'background:#e2e8f0;border-radius:2px;font-size:10px;color:#475569;font-weight:700;vertical-align:middle;">'
+             . esc_html( strtoupper( $code ) ) . '</span>';
+    }
+
+    $url = AA_PLUGIN_URL . 'assets/flags/' . $code_lower . '.webp';
+    $alt = esc_attr( strtoupper( $code ) );
+
+    return '<img src="' . esc_url( $url ) . '" alt="' . $alt . '" title="' . $alt . '" '
+         . 'width="' . round( $size * 1.5 ) . '" height="' . $size . '" '
+         . 'style="vertical-align:middle;border-radius:2px;object-fit:cover;" '
+         . 'loading="lazy" />';
 }
 
 $max_hits     = ! empty( $rows ) ? (int) $rows[0]->hits : 1;
@@ -117,8 +144,11 @@ $period_label = ( $from === $to ) ? $label_from : $label_from . ' → ' . $label
             <div class="aa-kpi-value" style="font-size:22px;">
                 <?php
                 if ( ! empty( $rows ) ) {
-                    $top = $rows[0];
-                    echo esc_html( aa_country_flag_php( $top->country_code ) . ' ' . ( $country_names[ $top->country_code ] ?? $top->country_code ) );
+                    $top        = $rows[0];
+                    $top_flag   = aa_country_flag_php( $top->country_code, 20 );
+                    $top_name   = esc_html( $country_names[ $top->country_code ] ?? $top->country_code );
+                    $allowed    = array( 'img' => array( 'src' => array(), 'alt' => array(), 'title' => array(), 'width' => array(), 'height' => array(), 'style' => array(), 'loading' => array(), 'onerror' => array() ), 'span' => array( 'style' => array() ) );
+                    echo wp_kses( $top_flag, $allowed ) . ' ' . $top_name;
                 } else {
                     echo '—';
                 }
@@ -169,7 +199,7 @@ $period_label = ( $from === $to ) ? $label_from : $label_from . ' → ' . $label
                                 <?php echo $medal ? esc_html( $medal ) : esc_html( $rank ); ?>
                             </td>
                             <td>
-                                <span style="font-size:20px;margin-right:8px;"><?php echo esc_html( $flag ); ?></span>
+                                <span style="margin-right:8px;"><?php echo wp_kses( $flag, array( 'img' => array( 'src' => array(), 'alt' => array(), 'title' => array(), 'width' => array(), 'height' => array(), 'style' => array(), 'loading' => array(), 'onerror' => array() ), 'span' => array( 'style' => array() ) ) ); ?></span>
                                 <span style="font-weight:600;color:#0f172a;"><?php echo esc_html( $name ); ?></span>
                                 <span style="color:#94a3b8;font-size:12px;margin-left:4px;"><?php echo esc_html( $row->country_code ); ?></span>
                             </td>
@@ -212,7 +242,10 @@ $period_label = ( $from === $to ) ? $label_from : $label_from . ' → ' . $label
                     ?>
                     <div style="margin-bottom:14px;">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                            <span style="font-size:14px;"><?php echo esc_html( $flag . ' ' . $name ); ?></span>
+                            <span style="font-size:14px;display:flex;align-items:center;gap:6px;"><?php
+                                echo wp_kses( $flag, array( 'img' => array( 'src' => array(), 'alt' => array(), 'title' => array(), 'width' => array(), 'height' => array(), 'style' => array(), 'loading' => array(), 'onerror' => array() ), 'span' => array( 'style' => array() ) ) );
+                                echo esc_html( $name );
+                            ?></span>
                             <span style="font-weight:700;font-size:13px;color:#0f172a;"><?php echo esc_html( $pct ); ?>%</span>
                         </div>
                         <div style="background:#f1f5f9;border-radius:6px;height:10px;overflow:hidden;">

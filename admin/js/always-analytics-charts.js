@@ -44,6 +44,25 @@
         },
 
         /**
+         * Campaign annotations — vertical dashed lines on the chart.
+         */
+        campaigns: [],
+        _lastIsHourly: false,
+        _lastLabels: [],
+        _lastDates: [],
+
+        setCampaigns: function (campaigns) {
+            this.campaigns = campaigns || [];
+            if (this.visitsChart) {
+                this.visitsChart._aaCampaigns = this.campaigns;
+                this.visitsChart._aaIsHourly  = this._lastIsHourly;
+                this.visitsChart._aaLabels    = this._lastLabels;
+                this.visitsChart._aaDates     = this._lastDates;
+                this.visitsChart.update();
+            }
+        },
+
+        /**
          * Render the main visits line chart.
          */
         renderVisitsChart: function (data) {
@@ -56,16 +75,19 @@
 
             // Détecter le mode : horaire (today) ou journalier
             var isHourly = data.length > 0 && data[0].hasOwnProperty('hour');
+            this._lastIsHourly = isHourly;
 
-            var labels, visitors, pageViews, sessions;
+            var labels, visitors, pageViews, sessions, rawDates;
 
             if (isHourly) {
                 // Mode horaire — 24 points, heures futures grisées
                 labels    = data.map(function (d) { return d.hour + 'h'; });
+                rawDates  = [];  // pas de date matching en mode horaire
                 visitors  = data.map(function (d) { return d.future ? null : d.visitors; });
                 pageViews = data.map(function (d) { return d.future ? null : d.page_views; });
                 sessions  = data.map(function (d) { return d.future ? null : d.sessions; });
             } else {
+                rawDates  = data.map(function (d) { return d.date; }); // YYYY-MM-DD
                 labels    = data.map(function (d) {
                     var parts = d.date.split('-');
                     var date  = new Date( parts[0], parts[1] - 1, parts[2] );
@@ -76,8 +98,149 @@
                 sessions  = data.map(function (d) { return d.sessions; });
             }
 
+            this._lastLabels = labels;
+            this._lastDates  = rawDates;
+
+            var self = this;
+
+            // ── Plugin inline : dessine les lignes de campagne ─────────────────
+            var campaignAnnotationsPlugin = {
+                id: 'aaCampaigns',
+                afterDraw: function (chart) {
+                    var campaigns = chart._aaCampaigns;
+                    var dates     = chart._aaDates;
+                    if (!campaigns || !campaigns.length || !dates || !dates.length) return;
+
+                    var ctx2   = chart.ctx;
+                    var xScale = chart.scales.x;
+                    var yScale = chart.scales.y;
+
+                    campaigns.forEach(function (camp) {
+                        var idx = dates.indexOf(camp.event_date);
+                        if (idx === -1) return; // date hors plage visible
+
+                        var xPx = xScale.getPixelForValue(idx);
+                        var top  = yScale.top;
+                        var bot  = yScale.bottom;
+                        var color = camp.color || '#6c63ff';
+
+                        ctx2.save();
+
+                        // Ligne verticale pointillée
+                        ctx2.beginPath();
+                        ctx2.setLineDash([5, 4]);
+                        ctx2.strokeStyle = color;
+                        ctx2.lineWidth   = 2;
+                        ctx2.globalAlpha = 0.85;
+                        ctx2.moveTo(xPx, top);
+                        ctx2.lineTo(xPx, bot);
+                        ctx2.stroke();
+
+                        // Losange en haut
+                        var r = 6;
+                        ctx2.setLineDash([]);
+                        ctx2.globalAlpha = 1;
+                        ctx2.beginPath();
+                        ctx2.moveTo(xPx, top - r - 2);
+                        ctx2.lineTo(xPx + r, top + 2);
+                        ctx2.lineTo(xPx, top + r + 2);
+                        ctx2.lineTo(xPx - r, top + 2);
+                        ctx2.closePath();
+                        ctx2.fillStyle = color;
+                        ctx2.fill();
+
+                        // Label court en haut (tronqué)
+                        var shortLabel = camp.label.length > 18 ? camp.label.substring(0, 16) + '…' : camp.label;
+                        ctx2.font      = 'bold 10px -apple-system, sans-serif';
+                        ctx2.fillStyle = color;
+                        ctx2.textAlign = 'center';
+                        ctx2.fillText(shortLabel, xPx, top - r - 8);
+
+                        ctx2.restore();
+                    });
+                },
+
+                // Tooltip custom pour survoler la zone de la ligne
+                afterEvent: function (chart, args) {
+                    var campaigns = chart._aaCampaigns;
+                    var dates     = chart._aaDates;
+                    if (!campaigns || !campaigns.length || !dates || !dates.length) return;
+
+                    var event  = args.event;
+                    if (event.type !== 'mousemove') return;
+
+                    var xScale = chart.scales.x;
+                    var THRESHOLD = 12; // pixels
+
+                    var found = null;
+                    campaigns.forEach(function (camp) {
+                        var idx = dates.indexOf(camp.event_date);
+                        if (idx === -1) return;
+                        var xPx = xScale.getPixelForValue(idx);
+                        if (Math.abs(event.x - xPx) < THRESHOLD) {
+                            found = camp;
+                        }
+                    });
+
+                    var tip = document.getElementById('aa-camp-tooltip');
+                    if (!tip) {
+                        tip = document.createElement('div');
+                        tip.id = 'aa-camp-tooltip';
+                        tip.className = 'aa-camp-tooltip';
+                        document.body.appendChild(tip);
+                    }
+
+                    if (found) {
+                        var rect   = chart.canvas.getBoundingClientRect();
+                        var idx2   = dates.indexOf(found.event_date);
+                        var xPx2   = xScale.getPixelForValue(idx2);
+
+                        // Format date
+                        var parts  = found.event_date.split('-');
+                        var dObj   = new Date(parts[0], parts[1]-1, parts[2]);
+                        var dLabel = dObj.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+
+                        tip.innerHTML =
+                            '<div class="aa-camp-tooltip-header" style="border-left:3px solid ' + (found.color || '#6c63ff') + '">' +
+                            '<strong>' + found.label + '</strong>' +
+                            '<span class="aa-camp-tooltip-date">' + dLabel + '</span>' +
+                            '</div>' +
+                            (found.description ? '<div class="aa-camp-tooltip-desc">' + found.description + '</div>' : '') +
+                            '<button class="aa-camp-tooltip-del" data-id="' + found.id + '" title="Supprimer">✕</button>';
+
+                        var tipLeft = rect.left + window.scrollX + xPx2 + 10;
+                        var tipTop  = rect.top  + window.scrollY + chart.scales.y.top + 20;
+                        // Stay in viewport
+                        if (tipLeft + 220 > window.innerWidth) tipLeft = tipLeft - 240;
+
+                        tip.style.left    = tipLeft + 'px';
+                        tip.style.top     = tipTop  + 'px';
+                        tip.style.display = 'block';
+                        tip.style.opacity = '1';
+                        tip.style.borderColor = found.color || '#6c63ff';
+
+                        // Delete button handler
+                        var delBtn = tip.querySelector('.aa-camp-tooltip-del');
+                        if (delBtn && !delBtn._bound) {
+                            delBtn._bound = true;
+                            delBtn.addEventListener('click', function (e) {
+                                e.stopPropagation();
+                                var id = this.getAttribute('data-id');
+                                if (id && window.AlwaysAnalyticsCampaigns) {
+                                    window.AlwaysAnalyticsCampaigns.deleteCampaign(parseInt(id, 10));
+                                }
+                                tip.style.display = 'none';
+                            });
+                        }
+                    } else {
+                        tip.style.display = 'none';
+                    }
+                },
+            };
+
             this.visitsChart = new Chart(ctx, {
                 type: 'line',
+                plugins: [ campaignAnnotationsPlugin ],
                 data: {
                     labels: labels,
                     datasets: [
@@ -165,6 +328,12 @@
                     },
                 },
             });
+
+            // Attach campaigns to the new chart instance
+            this.visitsChart._aaCampaigns = this.campaigns;
+            this.visitsChart._aaIsHourly  = isHourly;
+            this.visitsChart._aaLabels    = labels;
+            this.visitsChart._aaDates     = rawDates;
         },
 
         /**

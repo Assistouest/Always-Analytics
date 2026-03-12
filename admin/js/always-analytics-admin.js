@@ -150,6 +150,10 @@
         loadReferrers();
         loadCountries();
         loadDevices();
+        // Reload campaigns so annotations re-apply after chart is redrawn
+        if (window.AlwaysAnalyticsCampaigns) {
+            window.AlwaysAnalyticsCampaigns.loadCampaigns();
+        }
     }
 
     function loadOverview() {
@@ -175,25 +179,41 @@
             var tbody = document.querySelector('#aa-recent-visitors tbody');
             if (!tbody) return;
             if (!data || !data.length) {
-                tbody.innerHTML = '<tr><td colspan="4" class="aa-no-data">' + alwaysAnalyticsAdmin.i18n.noData + '</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="2" class="aa-no-data">' + alwaysAnalyticsAdmin.i18n.noData + '</td></tr>';
                 return;
             }
             var now = new Date();
             tbody.innerHTML = data.map(function (s) {
-                var flag   = flag2(s.country_code);
-                var device = s.device_type === 'mobile' ? '📱' : (s.device_type === 'tablet' ? '💊' : '💻');
-                var vid    = s.visitor_hash.substring(0, 8);
-                var ended  = new Date(s.ended_at + 'Z');
-                var sec    = Math.floor((now - ended) / 1000);
-                var time   = sec < 60 ? 'En ce moment' : 'Il y a ' + Math.floor(sec / 60) + ' min';
-                var pages  = parseInt(s.total_pages, 10) || parseInt(s.last_page_count, 10) || 0;
-                var dur    = parseInt(s.total_duration, 10) || 0;
-                var sessions_label = parseInt(s.session_count, 10) > 1 ? ' <small style="color:#64748b">(' + s.session_count + ' visites)</small>' : '';
+                var flag    = flag2(s.country_code);
+                var deviceIcon = s.device_type === 'mobile'
+                    ? '<svg class="aa-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="17" r="1"/></svg>'
+                    : s.device_type === 'tablet'
+                    ? '<svg class="aa-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="2" width="18" height="20" rx="2"/><circle cx="12" cy="17" r="1"/></svg>'
+                    : '<svg class="aa-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 20h8M12 18v2"/></svg>';
+                var vid     = s.visitor_hash.substring(0, 8);
+                var ended   = new Date(s.ended_at + 'Z');
+                var sec     = Math.floor((now - ended) / 1000);
+                var time    = sec < 60 ? 'En ce moment' : 'Il y a ' + Math.floor(sec / 60) + ' min';
+                var dur     = parseInt(s.total_duration, 10) || 0;
+                var pages   = parseInt(s.total_pages, 10) || parseInt(s.last_page_count, 10) || 0;
+                var multi   = parseInt(s.session_count, 10) > 1 ? ' <small style="color:#64748b">(' + s.session_count + ' visites)</small>' : '';
+                var href    = '?page=always-analytics-visitor&visitor_hash=' + enc(s.visitor_hash);
+                // Favicon du référent si disponible
+                var refFavicon = '';
+                if (s.last_referrer_domain) {
+                    var refFaviconUrl = getFaviconUrl(s.last_referrer_domain);
+                    refFavicon = ' <img src="' + refFaviconUrl + '" width="13" height="13" alt="' + esc(s.last_referrer_domain) + '" title="' + esc(s.last_referrer_domain) + '" loading="lazy" style="vertical-align:middle;border-radius:2px;opacity:.7;" onerror="this.style.display=\'none\'">';
+                }
                 return '<tr>'
-                    + '<td><strong>Visiteur ' + vid + '</strong>' + sessions_label + '<br><small>' + flag + ' ' + device + '</small></td>'
-                    + '<td><span class="aa-time-badge">' + time + '</span><br><small>Durée : ' + fmtDuration(dur) + '</small></td>'
-                    + '<td style="text-align:center"><span class="aa-badge">' + pages + '</span></td>'
-                    + '<td style="text-align:right"><a href="?page=always-analytics-visitor&visitor_hash=' + enc(s.visitor_hash) + '" class="button button-small">Voir parcours</a></td>'
+                    + '<td>'
+                    +   '<a href="' + href + '" class="aa-visitor-link"><strong>Visiteur ' + vid + '</strong></a>'
+                    +   multi
+                    +   '<br><small>' + flag + ' ' + deviceIcon + refFavicon + ' &middot; ' + pages + ' page' + (pages > 1 ? 's' : '') + '</small>'
+                    + '</td>'
+                    + '<td style="text-align:right">'
+                    +   '<span class="aa-time-badge">' + time + '</span>'
+                    +   '<br><small>' + fmtDuration(dur) + '</small>'
+                    + '</td>'
                     + '</tr>';
             }).join('');
         });
@@ -591,10 +611,28 @@
         return d.innerHTML;
     }
 
+    /**
+     * Génère une balise <img> pour le drapeau du pays.
+     * SVG servis localement depuis /assets/flags/ (lipis/flag-icons — MIT).
+     * Aucune requête externe, respectueux de la vie privée.
+     *
+     * @param {string} code  Code ISO 3166-1 alpha-2 (ex: "US", "FR").
+     * @returns {string}     Balise <img> HTML ou badge fallback.
+     */
     function flag2(code) {
-        if (!code || code.length !== 2) return '🌐';
-        return String.fromCodePoint(0x1F1E6 + code.charCodeAt(0) - 65)
-             + String.fromCodePoint(0x1F1E6 + code.charCodeAt(1) - 65);
+        if (!code || code.length !== 2) {
+            return '<span style="display:inline-block;padding:0 4px;height:14px;line-height:14px;'
+                 + 'background:#e2e8f0;border-radius:2px;font-size:10px;color:#475569;font-weight:700;'
+                 + 'vertical-align:middle;">?</span>';
+        }
+        var baseUrl = (alwaysAnalyticsAdmin && alwaysAnalyticsAdmin.flagsUrl) || '';
+        var lc      = code.toLowerCase();
+        var uc      = code.toUpperCase();
+        return '<img src="' + baseUrl + lc + '.webp" alt="' + uc + '" title="' + uc + '" '
+             + 'width="20" height="14" '
+             + 'style="vertical-align:middle;border-radius:2px;object-fit:cover;" '
+             + 'loading="lazy" '
+             + 'onerror="this.replaceWith(document.createTextNode(\'' + uc + '\'))" />';
     }
 
     // ── Manual anonymization button ──────────────────────────────────────────
@@ -648,5 +686,356 @@
             });
         });
     }
+
+    // ── Campaigns ─────────────────────────────────────────────────────────────
+
+    window.AlwaysAnalyticsCampaigns = (function () {
+
+        var _campaigns = [];
+
+        function loadCampaigns() {
+            fetch(API_BASE + 'campaigns?_t=' + Date.now(), {
+                method:  'GET',
+                cache:   'no-store',
+                headers: { 'X-WP-Nonce': NONCE },
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                _campaigns = data || [];
+                if (window.AlwaysAnalyticsCharts) {
+                    AlwaysAnalyticsCharts.setCampaigns(_campaigns);
+                }
+                renderCampaignsList();
+            })
+            .catch(function (e) { console.error('[AA Campaigns] load', e); });
+        }
+
+        function renderCampaignsList() {
+            var container = document.getElementById('aa-campaigns-list');
+            if (!container) return;
+
+            var empty = container.querySelector('.aa-no-data');
+
+            if (!_campaigns.length) {
+                container.innerHTML = '<p class="aa-no-data">' + (alwaysAnalyticsAdmin.i18n.noData || 'Aucun événement.') + '</p>';
+                return;
+            }
+
+            // Tri par date décroissante
+            var sorted = _campaigns.slice().sort(function (a, b) {
+                return b.event_date.localeCompare(a.event_date);
+            });
+
+            container.innerHTML = sorted.map(function (c) {
+                var parts = c.event_date.split('-');
+                var d = new Date(parts[0], parts[1] - 1, parts[2]);
+                var dLabel = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+                var color = c.color || '#6c63ff';
+                return '<div class="aa-camp-row" data-id="' + c.id + '">'
+                    + '<span class="aa-camp-dot" style="background:' + color + ';"></span>'
+                    + '<div class="aa-camp-info">'
+                    +   '<strong class="aa-camp-name">' + esc(c.label) + '</strong>'
+                    +   '<span class="aa-camp-date">' + dLabel + '</span>'
+                    +   (c.description ? '<span class="aa-camp-desc-preview">' + esc(c.description) + '</span>' : '')
+                    + '</div>'
+                    + '<div class="aa-camp-actions">'
+                    +   '<button class="aa-camp-edit" data-id="' + c.id + '" title="Modifier"><svg class="aa-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg></button>'
+                    +   '<button class="aa-camp-del" data-id="' + c.id + '" title="Supprimer"><svg class="aa-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>'
+                    + '</div>'
+                    + '</div>';
+            }).join('');
+        }
+
+        function openModal() {
+            var modal = document.getElementById('aa-campaign-modal');
+            if (!modal) return;
+            // Pré-remplir la date du jour
+            var today = new Date();
+            var yyyy  = today.getFullYear();
+            var mm    = String(today.getMonth() + 1).padStart(2, '0');
+            var dd    = String(today.getDate()).padStart(2, '0');
+            document.getElementById('aa-camp-date').value  = yyyy + '-' + mm + '-' + dd;
+            document.getElementById('aa-camp-label').value = '';
+            document.getElementById('aa-camp-desc').value  = '';
+            document.getElementById('aa-camp-color').value = '#6c63ff';
+            modal.querySelectorAll('.aa-swatch').forEach(function (s) {
+                s.classList.toggle('aa-swatch--active', s.getAttribute('data-color') === '#6c63ff');
+            });
+            var err = document.getElementById('aa-camp-error');
+            if (err) { err.style.display = 'none'; err.textContent = ''; }
+            modal.classList.add('aa-modal--open');
+            setTimeout(function () {
+                var lbl = document.getElementById('aa-camp-label');
+                if (lbl) lbl.focus();
+            }, 50);
+        }
+
+        function closeModal() {
+            var modal = document.getElementById('aa-campaign-modal');
+            if (modal) modal.classList.remove('aa-modal--open');
+        }
+
+        function saveCampaign() {
+            var date  = document.getElementById('aa-camp-date').value;
+            var label = (document.getElementById('aa-camp-label').value || '').trim();
+            var desc  = (document.getElementById('aa-camp-desc').value || '').trim();
+            var color = document.getElementById('aa-camp-color').value || '#6c63ff';
+            var err   = document.getElementById('aa-camp-error');
+
+            if (!date || !label) {
+                if (err) { err.textContent = 'La date et le label sont requis.'; err.style.display = 'block'; }
+                return;
+            }
+
+            var btn = document.getElementById('aa-camp-save');
+            if (btn) { btn.disabled = true; btn.textContent = 'Enregistrement…'; }
+
+            fetch(API_BASE + 'campaigns', {
+                method:  'POST',
+                cache:   'no-store',
+                headers: { 'X-WP-Nonce': NONCE, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ event_date: date, label: label, description: desc, color: color }),
+            })
+            .then(function (r) {
+                if (r.status === 409) throw new Error('Un événement existe déjà pour cette date.');
+                if (!r.ok) throw new Error('Erreur serveur (' + r.status + ').');
+                return r.json();
+            })
+            .then(function (data) {
+                _campaigns.push(data);
+                if (window.AlwaysAnalyticsCharts) AlwaysAnalyticsCharts.setCampaigns(_campaigns);
+                renderCampaignsList();
+                closeModal();
+            })
+            .catch(function (e) {
+                if (err) { err.textContent = e.message || 'Erreur.'; err.style.display = 'block'; }
+            })
+            .finally(function () {
+                if (btn) { btn.disabled = false; btn.textContent = 'Enregistrer'; }
+            });
+        }
+
+        function deleteCampaign(id) {
+            if (!confirm('Supprimer cet événement ?')) return;
+            var sid = String(id);
+            fetch(API_BASE + 'campaigns/' + sid, {
+                method:  'DELETE',
+                cache:   'no-store',
+                headers: { 'X-WP-Nonce': NONCE },
+            })
+            .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+            .then(function () {
+                _campaigns = _campaigns.filter(function (c) { return String(c.id) !== sid; });
+                if (window.AlwaysAnalyticsCharts) AlwaysAnalyticsCharts.setCampaigns(_campaigns);
+                renderCampaignsList();
+            })
+            .catch(function () { alert('Impossible de supprimer l\'événement.'); });
+        }
+
+        function openEditModal(id) {
+            var sid  = String(id);
+            var camp = _campaigns.find(function (c) { return String(c.id) === sid; });
+            if (!camp) return;
+            var modal = document.getElementById('aa-campaign-edit-modal');
+            if (!modal) return;
+
+            document.getElementById('aa-edit-camp-id').value    = camp.id;
+            document.getElementById('aa-edit-camp-date').value  = camp.event_date;
+            document.getElementById('aa-edit-camp-label').value = camp.label;
+            document.getElementById('aa-edit-camp-desc').value  = camp.description || '';
+            document.getElementById('aa-edit-camp-color').value = camp.color || '#6c63ff';
+
+            var color = camp.color || '#6c63ff';
+            modal.querySelectorAll('#aa-edit-swatches .aa-swatch').forEach(function (s) {
+                s.classList.toggle('aa-swatch--active', s.getAttribute('data-color') === color);
+            });
+
+            var err = document.getElementById('aa-edit-camp-error');
+            if (err) { err.style.display = 'none'; err.textContent = ''; }
+            modal.classList.add('aa-modal--open');
+            setTimeout(function () { document.getElementById('aa-edit-camp-label').focus(); }, 50);
+        }
+
+        function closeEditModal() {
+            var modal = document.getElementById('aa-campaign-edit-modal');
+            if (modal) modal.classList.remove('aa-modal--open');
+        }
+
+        function saveEditCampaign() {
+            var id    = parseInt(document.getElementById('aa-edit-camp-id').value, 10);
+            var date  = document.getElementById('aa-edit-camp-date').value;
+            var label = (document.getElementById('aa-edit-camp-label').value || '').trim();
+            var desc  = (document.getElementById('aa-edit-camp-desc').value || '').trim();
+            var color = document.getElementById('aa-edit-camp-color').value || '#6c63ff';
+            var err   = document.getElementById('aa-edit-camp-error');
+
+            if (!date || !label) {
+                if (err) { err.textContent = 'La date et le label sont requis.'; err.style.display = 'block'; }
+                return;
+            }
+
+            var btn = document.getElementById('aa-edit-camp-save');
+            if (btn) { btn.disabled = true; btn.textContent = 'Enregistrement…'; }
+
+            // Vérifier doublon date (sauf si c'est le même événement)
+            var existingOnDate = _campaigns.find(function (c) { return c.event_date === date && String(c.id) !== String(id); });
+            if (existingOnDate) {
+                if (err) { err.textContent = 'Un événement existe déjà pour cette date.'; err.style.display = 'block'; }
+                if (btn) { btn.disabled = false; btn.textContent = 'Enregistrer'; }
+                return;
+            }
+
+            // DELETE + re-POST (pas d'endpoint PUT natif)
+            fetch(API_BASE + 'campaigns/' + id, {
+                method:  'DELETE',
+                cache:   'no-store',
+                headers: { 'X-WP-Nonce': NONCE },
+            })
+            .then(function (r) { if (!r.ok) throw new Error('Erreur suppression.'); return r.json(); })
+            .then(function () {
+                return fetch(API_BASE + 'campaigns', {
+                    method:  'POST',
+                    cache:   'no-store',
+                    headers: { 'X-WP-Nonce': NONCE, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ event_date: date, label: label, description: desc, color: color }),
+                });
+            })
+            .then(function (r) {
+                if (!r.ok) throw new Error('Erreur création.');
+                return r.json();
+            })
+            .then(function (newCamp) {
+                var sid = String(id);
+                _campaigns = _campaigns.filter(function (c) { return String(c.id) !== sid; });
+                _campaigns.push(newCamp);
+                if (window.AlwaysAnalyticsCharts) AlwaysAnalyticsCharts.setCampaigns(_campaigns);
+                renderCampaignsList();
+                closeEditModal();
+            })
+            .catch(function (e) {
+                if (err) { err.textContent = e.message || 'Erreur.'; err.style.display = 'block'; }
+            })
+            .finally(function () {
+                if (btn) { btn.disabled = false; btn.textContent = 'Enregistrer'; }
+            });
+        }
+
+        function bindCampaignEvents() {
+            var modal   = document.getElementById('aa-campaign-modal');
+            var addBtn  = document.getElementById('aa-add-campaign-btn');
+            var addBtn2 = document.getElementById('aa-add-campaign-btn2');
+            var saveBtn = document.getElementById('aa-camp-save');
+
+            // ── Ouvrir modal création ────────────────────────────────────────────
+            function onAddClick(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                openModal();
+            }
+            if (addBtn)  addBtn.addEventListener('click', onAddClick);
+            if (addBtn2) addBtn2.addEventListener('click', onAddClick);
+
+            // ── Fermer modal création ────────────────────────────────────────────
+            if (modal) {
+                var closeBtn = modal.querySelector('.aa-modal-close');
+                if (closeBtn) closeBtn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); closeModal(); });
+                var cancelBtn = modal.querySelector('.aa-modal-cancel');
+                if (cancelBtn) cancelBtn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); closeModal(); });
+                var overlay = modal.querySelector('.aa-modal-overlay');
+                if (overlay) overlay.addEventListener('click', function (e) { e.stopPropagation(); closeModal(); });
+            }
+
+            // ── Fermer modal édition ─────────────────────────────────────────────
+            var editModal = document.getElementById('aa-campaign-edit-modal');
+            if (editModal) {
+                var editCloseBtn = editModal.querySelector('.aa-modal-close');
+                if (editCloseBtn) editCloseBtn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); closeEditModal(); });
+                var editCancelBtn = editModal.querySelector('.aa-modal-cancel');
+                if (editCancelBtn) editCancelBtn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); closeEditModal(); });
+                var editOverlay = editModal.querySelector('.aa-modal-overlay');
+                if (editOverlay) editOverlay.addEventListener('click', function (e) { e.stopPropagation(); closeEditModal(); });
+            }
+
+            // ── Escape ferme toutes les modales ──────────────────────────────────
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') { closeModal(); closeEditModal(); }
+            });
+
+            // ── Sauvegarder création ─────────────────────────────────────────────
+            if (saveBtn) saveBtn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); saveCampaign(); });
+
+            // ── Sauvegarder édition ──────────────────────────────────────────────
+            var editSaveBtn = document.getElementById('aa-edit-camp-save');
+            if (editSaveBtn) editSaveBtn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); saveEditCampaign(); });
+
+            // ── Color swatches modal création ────────────────────────────────────
+            if (modal) {
+                modal.querySelectorAll('.aa-swatch').forEach(function (swatch) {
+                    swatch.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        modal.querySelectorAll('.aa-swatch').forEach(function (s) { s.classList.remove('aa-swatch--active'); });
+                        swatch.classList.add('aa-swatch--active');
+                        var ci = document.getElementById('aa-camp-color');
+                        if (ci) ci.value = swatch.getAttribute('data-color');
+                    });
+                });
+                var colorInput = document.getElementById('aa-camp-color');
+                if (colorInput) colorInput.addEventListener('input', function () {
+                    modal.querySelectorAll('.aa-swatch').forEach(function (s) { s.classList.remove('aa-swatch--active'); });
+                });
+            }
+
+            // ── Color swatches modal édition ─────────────────────────────────────
+            if (editModal) {
+                editModal.querySelectorAll('#aa-edit-swatches .aa-swatch').forEach(function (swatch) {
+                    swatch.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        editModal.querySelectorAll('#aa-edit-swatches .aa-swatch').forEach(function (s) { s.classList.remove('aa-swatch--active'); });
+                        swatch.classList.add('aa-swatch--active');
+                        var ci = document.getElementById('aa-edit-camp-color');
+                        if (ci) ci.value = swatch.getAttribute('data-color');
+                    });
+                });
+                var editColorInput = document.getElementById('aa-edit-camp-color');
+                if (editColorInput) editColorInput.addEventListener('input', function () {
+                    editModal.querySelectorAll('#aa-edit-swatches .aa-swatch').forEach(function (s) { s.classList.remove('aa-swatch--active'); });
+                });
+            }
+
+            // ── Clics édition / suppression dans la liste ────────────────────────
+            var listContainer = document.getElementById('aa-campaigns-list');
+            if (listContainer) {
+                listContainer.addEventListener('click', function (e) {
+                    var editBtn = e.target.closest('.aa-camp-edit');
+                    var delBtn  = e.target.closest('.aa-camp-del');
+                    if (editBtn) {
+                        e.stopPropagation();
+                        openEditModal(parseInt(editBtn.getAttribute('data-id'), 10));
+                    }
+                    if (delBtn) {
+                        e.stopPropagation();
+                        deleteCampaign(parseInt(delBtn.getAttribute('data-id'), 10));
+                    }
+                });
+            }
+
+            // ── Masquer tooltip au survol hors canvas ────────────────────────────
+            var canvas = document.getElementById('aa-visits-chart');
+            if (canvas) {
+                canvas.addEventListener('mouseleave', function () {
+                    var tip = document.getElementById('aa-camp-tooltip');
+                    if (tip) tip.style.display = 'none';
+                });
+            }
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', function () {
+            bindCampaignEvents();
+            loadCampaigns();
+        });
+
+        return { loadCampaigns: loadCampaigns, deleteCampaign: deleteCampaign };
+    })();
 
 })();

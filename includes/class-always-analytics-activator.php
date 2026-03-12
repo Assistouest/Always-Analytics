@@ -168,11 +168,24 @@ class Always_Analytics_Activator
             KEY idx_recorded (recorded_at)
         ) {$charset_collate};";
 
+        $table_campaigns = $wpdb->prefix . 'aa_campaigns';
+        $sql_campaigns = "CREATE TABLE {$table_campaigns} (
+            id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            event_date      DATE            NOT NULL,
+            label           VARCHAR(255)    NOT NULL,
+            description     TEXT            DEFAULT '',
+            color           VARCHAR(7)      DEFAULT '#6c63ff',
+            created_at      DATETIME        NOT NULL,
+            PRIMARY KEY  (id),
+            KEY idx_event_date (event_date)
+        ) {$charset_collate};";
+
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
         dbDelta($sql_hits);
         dbDelta($sql_sessions);
         dbDelta($sql_daily);
         dbDelta($sql_scroll);
+        dbDelta($sql_campaigns);
 
         // Migration si table existante : ajouter les colonnes manquantes
         $cols = $wpdb->get_col($wpdb->prepare("DESCRIBE {$table_hits}"), 0);
@@ -444,7 +457,7 @@ class Always_Analytics_Activator
             'geo_provider'    => 'native',
             'maxmind_db_path' => '',
             'cache_ttl' => 300, // 5 minutes
-            'bot_filter_mode' => 'normal', // 'strict', 'normal', 'off'
+            'bot_filter_mode' => 'normal', // 'normal' or 'off'
             'export_format' => 'csv',
             'consent_enabled' => false,
             'consent_message' => __('Ce site utilise des cookies pour analyser le trafic. Acceptez-vous ?', 'always-analytics'),

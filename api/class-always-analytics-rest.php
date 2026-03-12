@@ -111,6 +111,27 @@ class Always_Analytics_Rest {
                 },
             ) );
         }
+
+        // ── Endpoints campagnes ────────────────────────────────────────────────
+        register_rest_route( self::NAMESPACE, '/campaigns', array(
+            array(
+                'methods'             => 'GET',
+                'callback'            => array( __CLASS__, 'get_campaigns' ),
+                'permission_callback' => function () { return current_user_can( 'manage_options' ); },
+            ),
+            array(
+                'methods'             => 'POST',
+                'callback'            => array( __CLASS__, 'create_campaign' ),
+                'permission_callback' => function () { return current_user_can( 'manage_options' ); },
+            ),
+        ) );
+        register_rest_route( self::NAMESPACE, '/campaigns/(?P<id>\d+)', array(
+            array(
+                'methods'             => 'DELETE',
+                'callback'            => array( __CLASS__, 'delete_campaign' ),
+                'permission_callback' => function () { return current_user_can( 'manage_options' ); },
+            ),
+        ) );
     }
 
     // ── Paramètres de date ─────────────────────────────────────────────────────
@@ -127,7 +148,7 @@ class Always_Analytics_Rest {
             'to'        => $to,
             'from_utc'  => gmdate( 'Y-m-d H:i:s', strtotime( $from . ' 00:00:00' ) - $tz_offset_seconds ),
             'to_utc'    => gmdate( 'Y-m-d H:i:s', strtotime( $to   . ' 23:59:59' ) - $tz_offset_seconds ),
-            'is_today'  => ( $to === $today ),
+            'is_today'  => ( $from === $today && $to === $today ),
             'post_type' => sanitize_key(        $request->get_param( 'post_type' ) ?: '' ),
             'device'    => sanitize_text_field( $request->get_param( 'device' )    ?: '' ),
             'country'   => sanitize_text_field( $request->get_param( 'country' )   ?: '' ),
@@ -712,7 +733,13 @@ class Always_Analytics_Rest {
                 SUBSTRING_INDEX(GROUP_CONCAT(s.session_id ORDER BY s.ended_at DESC), ',', 1) AS last_session_id,
                 -- Durée de la dernière session uniquement
                 MAX(CASE WHEN s.ended_at = (SELECT MAX(s2.ended_at) FROM {$t_sess} s2 WHERE s2.visitor_hash = s.visitor_hash) THEN CASE WHEN s.engagement_time > 0 THEN s.engagement_time ELSE s.duration END END) AS last_duration,
-                MAX(CASE WHEN s.ended_at = (SELECT MAX(s2.ended_at) FROM {$t_sess} s2 WHERE s2.visitor_hash = s.visitor_hash) THEN s.page_count END) AS last_page_count
+                MAX(CASE WHEN s.ended_at = (SELECT MAX(s2.ended_at) FROM {$t_sess} s2 WHERE s2.visitor_hash = s.visitor_hash) THEN s.page_count END) AS last_page_count,
+                -- Domaine référent du premier hit de la session la plus récente
+                (SELECT h2.referrer_domain FROM {$t_hits} h2
+                 INNER JOIN {$t_sess} s3 ON s3.session_id = h2.session_id
+                 WHERE s3.visitor_hash = s.visitor_hash AND h2.is_superseded = 0 AND h2.referrer_domain != ''
+                 ORDER BY s3.ended_at DESC, h2.hit_at ASC
+                 LIMIT 1)                               AS last_referrer_domain
              FROM {$t_sess} s
              INNER JOIN (
                  SELECT DISTINCT session_id
@@ -840,33 +867,47 @@ class Always_Analytics_Rest {
         $scroll_map = array( 25 => 0, 50 => 0, 75 => 0, 100 => 0 );
 
         if ( $has_scroll_table ) {
+            // On compte par PAGE VUE (hit), pas par session.
+            // Pour chaque couple (session_id, page_url), on prend le MAX scroll atteint
+            // puis on le regroupe en tranche exclusive (25/50/75/100).
+            // Un visiteur qui a lu 3 pages différentes jusqu'à des profondeurs différentes
+            // contribue 3 pages vues, chacune dans sa propre tranche.
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery
             $scroll_dist = $wpdb->get_results( $wpdb->prepare(
-                "SELECT sr.scroll_depth, COUNT(DISTINCT sr.session_id) AS sessions
-                 FROM {$t_scroll} sr
-                 INNER JOIN {$t_sess} s ON s.session_id = sr.session_id
-                 WHERE sr.session_id IN (
-                     SELECT DISTINCT session_id FROM {$t_hits}
-                     WHERE hit_at >= %s AND hit_at <= %s AND is_superseded = 0
-                 ) AND (s.duration > 0 OR s.engagement_time > 0)
-                 GROUP BY sr.scroll_depth",
+                "SELECT mx.max_depth AS scroll_depth, COUNT(*) AS page_views
+                 FROM (
+                     SELECT sr.session_id,
+                            REGEXP_REPLACE(sr.page_url, '\\?.*\$', '') AS clean_url,
+                            MAX(sr.scroll_depth) AS max_depth
+                     FROM {$t_scroll} sr
+                     INNER JOIN {$t_sess} s ON s.session_id = sr.session_id
+                     WHERE sr.session_id IN (
+                         SELECT DISTINCT session_id FROM {$t_hits}
+                         WHERE hit_at >= %s AND hit_at <= %s AND is_superseded = 0
+                     ) AND (s.duration > 0 OR s.engagement_time > 0)
+                     GROUP BY sr.session_id, REGEXP_REPLACE(sr.page_url, '\\?.*\$', '')
+                 ) mx
+                 WHERE mx.max_depth IN (25, 50, 75, 100)
+                 GROUP BY mx.max_depth",
                 $from, $to
             ) );
             foreach ( $scroll_dist as $row ) {
                 $d = (int) $row->scroll_depth;
-                if ( isset( $scroll_map[$d] ) ) $scroll_map[$d] = (int) $row->sessions;
+                if ( isset( $scroll_map[$d] ) ) $scroll_map[$d] = (int) $row->page_views;
             }
         }
 
         // Fallback : depuis max_scroll_depth des sessions — filtre via hits (hit_at + is_superseded = 0)
         if ( $has_sess_table && $has_scroll_col && array_sum( $scroll_map ) === 0 ) {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+            // Fallback : max_scroll_depth sur la session — on multiplie par page_count
+            // pour approximer le nombre de pages vues par tranche (faute de détail par page).
             $r = $wpdb->get_row( $wpdb->prepare(
                 "SELECT
-                    SUM(CASE WHEN s.max_scroll_depth >= 25  AND (s.duration > 0 OR s.engagement_time > 0) THEN 1 ELSE 0 END) AS s25,
-                    SUM(CASE WHEN s.max_scroll_depth >= 50  AND (s.duration > 0 OR s.engagement_time > 0) THEN 1 ELSE 0 END) AS s50,
-                    SUM(CASE WHEN s.max_scroll_depth >= 75  AND (s.duration > 0 OR s.engagement_time > 0) THEN 1 ELSE 0 END) AS s75,
-                    SUM(CASE WHEN s.max_scroll_depth >= 100 AND (s.duration > 0 OR s.engagement_time > 0) THEN 1 ELSE 0 END) AS s100
+                    SUM(CASE WHEN s.max_scroll_depth >= 25  AND s.max_scroll_depth < 50  AND (s.duration > 0 OR s.engagement_time > 0) THEN s.page_count ELSE 0 END) AS s25,
+                    SUM(CASE WHEN s.max_scroll_depth >= 50  AND s.max_scroll_depth < 75  AND (s.duration > 0 OR s.engagement_time > 0) THEN s.page_count ELSE 0 END) AS s50,
+                    SUM(CASE WHEN s.max_scroll_depth >= 75  AND s.max_scroll_depth < 100 AND (s.duration > 0 OR s.engagement_time > 0) THEN s.page_count ELSE 0 END) AS s75,
+                    SUM(CASE WHEN s.max_scroll_depth >= 100                              AND (s.duration > 0 OR s.engagement_time > 0) THEN s.page_count ELSE 0 END) AS s100
                  FROM {$t_sess} s
                  WHERE s.session_id IN (
                      SELECT DISTINCT session_id FROM {$t_hits}
@@ -1294,6 +1335,121 @@ class Always_Analytics_Rest {
         } );
 
         return rest_ensure_response( array_slice( $scored, 0, $limit ) );
+    }
+
+    // ── Campaigns ─────────────────────────────────────────────────────────────
+
+    /**
+     * GET /campaigns?from=&to=
+     * Returns all campaigns. Optionally filtered by date range (any campaign
+     * whose event_date falls in [from, to] is returned, but we always return
+     * all so the chart can show them on any range).
+     */
+    public static function get_campaigns( $request ) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'aa_campaigns';
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
+        if ( ! $exists ) {
+            return rest_ensure_response( array() );
+        }
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $rows = $wpdb->get_results(
+            "SELECT id, event_date, label, description, color, created_at FROM {$table} ORDER BY event_date ASC",
+            ARRAY_A
+        );
+
+        return rest_ensure_response( $rows ? $rows : array() );
+    }
+
+    /**
+     * POST /campaigns
+     * Body (JSON): { event_date, label, description, color }
+     */
+    public static function create_campaign( $request ) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'aa_campaigns';
+
+        // Créer la table si elle n'existe pas encore (migration non encore jouée)
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
+        if ( ! $exists ) {
+            $charset_collate = $wpdb->get_charset_collate();
+            $sql = "CREATE TABLE {$table} (
+                id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                event_date      DATE            NOT NULL,
+                label           VARCHAR(255)    NOT NULL,
+                description     TEXT            DEFAULT '',
+                color           VARCHAR(7)      DEFAULT '#6c63ff',
+                created_at      DATETIME        NOT NULL,
+                PRIMARY KEY  (id),
+                KEY idx_event_date (event_date)
+            ) {$charset_collate};";
+            require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+            dbDelta( $sql );
+        }
+
+        $body        = $request->get_json_params();
+        $event_date  = isset( $body['event_date'] )  ? sanitize_text_field( $body['event_date'] )  : '';
+        $label       = isset( $body['label'] )        ? sanitize_text_field( $body['label'] )        : '';
+        $description = isset( $body['description'] )  ? sanitize_textarea_field( $body['description'] ) : '';
+        $color       = isset( $body['color'] )        ? sanitize_hex_color( $body['color'] )         : '#6c63ff';
+
+        // Validate date
+        if ( empty( $event_date ) || ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $event_date ) ) {
+            return new \WP_Error( 'invalid_date', 'Date invalide.', array( 'status' => 400 ) );
+        }
+        if ( empty( $label ) ) {
+            return new \WP_Error( 'invalid_label', 'Label requis.', array( 'status' => 400 ) );
+        }
+        // Max 1 campaign per day security
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $existing = $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$table} WHERE event_date = %s",
+            $event_date
+        ) );
+        if ( (int) $existing >= 1 ) {
+            return new \WP_Error( 'date_taken', 'Un événement existe déjà pour cette date.', array( 'status' => 409 ) );
+        }
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $inserted = $wpdb->insert( $table, array(
+            'event_date'  => $event_date,
+            'label'       => $label,
+            'description' => $description,
+            'color'       => $color ?: '#6c63ff',
+            'created_at'  => current_time( 'mysql' ),
+        ), array( '%s', '%s', '%s', '%s', '%s' ) );
+
+        if ( ! $inserted ) {
+            return new \WP_Error( 'db_error', 'Erreur lors de la création.', array( 'status' => 500 ) );
+        }
+
+        return rest_ensure_response( array(
+            'id'         => $wpdb->insert_id,
+            'event_date' => $event_date,
+            'label'      => $label,
+            'description'=> $description,
+            'color'      => $color ?: '#6c63ff',
+        ) );
+    }
+
+    /**
+     * DELETE /campaigns/{id}
+     */
+    public static function delete_campaign( $request ) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'aa_campaigns';
+        $id    = (int) $request->get_param( 'id' );
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $deleted = $wpdb->delete( $table, array( 'id' => $id ), array( '%d' ) );
+        if ( ! $deleted ) {
+            return new \WP_Error( 'not_found', 'Événement introuvable.', array( 'status' => 404 ) );
+        }
+        return rest_ensure_response( array( 'deleted' => true ) );
     }
 
 }
