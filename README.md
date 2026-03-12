@@ -19,6 +19,9 @@
 - **Vitesse Éclair** : Script ultra-léger sans impact sur le SEO.
 - **Conformité RGPD Native** : Anonymisation et respect de la vie privée par design.
 
+<video src="demonstration.mp4" controls="controls" style="max-width: 100%;">
+</video>
+
 La plupart des outils d'analytics affichent des classements basés sur des moyennes brutes. La moyenne brute est mathématiquement imprécise. Elle ne tient pas compte de la taille de l'échantillon. Sans correction, votre dashboard est pollué par des mirages statistiques : une page consultée une seule fois pendant 10 minutes sera classée au-dessus de votre guide pilier lu par 5 000 personnes, et inversement.
 
 Pour éviter l'anomalie des petits nombres, nous appliquons la limite inférieure de l'intervalle de confiance de Wilson dans les statistiques d'engagement.
