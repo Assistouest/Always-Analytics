@@ -99,6 +99,7 @@ class Always_Analytics_Rest {
             array( 'recent-visitors', 'GET', 'get_recent_visitors' ),
             array( 'engagement',      'GET', 'get_engagement' ),
             array( 'engagement/pages','GET', 'get_engagement_pages' ),
+            array( 'reader-profiles', 'GET', 'get_reader_profiles' ),
             array( 'export',          'GET', 'handle_export' ),
         );
 
@@ -146,21 +147,28 @@ class Always_Analytics_Rest {
     // ── Paramètres de date ─────────────────────────────────────────────────────
 
     private static function get_date_params( $request ) {
-        $today = wp_date( 'Y-m-d' );
-        $from  = sanitize_text_field( $request->get_param( 'from' ) ?: wp_date( 'Y-m-d', strtotime( '-30 days' ) ) );
-        $to    = sanitize_text_field( $request->get_param( 'to' )   ?: $today );
+        $today     = wp_date( 'Y-m-d' );
+        $yesterday = wp_date( 'Y-m-d', strtotime( '-1 day' ) );
+        $from      = sanitize_text_field( $request->get_param( 'from' ) ?: wp_date( 'Y-m-d', strtotime( '-30 days' ) ) );
+        $to        = sanitize_text_field( $request->get_param( 'to' )   ?: $today );
 
         $tz_offset_seconds = (int) ( get_option( 'gmt_offset' ) * HOUR_IN_SECONDS );
 
+        // is_today   : affichage horaire avec heures futures grisées.
+        // is_yesterday: affichage horaire sans heures futures (journée complète).
+        $is_today     = ( $from === $today     && $to === $today );
+        $is_yesterday = ( $from === $yesterday && $to === $yesterday );
+
         return array(
-            'from'      => $from,
-            'to'        => $to,
-            'from_utc'  => gmdate( 'Y-m-d H:i:s', strtotime( $from . ' 00:00:00' ) - $tz_offset_seconds ),
-            'to_utc'    => gmdate( 'Y-m-d H:i:s', strtotime( $to   . ' 23:59:59' ) - $tz_offset_seconds ),
-            'is_today'  => ( $from === $today && $to === $today ),
-            'post_type' => sanitize_key(        $request->get_param( 'post_type' ) ?: '' ),
-            'device'    => sanitize_text_field( $request->get_param( 'device' )    ?: '' ),
-            'country'   => sanitize_text_field( $request->get_param( 'country' )   ?: '' ),
+            'from'         => $from,
+            'to'           => $to,
+            'from_utc'     => gmdate( 'Y-m-d H:i:s', strtotime( $from . ' 00:00:00' ) - $tz_offset_seconds ),
+            'to_utc'       => gmdate( 'Y-m-d H:i:s', strtotime( $to   . ' 23:59:59' ) - $tz_offset_seconds ),
+            'is_today'     => $is_today,
+            'is_yesterday' => $is_yesterday,
+            'post_type'    => sanitize_key(        $request->get_param( 'post_type' ) ?: '' ),
+            'device'       => sanitize_text_field( $request->get_param( 'device' )    ?: '' ),
+            'country'      => sanitize_text_field( $request->get_param( 'country' )   ?: '' ),
         );
     }
 
@@ -458,12 +466,14 @@ class Always_Analytics_Rest {
         global $wpdb;
         self::no_cache_headers();
 
-        $params = self::get_date_params( $request );
-        $table  = $wpdb->prefix . 'aa_hits';
-        $from   = $params['from_utc'];
-        $to     = $params['to_utc'];
+        $params       = self::get_date_params( $request );
+        $table        = $wpdb->prefix . 'aa_hits';
+        $from         = $params['from_utc'];
+        $to           = $params['to_utc'];
+        $is_today     = $params['is_today'];
+        $is_yesterday = $params['is_yesterday'];
 
-        // Mode horaire : today uniquement (from === to)
+        // Mode horaire : today ou yesterday (plage d'un seul jour)
         if ( $params['from'] === $params['to'] ) {
             $tz_offset_seconds = (int) ( get_option( 'gmt_offset' ) * HOUR_IN_SECONDS );
             $sql  = "SELECT HOUR(hit_at) as hour_utc,
@@ -493,7 +503,7 @@ class Always_Analytics_Rest {
                     'visitors'   => isset( $indexed[ $h ] ) ? (int) $indexed[ $h ]->visitors   : 0,
                     'page_views' => isset( $indexed[ $h ] ) ? (int) $indexed[ $h ]->page_views : 0,
                     'sessions'   => isset( $indexed[ $h ] ) ? (int) $indexed[ $h ]->sessions   : 0,
-                    'future'     => $h > $now_local_hour,
+                    'future'     => ( $is_today && $h > $now_local_hour ),
                 );
             }
             return rest_ensure_response( $filled );
@@ -648,7 +658,13 @@ class Always_Analytics_Rest {
 
         // Toutes les métriques sont en sessions (COUNT DISTINCT session_id),
         // pas en pages vues — un visiteur qui charge 10 pages ne compte qu'une fois.
+        //
+        // Optimisation P-08 : 8 requêtes → 3.
+        // Une session appartient toujours à un seul device_type (sessionStorage JS, unique par onglet).
+        // On peut donc dériver browsers/os globaux et par device_type depuis 2 requêtes composites,
+        // puis reconstruire la structure de réponse en PHP pur — identique au JSON attendu par le JS.
 
+        // ── Requête 1 : répartition par device_type ──────────────────────────
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery
         $devices = $wpdb->get_results( $wpdb->prepare(
             "SELECT device_type, COUNT(DISTINCT session_id) as count
@@ -657,41 +673,85 @@ class Always_Analytics_Rest {
             $base_args
         ) );
 
-        // Navigateurs et OS globaux (onglet "Tous")
+        // ── Requête 2 : browsers par device_type (sans LIMIT — on filtre en PHP) ──
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-        $browsers = $wpdb->get_results( $wpdb->prepare(
-            "SELECT browser, COUNT(DISTINCT session_id) as count
-             FROM {$table} WHERE hit_at >= %s AND hit_at <= %s AND is_superseded = 0 AND browser != ''
-             GROUP BY browser ORDER BY count DESC LIMIT 10",
-            $base_args
-        ) );
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-        $os_list = $wpdb->get_results( $wpdb->prepare(
-            "SELECT os, COUNT(DISTINCT session_id) as count
-             FROM {$table} WHERE hit_at >= %s AND hit_at <= %s AND is_superseded = 0 AND os != ''
-             GROUP BY os ORDER BY count DESC LIMIT 10",
+        $browsers_raw = $wpdb->get_results( $wpdb->prepare(
+            "SELECT device_type, browser, COUNT(DISTINCT session_id) as count
+             FROM {$table}
+             WHERE hit_at >= %s AND hit_at <= %s AND is_superseded = 0 AND browser != ''
+             GROUP BY device_type, browser
+             ORDER BY count DESC",
             $base_args
         ) );
 
-        // Navigateurs et OS par device_type (pour les onglets filtrés)
+        // ── Requête 3 : OS par device_type (sans LIMIT — on filtre en PHP) ──
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $os_raw = $wpdb->get_results( $wpdb->prepare(
+            "SELECT device_type, os, COUNT(DISTINCT session_id) as count
+             FROM {$table}
+             WHERE hit_at >= %s AND hit_at <= %s AND is_superseded = 0 AND os != ''
+             GROUP BY device_type, os
+             ORDER BY count DESC",
+            $base_args
+        ) );
+
+        // ── Reconstruction PHP ────────────────────────────────────────────────
+        // Index par device_type pour accès O(1)
+        $browsers_by_device = array();
+        foreach ( $browsers_raw as $row ) {
+            $browsers_by_device[ $row->device_type ][] = (object) array(
+                'browser' => $row->browser,
+                'count'   => $row->count,
+            );
+        }
+
+        $os_by_device = array();
+        foreach ( $os_raw as $row ) {
+            $os_by_device[ $row->device_type ][] = (object) array(
+                'os'    => $row->os,
+                'count' => $row->count,
+            );
+        }
+
+        // Browsers global (onglet "Tous") : agrégation cross-device par browser.
+        // Valide car une session n'a qu'un seul device_type —
+        // SUM(count GROUP BY device_type, browser) par browser = COUNT DISTINCT global par browser.
+        $browsers_global = array();
+        foreach ( $browsers_raw as $row ) {
+            $k = $row->browser;
+            if ( ! isset( $browsers_global[ $k ] ) ) {
+                $browsers_global[ $k ] = 0;
+            }
+            $browsers_global[ $k ] += (int) $row->count;
+        }
+        arsort( $browsers_global );
+        $browsers_global = array_slice( $browsers_global, 0, 10, true );
+        $browsers = array_map( function( $browser, $count ) {
+            return (object) array( 'browser' => $browser, 'count' => (string) $count );
+        }, array_keys( $browsers_global ), array_values( $browsers_global ) );
+
+        // OS global (onglet "Tous") : même logique.
+        $os_global = array();
+        foreach ( $os_raw as $row ) {
+            $k = $row->os;
+            if ( ! isset( $os_global[ $k ] ) ) {
+                $os_global[ $k ] = 0;
+            }
+            $os_global[ $k ] += (int) $row->count;
+        }
+        arsort( $os_global );
+        $os_global = array_slice( $os_global, 0, 10, true );
+        $os_list = array_map( function( $os, $count ) {
+            return (object) array( 'os' => $os, 'count' => (string) $count );
+        }, array_keys( $os_global ), array_values( $os_global ) );
+
+        // by_device : browsers et OS filtrés par device_type, déjà triés par count DESC, limités à 10.
         $by_device = array();
         foreach ( array( 'desktop', 'mobile', 'tablet' ) as $dtype ) {
-            $args_dt = array( $params['from_utc'], $params['to_utc'], $dtype );
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-            $b = $wpdb->get_results( $wpdb->prepare(
-                "SELECT browser, COUNT(DISTINCT session_id) as count
-                 FROM {$table} WHERE hit_at >= %s AND hit_at <= %s AND is_superseded = 0 AND device_type = %s AND browser != ''
-                 GROUP BY browser ORDER BY count DESC LIMIT 10",
-                $args_dt
-            ) );
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-            $o = $wpdb->get_results( $wpdb->prepare(
-                "SELECT os, COUNT(DISTINCT session_id) as count
-                 FROM {$table} WHERE hit_at >= %s AND hit_at <= %s AND is_superseded = 0 AND device_type = %s AND os != ''
-                 GROUP BY os ORDER BY count DESC LIMIT 10",
-                $args_dt
-            ) );
-            $by_device[ $dtype ] = array( 'browsers' => $b, 'os' => $o );
+            $by_device[ $dtype ] = array(
+                'browsers' => array_slice( $browsers_by_device[ $dtype ] ?? array(), 0, 10 ),
+                'os'       => array_slice( $os_by_device[ $dtype ]       ?? array(), 0, 10 ),
+            );
         }
 
         return rest_ensure_response( array(
@@ -802,7 +862,8 @@ class Always_Analytics_Rest {
         $t_scroll = $wpdb->prefix . 'aa_scroll';
         $from     = $params['from_utc'];
         $to       = $params['to_utc'];
-        $is_today = $params['is_today'];
+        $is_today     = $params['is_today'];
+        $is_yesterday = $params['is_yesterday'];
 
         // ── Vérifie quelles tables/colonnes existent ───────────────────────────
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -889,8 +950,8 @@ class Always_Analytics_Rest {
         $engagement_rate = round( $engaged / $total * 100, 1 );
         $deep_read_rate  = round( $deep   / $total * 100, 1 );
 
-        // ── Distribution scroll 25/50/75/100 ──────────────────────────────────
-        $scroll_map = array( 25 => 0, 50 => 0, 75 => 0, 100 => 0 );
+        // ── Distribution scroll 10/25/50/75/100 ──────────────────────────────────
+        $scroll_map = array( 10 => 0, 25 => 0, 50 => 0, 75 => 0, 100 => 0 );
 
         if ( $has_scroll_table ) {
             // On compte par PAGE VUE (hit), pas par session.
@@ -913,7 +974,7 @@ class Always_Analytics_Rest {
                      ) AND (s.duration > 0 OR s.engagement_time > 0)
                      GROUP BY sr.session_id, REGEXP_REPLACE(sr.page_url, '\\?.*\$', '')
                  ) mx
-                 WHERE mx.max_depth IN (25, 50, 75, 100)
+                 WHERE mx.max_depth IN (10, 25, 50, 75, 100)
                  GROUP BY mx.max_depth",
                 $from, $to
             ) );
@@ -930,6 +991,7 @@ class Always_Analytics_Rest {
             // pour approximer le nombre de pages vues par tranche (faute de détail par page).
             $r = $wpdb->get_row( $wpdb->prepare(
                 "SELECT
+                    SUM(CASE WHEN s.max_scroll_depth >= 10  AND s.max_scroll_depth < 25  AND (s.duration > 0 OR s.engagement_time > 0) THEN s.page_count ELSE 0 END) AS s10,
                     SUM(CASE WHEN s.max_scroll_depth >= 25  AND s.max_scroll_depth < 50  AND (s.duration > 0 OR s.engagement_time > 0) THEN s.page_count ELSE 0 END) AS s25,
                     SUM(CASE WHEN s.max_scroll_depth >= 50  AND s.max_scroll_depth < 75  AND (s.duration > 0 OR s.engagement_time > 0) THEN s.page_count ELSE 0 END) AS s50,
                     SUM(CASE WHEN s.max_scroll_depth >= 75  AND s.max_scroll_depth < 100 AND (s.duration > 0 OR s.engagement_time > 0) THEN s.page_count ELSE 0 END) AS s75,
@@ -942,6 +1004,7 @@ class Always_Analytics_Rest {
                 $from, $to
             ) );
             if ( $r ) {
+                $scroll_map[10]  = (int) $r->s10;
                 $scroll_map[25]  = (int) $r->s25;
                 $scroll_map[50]  = (int) $r->s50;
                 $scroll_map[75]  = (int) $r->s75;
@@ -967,7 +1030,7 @@ class Always_Analytics_Rest {
             ? 'COUNT(DISTINCT CASE WHEN s.is_bounce = 0 AND (s.duration > 0 OR s.engagement_time > 0) THEN h.session_id END)'
             : 'COUNT(DISTINCT CASE WHEN pv.pv > 1 THEN h.session_id END)';
 
-        if ( $is_today ) {
+        if ( $is_today || $is_yesterday ) {
             if ( $has_sess_table ) {
                 // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
                 $chart_raw = $wpdb->get_results( $wpdb->prepare(
@@ -1009,7 +1072,7 @@ class Always_Analytics_Rest {
                     'engaged'    => isset( $indexed[$h] ) ? (int)   $indexed[$h]->engaged     : 0,
                     'avg_dur'    => isset( $indexed[$h] ) ? (int)   $indexed[$h]->avg_dur     : 0,
                     'avg_scroll' => isset( $indexed[$h] ) ? (float) $indexed[$h]->avg_scroll  : 0,
-                    'future'     => $h > $now_h,
+                    'future'     => ( $is_today && $h > $now_h ),
                 );
             }
         } else {
@@ -1074,6 +1137,179 @@ class Always_Analytics_Rest {
             'chart'               => $chart,
         ) );
     }
+
+    // ── /reader-profiles ──────────────────────────────────────────────────────
+    //
+    // Classifie chaque session de la période en l'un des 4 profils de lecture :
+    //
+    //  Zappeur         max_scroll_depth < 20
+    //  Curieux         20 ≤ max_scroll_depth < 75
+    //  Super-Lecteur   75 ≤ max_scroll_depth < 100  (lecture approfondie sans scan complet)
+    //              OU  max_scroll_depth ≥ 100 ET velocity ≤ seuil adaptatif
+    //  Compulsif       max_scroll_depth ≥ 100 ET velocity > seuil adaptatif (scan rapide)
+    //
+    // La zone 50–75% est volontairement absente : ces sessions sont comptées dans
+    // Curieux (lecture avancée mais incomplète).
+    // Le seuil adaptatif est AVG(velocity) sur les sessions à 100% de scroll —
+    // approximation de la médiane, compatible MySQL 5.7+, sans chargement en RAM.
+    // Une session sans mesure de scroll (max_scroll_depth = 0) est exclue.
+    //
+    // Optimisation : remplacement du chargement de TOUTES les sessions en RAM PHP
+    // par 2 requêtes SQL retournant directement 4+1 lignes de résultat.
+    // velocity = ROUND(max_scroll_depth / effective_duration * 100)  (centièmes de %/s)
+
+    public static function get_reader_profiles( $request ) {
+        global $wpdb;
+        self::no_cache_headers();
+
+        $params = self::get_date_params( $request );
+        $from   = $params['from_utc'];
+        $to     = $params['to_utc'];
+        $t_hits = $wpdb->prefix . 'aa_hits';
+        $t_sess = $wpdb->prefix . 'aa_sessions';
+
+        // Vérifier que la table sessions existe et a max_scroll_depth.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $has_sess = (bool) $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $t_sess ) );
+        if ( ! $has_sess ) {
+            return rest_ensure_response( array(
+                'profiles'        => array(),
+                'total_sessions'  => 0,
+                'median_velocity' => 0,
+            ) );
+        }
+
+        // ── Requête 1 : seuil adaptatif de velocity ───────────────────────────
+        //
+        // Calculé comme AVG(velocity) sur les sessions ayant scrollé 100%,
+        // avec une durée mesurée. C'est une approximation de la médiane :
+        // suffisante pour distinguer "scan rapide" vs "lecture posée" dans
+        // une distribution log-normale typique des temps de lecture.
+        //
+        // Plancher à 10 (= 0.10 %/s) pour éviter les cas dégénérés.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $avg_velocity_row = $wpdb->get_var( $wpdb->prepare(
+            "SELECT GREATEST(10, COALESCE(
+                ROUND(AVG(
+                    ROUND(s.max_scroll_depth / COALESCE(NULLIF(s.engagement_time, 0), NULLIF(s.duration, 0)) * 100)
+                )),
+            10))
+             FROM {$t_sess} s
+             INNER JOIN (
+                 SELECT DISTINCT session_id FROM {$t_hits}
+                 WHERE hit_at >= %s AND hit_at <= %s AND is_superseded = 0
+             ) h ON h.session_id = s.session_id
+             WHERE s.max_scroll_depth >= 100
+               AND (s.engagement_time > 0 OR s.duration > 0)",
+            $from, $to
+        ) );
+        $velocity_threshold = (int) ( $avg_velocity_row ?? 10 );
+
+        // ── Requête 2 : classification directe en SQL ─────────────────────────
+        //
+        // Retourne 4 lignes (une par profil) avec le count de sessions.
+        // Aucun chargement de N sessions en RAM PHP — compatible MySQL 5.7+.
+        //
+        // Logique identique à l'ancienne implémentation PHP :
+        //   scroll < 20                              → zappeur
+        //   20 ≤ scroll < 75                         → curieux
+        //   75 ≤ scroll < 100                        → super_lecteur
+        //   scroll ≥ 100 ET velocity > seuil         → compulsif
+        //   scroll ≥ 100 ET (velocity ≤ seuil OU dur = 0) → super_lecteur
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $rows = $wpdb->get_results( $wpdb->prepare(
+            "SELECT
+                CASE
+                    WHEN s.max_scroll_depth < 20 THEN 'zappeur'
+                    WHEN s.max_scroll_depth < 75 THEN 'curieux'
+                    WHEN s.max_scroll_depth >= 100
+                         AND COALESCE(NULLIF(s.engagement_time, 0), NULLIF(s.duration, 0)) > 0
+                         AND ROUND(s.max_scroll_depth / COALESCE(NULLIF(s.engagement_time, 0), NULLIF(s.duration, 0)) * 100) > %d
+                         THEN 'compulsif'
+                    ELSE 'super_lecteur'
+                END AS profile_key,
+                COUNT(*) AS cnt
+             FROM {$t_sess} s
+             INNER JOIN (
+                 SELECT DISTINCT session_id FROM {$t_hits}
+                 WHERE hit_at >= %s AND hit_at <= %s AND is_superseded = 0
+             ) h ON h.session_id = s.session_id
+             WHERE s.max_scroll_depth > 0
+               AND (s.duration > 0 OR s.engagement_time > 0)
+             GROUP BY profile_key",
+            $velocity_threshold, $from, $to
+        ) );
+
+        // Initialiser à 0 — si un profil n'a aucune session, il n'apparaît pas dans GROUP BY
+        $counts = array(
+            'zappeur'       => 0,
+            'curieux'       => 0,
+            'super_lecteur' => 0,
+            'compulsif'     => 0,
+        );
+        foreach ( $rows as $row ) {
+            if ( isset( $counts[ $row->profile_key ] ) ) {
+                $counts[ $row->profile_key ] = (int) $row->cnt;
+            }
+        }
+
+        $total = array_sum( $counts );
+
+        if ( 0 === $total ) {
+            return rest_ensure_response( array(
+                'profiles'        => array(),
+                'total_sessions'  => 0,
+                'median_velocity' => 0,
+            ) );
+        }
+
+        // ── Construction de la réponse ─────────────────────────────────────────
+        $profiles = array(
+            array(
+                'key'         => 'zappeur',
+                'label'       => __( 'Zappeur', 'always-analytics' ),
+                'range'       => '0 – 20 %',
+                'description' => __( 'Venu, vu, reparti. Promesse non tenue ou mauvais aiguillage.', 'always-analytics' ),
+                'count'       => $counts['zappeur'],
+                'pct'         => $total > 0 ? round( $counts['zappeur'] / $total * 100, 1 ) : 0,
+                'color'       => '#ef4444',
+            ),
+            array(
+                'key'         => 'curieux',
+                'label'       => __( 'Curieux', 'always-analytics' ),
+                'range'       => '20 – 74 %',
+                'description' => __( 'A parcouru le contenu sans atteindre la conclusion.', 'always-analytics' ),
+                'count'       => $counts['curieux'],
+                'pct'         => $total > 0 ? round( $counts['curieux'] / $total * 100, 1 ) : 0,
+                'color'       => '#f59e0b',
+            ),
+            array(
+                'key'         => 'compulsif',
+                'label'       => __( 'Lecteur Compulsif', 'always-analytics' ),
+                'range'       => '100 % · rapide',
+                'description' => __( 'Scanne à toute vitesse. Cherche une info précise sans lire le détail.', 'always-analytics' ),
+                'count'       => $counts['compulsif'],
+                'pct'         => $total > 0 ? round( $counts['compulsif'] / $total * 100, 1 ) : 0,
+                'color'       => '#6c63ff',
+            ),
+            array(
+                'key'         => 'super_lecteur',
+                'label'       => __( 'Super-Lecteur', 'always-analytics' ),
+                'range'       => '75 – 100 %',
+                'description' => __( 'A tout bu jusqu\'à la dernière ligne. Ton graal.', 'always-analytics' ),
+                'count'       => $counts['super_lecteur'],
+                'pct'         => $total > 0 ? round( $counts['super_lecteur'] / $total * 100, 1 ) : 0,
+                'color'       => '#10b981',
+            ),
+        );
+
+        return rest_ensure_response( array(
+            'profiles'        => $profiles,
+            'total_sessions'  => $total,
+            'median_velocity' => $velocity_threshold,
+        ) );
+    }
+
 
     // ── /engagement/pages ─────────────────────────────────────────────────────
 
@@ -1423,9 +1659,10 @@ class Always_Analytics_Rest {
         // Agrégation journalière si plage > 1 jour, horaire sinon.
         $tz_offset_seconds = (int) ( get_option( 'gmt_offset' ) * HOUR_IN_SECONDS );
         $tz_str = sprintf( '%+03d:00', (int) round( $tz_offset_seconds / HOUR_IN_SECONDS ) );
-        $is_today = $params['is_today'];
+        $is_today     = $params['is_today'];
+        $is_yesterday = $params['is_yesterday'];
 
-        if ( $is_today ) {
+        if ( $is_today || $is_yesterday ) {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery
             $trend = $wpdb->get_results( $wpdb->prepare(
                 "SELECT

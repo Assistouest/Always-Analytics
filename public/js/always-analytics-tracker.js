@@ -224,7 +224,7 @@
 
     // ── Scroll tracker ────────────────────────────────────────────────────────
 
-    var _scrollSent   = { 25: false, 50: false, 75: false, 100: false };
+    var _scrollSent   = { 10: false, 25: false, 50: false, 75: false, 100: false };
     var _scrollInited = false;
     var _scrollRaf    = null;
     var _currentScrollPct = 0;
@@ -253,7 +253,7 @@
             ? Math.min(100, Math.round(((scrolled + viewH) / docH) * 100))
             : 100;
         _currentScrollPct = pct;
-        var thresholds = [25, 50, 75, 100];
+        var thresholds = [10, 25, 50, 75, 100];
         for (var i = 0; i < thresholds.length; i++) {
             var t = thresholds[i];
             if (!_scrollSent[t] && pct >= t) {
@@ -384,7 +384,19 @@
 
     function _hostnameOf(url) {
         if (!url) return '';
-        try { return new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return ''; }
+        try { return new URL(url).hostname.replace(/^www\./, '').toLowerCase(); } catch (e) { return ''; }
+    }
+
+    /**
+     * Retourne vrai si refHost est interne au site :
+     * - hostname exact (ex: monsite.com)
+     * - sous-domaine (ex: shop.monsite.com)
+     */
+    function _isInternalHost(refHost) {
+        if (!refHost) return false;
+        var siteHost = _hostnameOf(config.siteUrl || window.location.origin);
+        if (!siteHost) return false;
+        return refHost === siteHost || refHost.slice(-(siteHost.length + 1)) === '.' + siteHost;
     }
 
     function getEntryReferrer() {
@@ -392,21 +404,19 @@
             var stored = sessionStorage.getItem(_REFERRER_KEY);
             if (stored !== null) return stored; // peut être '' (direct)
 
-            var raw      = document.referrer || '';
-            var siteHost = _hostnameOf((config.siteUrl || window.location.origin));
-            var refHost  = _hostnameOf(raw);
+            var raw     = document.referrer || '';
+            var refHost = _hostnameOf(raw);
 
-            // Referrer interne => on considere l'entree comme directe
-            var entry = (refHost && refHost === siteHost) ? '' : raw;
+            // Referrer interne (même domaine ou sous-domaine) => entrée directe
+            var entry = _isInternalHost(refHost) ? '' : raw;
             sessionStorage.setItem(_REFERRER_KEY, entry);
             return entry;
         } catch (e) {
-            // sessionStorage indisponible (navigation privee stricte) :
-            // fallback avec filtrage interne a la volee.
-            var raw      = document.referrer || '';
-            var siteHost = _hostnameOf((config.siteUrl || window.location.origin));
-            var refHost  = _hostnameOf(raw);
-            return (refHost && refHost === siteHost) ? '' : raw;
+            // sessionStorage indisponible (navigation privée stricte) :
+            // fallback avec filtrage interne à la volée.
+            var raw     = document.referrer || '';
+            var refHost = _hostnameOf(raw);
+            return _isInternalHost(refHost) ? '' : raw;
         }
     }
 

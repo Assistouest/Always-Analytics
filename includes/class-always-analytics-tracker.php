@@ -65,7 +65,8 @@ class Always_Analytics_Tracker
         // ── Nouveau visiteur ? ──────────────────────────────────────────────
         // Utilise $effective_mode : si fallback cookieless, is_new = lookup du jour
         // (pas lookup global qui serait faux sur un hash qui change chaque jour).
-        $is_new = self::is_new_visitor($visitor_hash, $effective_mode);
+        // P-02 : $options déjà lu en tête de track() — on le transmet pour éviter un get_option() de plus.
+        $is_new = self::is_new_visitor($visitor_hash, $effective_mode, $options);
 
         // ── Post ID / type ─────────────────────────────────────────────────
         $post_id = isset($data['postId']) ? absint($data['postId']) : 0;
@@ -83,13 +84,8 @@ class Always_Analytics_Tracker
             $parsed = wp_parse_url($referrer);
             $referrer_domain = isset($parsed['host']) ? sanitize_text_field($parsed['host']) : '';
 
-            // Ignore internal referrers (navigations within the same site).
-            // Compare against the site host, stripping any leading 'www.' for robustness.
-            $site_host = wp_parse_url(home_url(), PHP_URL_HOST);
-            $strip_www = function ($host) {
-                return preg_replace('/^www\./i', '', $host);
-            };
-            if ($referrer_domain && $strip_www($referrer_domain) === $strip_www($site_host)) {
+            // Ignore internal referrers: same domain AND subdomains (shop., blog., etc.).
+            if ($referrer_domain && self::is_internal_host($referrer_domain)) {
                 $referrer = '';
                 $referrer_domain = '';
             }
@@ -137,7 +133,7 @@ class Always_Analytics_Tracker
             'is_new_visitor' => $is_new ? 1 : 0,
             'is_logged_in' => is_user_logged_in() ? 1 : 0,
             'user_id' => get_current_user_id(),
-            'scroll_depth' => 0, // mis à jour par les events scroll
+            'scroll_depth' => 0, // réservé — non alimenté (noscript ne génère pas d'events scroll) // réservé — non alimenté (le scroll est dans aa_scroll + aa_sessions.max_scroll_depth)
             // hit_source : si mode cookie mais visitorId absent (fallback cookieless),
             // on marque 'js_cookieless' pour distinguer dans les stats.
             'hit_source' => mb_substr( isset($data['hitSource'])
@@ -162,6 +158,22 @@ class Always_Analytics_Tracker
         }
 
         $hit_id = $wpdb->insert_id;
+
+        // ── Libération anticipée de la connexion client (P-01) ─────────────
+        // Si PHP-FPM est disponible, on envoie la réponse HTTP 204 au navigateur
+        // avant d'exécuter update_session() et les actions, réduisant la latence
+        // perçue par le visiteur. Le traitement se poursuit dans le worker PHP
+        // sans bloquer le client.
+        // Conditions : headers non encore envoyés, output buffer actif.
+        if ( function_exists( 'fastcgi_finish_request' ) && ! headers_sent() ) {
+            // Forcer l'envoi des headers et du buffer courant au client.
+            if ( ob_get_level() > 0 ) {
+                ob_end_flush();
+            }
+            flush();
+            fastcgi_finish_request();
+            // À ce stade le client a reçu sa réponse. On continue en tâche de fond.
+        }
 
         // ── Mise à jour de la session ───────────────────────────────────────
         Always_Analytics_Session::update_session($session_id, $hit_data);
@@ -255,11 +267,8 @@ class Always_Analytics_Tracker
         if ($referrer) {
             $parsed = wp_parse_url($referrer);
             $referrer_domain = isset($parsed['host']) ? sanitize_text_field($parsed['host']) : '';
-            $site_host = wp_parse_url(home_url(), PHP_URL_HOST);
-            $strip_www = function ($h) {
-                return preg_replace('/^www\./i', '', $h);
-            };
-            if ($referrer_domain && $strip_www($referrer_domain) === $strip_www($site_host)) {
+            // Ignore internal referrers: same domain AND subdomains.
+            if ($referrer_domain && self::is_internal_host($referrer_domain)) {
                 $referrer = $referrer_domain = '';
             }
         }
@@ -541,6 +550,44 @@ class Always_Analytics_Tracker
         return false;
     }
 
+
+    /**
+     * Détermine si un hostname est interne au site.
+     *
+     * Considère comme interne :
+     *  - le hostname exact du site (avec ou sans www)
+     *  - tous les sous-domaines du domaine racine (ex: shop.monsite.com, blog.monsite.com)
+     *
+     * @param string $host Hostname à tester (ex: "blog.monsite.com")
+     * @return bool
+     */
+    public static function is_internal_host( $host ) {
+        $site_host = wp_parse_url( home_url(), PHP_URL_HOST );
+        if ( ! $site_host || ! $host ) {
+            return false;
+        }
+
+        // Normalise : retire le www. de chaque côté
+        $strip_www = function ( $h ) {
+            return strtolower( preg_replace( '/^www\./i', '', $h ) );
+        };
+
+        $root_domain = $strip_www( $site_host );
+        $ref_domain  = $strip_www( $host );
+
+        // Correspondance exacte (ex: monsite.com === monsite.com)
+        if ( $ref_domain === $root_domain ) {
+            return true;
+        }
+
+        // Sous-domaine (ex: shop.monsite.com se termine par .monsite.com)
+        if ( substr( $ref_domain, -( strlen( $root_domain ) + 1 ) ) === '.' . $root_domain ) {
+            return true;
+        }
+
+        return false;
+    }
+
     private static function is_excluded_ip($ip, $options)
     {
         if (empty($options['excluded_ips']))
@@ -601,41 +648,50 @@ class Always_Analytics_Tracker
      * En mode cookieless : "nouveau" = pas vu aujourd'hui (hash tourne chaque jour).
      * La comparaison de date se fait en UTC pour coller avec hit_at stocké en UTC.
      */
-    private static function is_new_visitor($visitor_hash, $tracking_mode = 'cookieless')
+    /**
+     * P-02 fix : utilise SELECT 1 … LIMIT 1 au lieu de COUNT(*) pour court-circuiter
+     * le scan dès la première ligne trouvée — charge minimale sur le buffer InnoDB.
+     * Accepte $options en paramètre optionnel pour éviter un get_option() supplémentaire
+     * quand track() l'a déjà lu.
+     */
+    private static function is_new_visitor($visitor_hash, $tracking_mode = 'cookieless', $options = null)
     {
         global $wpdb;
         $table = $wpdb->prefix . 'aa_hits';
 
-        $options = get_option('always_analytics_options', array());
-        $window  = isset($options['cookieless_window']) ? $options['cookieless_window'] : 'daily';
+        if ( null === $options ) {
+            $options = get_option('always_analytics_options', array());
+        }
+        $window = isset($options['cookieless_window']) ? $options['cookieless_window'] : 'daily';
 
         if ('cookie' === $tracking_mode) {
-            // Hash permanent → nouveau = jamais vu en base
+            // Hash permanent → nouveau = jamais vu en base.
+            // SELECT 1 LIMIT 1 : MySQL s'arrête à la première ligne trouvée (index idx_visitor_hash).
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-            $count = $wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM {$table} WHERE visitor_hash = %s LIMIT 1",
+            $found = $wpdb->get_var($wpdb->prepare(
+                "SELECT 1 FROM {$table} WHERE visitor_hash = %s LIMIT 1",
                 $visitor_hash
             ));
         } elseif ('session' === $window) {
-            // Hash lié à la session JS → par définition jamais vu (hash unique par session)
-            // On vérifie quand même pour se protéger contre les doublons (retry réseau, etc.)
+            // Hash de session → unique par définition, mais on vérifie les doublons réseau.
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-            $count = $wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM {$table} WHERE visitor_hash = %s LIMIT 1",
+            $found = $wpdb->get_var($wpdb->prepare(
+                "SELECT 1 FROM {$table} WHERE visitor_hash = %s LIMIT 1",
                 $visitor_hash
             ));
         } else {
-            // daily (défaut) → nouveau = pas vu aujourd'hui UTC
+            // daily (défaut) → nouveau = pas vu aujourd'hui UTC.
+            // L'index idx_visitor_hash couvre visitor_hash ; le filtre hit_at réduit le range.
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-            $count = $wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM {$table} WHERE visitor_hash = %s AND hit_at >= %s AND hit_at < %s LIMIT 1",
+            $found = $wpdb->get_var($wpdb->prepare(
+                "SELECT 1 FROM {$table} WHERE visitor_hash = %s AND hit_at >= %s AND hit_at < %s LIMIT 1",
                 $visitor_hash,
                 gmdate('Y-m-d') . ' 00:00:00',
                 gmdate('Y-m-d', strtotime('+1 day')) . ' 00:00:00'
             ));
         }
 
-        return (0 === (int)$count);
+        return ( null === $found );
     }
 
     // ── User-Agent parsing ──────────────────────────────────────────────────

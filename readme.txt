@@ -4,7 +4,7 @@ Tags: analytics, statistics, tracking, privacy, GDPR
 Requires at least: 5.8
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 2.5.0
+Stable tag: 2.6.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -64,6 +64,13 @@ Ce plugin inclut les bibliothèques open source suivantes, servies localement (a
 * Usage : Rendu des graphiques dans le tableau de bord.
 
 == Changelog ==
+
+= 2.6.0 =
+* Refactoring : suppression de tous les CSS inline — styles extraits vers always-analytics-admin.css
+* Refactoring : suppression de tous les blocs <script> inline — JS extrait vers des fichiers dédiés (always-analytics-pages.js, always-analytics-engagement.js)
+* Les URLs dynamiques (page countries, top-pages) sont désormais passées via wp_localize_script
+* Sélecteur de période : ajout de l'option "Hier", suppression de la plage personnalisée
+* Bump version
 
 = 1.0.0 =
 * Version initiale

@@ -109,6 +109,8 @@ class Always_Analytics_Activator
             hit_at          DATETIME        NOT NULL,
             PRIMARY KEY  (id),
             KEY idx_hit_at       (hit_at),
+            KEY idx_hit_at_ns    (hit_at, is_superseded),
+            KEY idx_vh_hit_at    (visitor_hash, hit_at),
             KEY idx_visitor_hash (visitor_hash),
             KEY idx_session_id   (session_id),
             KEY idx_post_id      (post_id),
@@ -217,6 +219,21 @@ class Always_Analytics_Activator
         // Colonne is_superseded sur hits (pre_consent fusionné → marquer pour exclusion)
         if (!in_array('is_superseded', $cols, true)) {
             $wpdb->query($wpdb->prepare("ALTER TABLE {$table_hits} ADD COLUMN is_superseded TINYINT(1) DEFAULT 0 AFTER hit_source"));
+        }
+
+        // ── P-11 / P-12 / P-13 — Index composites pour les gros volumes ──────────
+        // idx_hit_at_ns : couvre le filtre hit_at + is_superseded = 0 présent sur toutes les requêtes.
+        // idx_vh_hit_at : accélère is_new_visitor() mode cookieless (visitor_hash + hit_at range).
+        // Ajout conditionnel : sans impact sur les installations fraîches (colonnes dans le CREATE TABLE).
+        $indexes = $wpdb->get_results( $wpdb->prepare( "SHOW INDEX FROM {$table_hits}" ), ARRAY_A );
+        $idx_names = array_column( $indexes, 'Key_name' );
+        if ( ! in_array( 'idx_hit_at_ns', $idx_names, true ) ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            $wpdb->query( "ALTER TABLE {$table_hits} ADD INDEX idx_hit_at_ns (hit_at, is_superseded)" );
+        }
+        if ( ! in_array( 'idx_vh_hit_at', $idx_names, true ) ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            $wpdb->query( "ALTER TABLE {$table_hits} ADD INDEX idx_vh_hit_at (visitor_hash, hit_at)" );
         }
 
         update_option('always_analytics_version', AA_VERSION);

@@ -1,546 +1,210 @@
 <?php
 /**
- * Engagement — vue complète.
+ * Engagement full view — Always Analytics.
  *
  * @package Always_Analytics
  */
-if ( ! defined( 'ABSPATH' ) ) exit;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
 $back_url = admin_url( 'admin.php?page=always-analytics' );
 ?>
 <div class="wrap aa-wrap">
 
-    <!-- Header -->
-    <div class="aa-header">
-        <h1>
-            <img src="<?php echo esc_url( AA_PLUGIN_URL . 'always-analytics.svg' ); ?>" alt="" style="width:28px;height:28px;vertical-align:middle;margin-right:6px;">
-            <?php esc_html_e( 'Engagement', 'always-analytics' ); ?>
-            <a href="<?php echo esc_url( $back_url ); ?>" class="aa-back-btn" style="font-size:13px;margin-left:16px;">
-                ← <?php esc_html_e( 'Retour', 'always-analytics' ); ?>
-            </a>
-        </h1>
-        <div class="aa-header-actions">
-            <div class="aa-date-filter">
-                <select id="eng-period">
-                    <option value="today"  selected><?php esc_html_e( "Aujourd'hui", 'always-analytics' ); ?></option>
-                    <option value="7days"><?php esc_html_e( '7 derniers jours', 'always-analytics' ); ?></option>
-                    <option value="30days"><?php esc_html_e( '30 derniers jours', 'always-analytics' ); ?></option>
-                    <option value="90days"><?php esc_html_e( '90 derniers jours', 'always-analytics' ); ?></option>
-                    <option value="year"><?php esc_html_e( 'Cette année', 'always-analytics' ); ?></option>
-                    <option value="custom"><?php esc_html_e( 'Personnalisé', 'always-analytics' ); ?></option>
-                </select>
-                <div id="eng-custom-dates" style="display:none;align-items:center;gap:6px;flex-wrap:wrap;">
-                    <input type="date" id="eng-from">
-                    <span>→</span>
-                    <input type="date" id="eng-to">
-                    <button id="eng-apply" class="button"><?php esc_html_e( 'Appliquer', 'always-analytics' ); ?></button>
-                </div>
-            </div>
-        </div>
-    </div>
+	<!-- Header -->
+	<div class="aa-header">
+		<h1>
+			<img src="<?php echo esc_url( AA_PLUGIN_URL . 'always-analytics.svg' ); ?>" alt="" class="aa-logo-img--sm">
+			<?php esc_html_e( 'Engagement', 'always-analytics' ); ?>
+			<a href="<?php echo esc_url( $back_url ); ?>" class="aa-back-btn aa-back-btn--inline">
+				← <?php esc_html_e( 'Retour', 'always-analytics' ); ?>
+			</a>
+		</h1>
+		<div class="aa-header-actions">
+			<div class="aa-date-filter">
+				<select id="eng-period">
+					<option value="today"  selected><?php esc_html_e( "Aujourd'hui", 'always-analytics' ); ?></option>
+					<option value="yesterday"><?php esc_html_e( 'Hier', 'always-analytics' ); ?></option>
+					<option value="7days"><?php esc_html_e( '7 derniers jours', 'always-analytics' ); ?></option>
+					<option value="30days"><?php esc_html_e( '30 derniers jours', 'always-analytics' ); ?></option>
+					<option value="90days"><?php esc_html_e( '90 derniers jours', 'always-analytics' ); ?></option>
+					<option value="year"><?php esc_html_e( 'Cette année', 'always-analytics' ); ?></option>
+				</select>
+			</div>
+		</div>
+	</div>
 
-    <!-- KPI Cards -->
-    <div class="aa-kpis" id="eng-kpis">
-        <div class="aa-kpi-card">
-            <div class="aa-kpi-value" id="eng-kpi-rate">—</div>
-            <div class="aa-kpi-label">Taux d'engagement</div>
-        </div>
-        <div class="aa-kpi-card">
-            <div class="aa-kpi-value" id="eng-kpi-duration">—</div>
-            <div class="aa-kpi-label">Durée moy. session</div>
-        </div>
-        <div class="aa-kpi-card">
-            <div class="aa-kpi-value" id="eng-kpi-pages">—</div>
-            <div class="aa-kpi-label">Pages / session</div>
-        </div>
-        <div class="aa-kpi-card">
-            <div class="aa-kpi-value" id="eng-kpi-scroll">—</div>
-            <div class="aa-kpi-label">Scroll moyen</div>
-        </div>
-        <div class="aa-kpi-card">
-            <div class="aa-kpi-value" id="eng-kpi-deepread">—</div>
-            <div class="aa-kpi-label">Lecteurs profonds ≥ 75%</div>
-        </div>
-    </div>
+	<!-- KPI Cards -->
+	<div class="aa-kpis" id="eng-kpis">
+		<div class="aa-kpi-card">
+			<div class="aa-kpi-value" id="eng-kpi-rate">—</div>
+			<div class="aa-kpi-label"><?php esc_html_e( "Taux d'engagement", 'always-analytics' ); ?></div>
+		</div>
+		<div class="aa-kpi-card">
+			<div class="aa-kpi-value" id="eng-kpi-duration">—</div>
+			<div class="aa-kpi-label"><?php esc_html_e( 'Durée moy. session', 'always-analytics' ); ?></div>
+		</div>
+		<div class="aa-kpi-card">
+			<div class="aa-kpi-value" id="eng-kpi-pages">—</div>
+			<div class="aa-kpi-label"><?php esc_html_e( 'Pages / session', 'always-analytics' ); ?></div>
+		</div>
+		<div class="aa-kpi-card">
+			<div class="aa-kpi-value" id="eng-kpi-scroll">—</div>
+			<div class="aa-kpi-label"><?php esc_html_e( 'Scroll moyen', 'always-analytics' ); ?></div>
+		</div>
+		<div class="aa-kpi-card">
+			<div class="aa-kpi-value" id="eng-kpi-deepread">—</div>
+			<div class="aa-kpi-label"><?php esc_html_e( 'Lecteurs profonds ≥ 75%', 'always-analytics' ); ?></div>
+		</div>
+	</div>
 
-    <!-- Graphique temporel -->
-    <div class="aa-card aa-chart-card" style="margin-bottom:24px;">
-        <div class="aa-card-header">
-            <h2>Engagement dans le temps</h2>
-            <div class="aa-chart-toggles">
-                <button class="aa-toggle active" data-eng-dataset="engaged">Sessions engagées</button>
-                <button class="aa-toggle" data-eng-dataset="avg_dur">Durée moy.</button>
-                <button class="aa-toggle" data-eng-dataset="avg_scroll">Scroll moyen</button>
-            </div>
-        </div>
-        <div class="aa-chart-container">
-            <canvas id="eng-chart"></canvas>
-        </div>
-    </div>
+	<!-- Time chart -->
+	<div class="aa-card aa-chart-card aa-engagement-chart-wrap">
+		<div class="aa-card-header">
+			<h2><?php esc_html_e( 'Engagement dans le temps', 'always-analytics' ); ?></h2>
+			<div class="aa-chart-toggles">
+				<button class="aa-toggle active" data-eng-dataset="engaged"><?php esc_html_e( 'Sessions engagées', 'always-analytics' ); ?></button>
+				<button class="aa-toggle" data-eng-dataset="avg_dur"><?php esc_html_e( 'Durée moy.', 'always-analytics' ); ?></button>
+				<button class="aa-toggle" data-eng-dataset="avg_scroll"><?php esc_html_e( 'Scroll moyen', 'always-analytics' ); ?></button>
+			</div>
+		</div>
+		<div class="aa-chart-container">
+			<canvas id="eng-chart"></canvas>
+		</div>
+	</div>
 
-    <!-- 2 colonnes : Scroll distribution + Répartition sessions -->
-    <div class="aa-grid" style="margin-bottom:24px;">
+	<!-- Profils de lecture — pleine largeur, 4 cards en ligne -->
+	<div id="eng-reader-profiles" class="aa-rp-section">
+		<div class="aa-skeleton" style="height:140px;border-radius:var(--aa-radius);"></div>
+	</div>
 
-        <!-- Funnel scroll -->
-        <div class="aa-card">
-            <div class="aa-card-header">
-                <h2>Profondeur de scroll</h2>
-            </div>
-            <div class="aa-card-body" id="eng-scroll-dist" style="padding:20px;">
-                <!-- rempli par JS -->
-                <div class="aa-skeleton" style="height:180px;border-radius:8px;"></div>
-            </div>
-        </div>
+	<!-- Profondeur de scroll — 50% largeur -->
+	<div class="aa-grid aa-grid--half">
+		<div class="aa-card">
+			<div class="aa-card-header">
+				<h2><?php esc_html_e( 'Profondeur de scroll', 'always-analytics' ); ?></h2>
+			</div>
+			<div class="aa-card-body" id="eng-scroll-dist">
+				<div class="aa-skeleton aa-skeleton--scroll-dist"></div>
+			</div>
+		</div>
+	</div>
+	<!-- Engagement score per page -->
+	<div class="aa-card">
+		<div class="aa-card-header">
+			<h2><?php esc_html_e( 'Wilson Engagement Score', 'always-analytics' ); ?></h2>
+			<!-- Bouton visible uniquement sur mobile via CSS -->
+			<button class="aa-score-info-toggle" id="eng-score-toggle" aria-expanded="true"
+					aria-controls="eng-score-explainer">
+				<?php esc_html_e( 'Méthode', 'always-analytics' ); ?>
+				<svg class="aa-score-info-chevron is-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+			</button>
+		</div>
 
-        <!-- Distribution durée sessions -->
-        <div class="aa-card">
-            <div class="aa-card-header">
-                <h2>Durée des sessions</h2>
-            </div>
-            <div class="aa-card-body" style="padding:20px;">
-                <canvas id="eng-duration-chart" style="max-height:200px;"></canvas>
-            </div>
-        </div>
+		<!-- Explainer — toujours visible sur desktop, repliable sur mobile -->
+		<div class="aa-score-explainer" id="eng-score-explainer">
+			<div class="aa-score-explainer__inner">
+				<div class="aa-score-explainer__signals">
+					<div class="aa-score-explainer__signal">
+						<div class="aa-score-explainer__signal-header">
+							<span class="aa-score-explainer__signal-icon aa-signal-icon--duration">
+								<!-- Lucide: timer -->
+								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></svg>
+							</span>
+							<span class="aa-score-explainer__signal-name"><?php esc_html_e( 'Durée', 'always-analytics' ); ?></span>
+						</div>
+						<span class="aa-score-explainer__signal-weight">~24 %</span>
+						<p><?php esc_html_e( 'Temps moyen passé sur la page. Plus un visiteur reste, plus il est engagé.', 'always-analytics' ); ?></p>
+					</div>
+					<div class="aa-score-explainer__signal">
+						<div class="aa-score-explainer__signal-header">
+							<span class="aa-score-explainer__signal-icon aa-signal-icon--scroll">
+								<!-- Lucide: arrow-down-to-line -->
+								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17V3"/><path d="m6 11 6 6 6-6"/><path d="M19 21H5"/></svg>
+							</span>
+							<span class="aa-score-explainer__signal-name"><?php esc_html_e( 'Scroll', 'always-analytics' ); ?></span>
+						</div>
+						<span class="aa-score-explainer__signal-weight">~22 %</span>
+						<p><?php esc_html_e( 'Profondeur de défilement moyenne. Une page lue jusqu\'au bout signe un contenu pertinent.', 'always-analytics' ); ?></p>
+					</div>
+					<div class="aa-score-explainer__signal">
+						<div class="aa-score-explainer__signal-header">
+							<span class="aa-score-explainer__signal-icon aa-signal-icon--engagement">
+								<!-- Lucide: mouse-pointer-click -->
+								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 9 5 12 1.8-5.2L21 14Z"/><path d="M7.2 2.2 8 5.1"/><path d="m5.1 8-2.9-.8"/><path d="M14 4.1 12 6"/><path d="m6 12-1.9 2"/></svg>
+							</span>
+							<span class="aa-score-explainer__signal-name"><?php esc_html_e( 'Engagement', 'always-analytics' ); ?></span>
+						</div>
+						<span class="aa-score-explainer__signal-weight">~22 %</span>
+						<p><?php esc_html_e( 'Part de sessions actives (durée > 0 et non rebond). Filtre les visites superficielles.', 'always-analytics' ); ?></p>
+					</div>
+					<div class="aa-score-explainer__signal">
+						<div class="aa-score-explainer__signal-header">
+							<span class="aa-score-explainer__signal-icon aa-signal-icon--return">
+								<!-- Lucide: repeat -->
+								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+							</span>
+							<span class="aa-score-explainer__signal-name"><?php esc_html_e( 'Retour', 'always-analytics' ); ?></span>
+						</div>
+						<span class="aa-score-explainer__signal-weight">~20 %</span>
+						<p><?php esc_html_e( 'Part de visiteurs qui reviennent sur cette page. Indicateur fort de valeur perçue.', 'always-analytics' ); ?></p>
+					</div>
+					<div class="aa-score-explainer__signal">
+						<div class="aa-score-explainer__signal-header">
+							<span class="aa-score-explainer__signal-icon aa-signal-icon--depth">
+								<!-- Lucide: layers -->
+								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>
+							</span>
+							<span class="aa-score-explainer__signal-name"><?php esc_html_e( 'Profondeur', 'always-analytics' ); ?></span>
+						</div>
+						<span class="aa-score-explainer__signal-weight">~13 %</span>
+						<p><?php esc_html_e( 'Nombre moyen de pages vues par session après cette page. Mesure l\'effet d\'entraînement.', 'always-analytics' ); ?></p>
+					</div>
+				</div>
 
-    </div>
+				<div class="aa-score-explainer__wilson">
+					<div class="aa-score-explainer__wilson-head">
+						<span class="aa-score-explainer__signal-icon aa-signal-icon--wilson">
+							<!-- Lucide: shield-check -->
+							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+						</span>
+						<strong><?php esc_html_e( 'Correction de Wilson', 'always-analytics' ); ?></strong>
+						<span class="aa-score-explainer__wilson-badge"><?php esc_html_e( 'Modificateur global', 'always-analytics' ); ?></span>
+					</div>
+					<p><?php esc_html_e( 'L\'intervalle de Wilson applique un facteur de confiance statistique : moins il y a de données, plus le score est réduit vers la moyenne. Ce modificateur est affiché séparément car son algorithme peut évoluer indépendamment des signaux.', 'always-analytics' ); ?></p>
+				</div>
+			</div>
+		</div>
 
-    <!-- Tableau pages avec score d'engagement -->
-    <div class="aa-card">
-        <div class="aa-card-header">
-            <h2>Score d'engagement par page</h2>
-        </div>
-        <div class="aa-card-body" style="padding:0;">
-            <table class="aa-full-table" id="eng-pages-table">
-                <thead>
-                    <tr>
-                        <th style="width:30%">Page</th>
-                        <th style="width:100px;text-align:center">Score</th>
-                        <th>
-                            <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px;font-size:10px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.4px;padding:0 4px;">
-                                <span title="Durée moyenne sur cette page (poids ~24%)">🕒 Durée moy.</span>
-                                <span title="Scroll depth moyen (poids ~22%)">⬇ Scroll moy.</span>
-                                <span title="% sessions engagées (poids ~22%)">✅ Engagement</span>
-                                <span title="% visiteurs revenus (poids ~20%)">🔁 Retour</span>
-                                <span title="Pages/session depuis cette page (poids ~13%)">📄 Profondeur</span>
-                                <span title="Facteur Wilson : correction d'incertitude appliquée sur le score global (100% = aucune pénalité)">📊 Confiance</span>
-                            </div>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td colspan="3" class="aa-no-data">Chargement…</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
+		<!-- Table -->
+		<div class="aa-card-body aa-card-body--flush">
+			<table class="aa-full-table aa-eng-table" id="eng-pages-table">
+				<thead>
+					<tr>
+						<th class="aa-eng-th-page"><?php esc_html_e( 'Page', 'always-analytics' ); ?></th>
+						<th class="aa-eng-th-duration" title="<?php esc_attr_e( 'Durée moyenne passée sur la page', 'always-analytics' ); ?>"><?php esc_html_e( 'Durée moy.', 'always-analytics' ); ?></th>
+						<th class="aa-eng-th-scroll" title="<?php esc_attr_e( 'Profondeur de scroll moyenne sur la page', 'always-analytics' ); ?>"><?php esc_html_e( 'Scroll moy.', 'always-analytics' ); ?></th>
+						<th class="aa-eng-th-profile" title="<?php esc_attr_e( 'Profil de lecteur dominant sur cette page', 'always-analytics' ); ?>"><?php esc_html_e( 'Profil lecteur', 'always-analytics' ); ?></th>
+						<th class="aa-eng-th-wilson" title="<?php esc_attr_e( 'Correction Wilson — fiabilité statistique. Plus il y a de sessions, plus ce score est élevé et plus le score global est fiable.', 'always-analytics' ); ?>">
+							<?php esc_html_e( 'Fiabilité', 'always-analytics' ); ?>
+						</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr><td colspan="5" class="aa-no-data"><?php esc_html_e( 'Chargement…', 'always-analytics' ); ?></td></tr>
+				</tbody>
+			</table>
+		</div>
+		<!-- Show more -->
+		<div class="aa-show-more-wrap" id="eng-show-more-wrap" style="display:none;">
+			<button class="aa-show-more-btn" id="eng-show-more-btn">
+				<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+				<?php esc_html_e( 'Afficher 10 de plus', 'always-analytics' ); ?>
+				<span class="aa-show-more-remaining" id="eng-show-more-remaining"></span>
+			</button>
+		</div>
+	</div>
 
 </div><!-- .wrap -->
-
-<script>
-(function () {
-    'use strict';
-
-    function waitForConfig(cb) {
-        if (typeof alwaysAnalyticsAdmin !== 'undefined') {
-            cb();
-        } else {
-            // alwaysAnalyticsAdmin n'est pas encore disponible (script chargé de façon asynchrone)
-            var attempts = 0;
-            var interval = setInterval(function () {
-                attempts++;
-                if (typeof alwaysAnalyticsAdmin !== 'undefined') {
-                    clearInterval(interval);
-                    cb();
-                } else if (attempts > 20) {
-                    clearInterval(interval);
-                    console.warn('[Always Analytics] alwaysAnalyticsAdmin introuvable — vérifiez que le script admin est bien chargé.');
-                }
-            }, 100);
-        }
-    }
-
-    waitForConfig(function () {
-
-    var API   = alwaysAnalyticsAdmin.restBase;
-    var NONCE = alwaysAnalyticsAdmin.nonce;
-
-    var state = { from: dateOff(0), to: dateOff(0) };
-
-    var engChart = null;
-    var durChart = null;
-    var currentDataset = 'engaged';
-
-    // ── Init ──────────────────────────────────────────────────────────────────
-    // Le DOM est déjà chargé quand WordPress inclut cette vue PHP,
-    // DOMContentLoaded ne se déclenche donc jamais → on initialise directement.
-
-    function init() {
-        bindPeriod();
-        loadAll();
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
-
-    // ── Period selector ───────────────────────────────────────────────────────
-
-    function bindPeriod() {
-        var sel  = document.getElementById('eng-period');
-        var cDiv = document.getElementById('eng-custom-dates');
-
-        sel.addEventListener('change', function () {
-            cDiv.style.display = 'none';
-            var today = dateOff(0);
-            var map = {
-                today:  { from: today,      to: today },
-                '7days': { from: dateOff(-7), to: today },
-                '30days':{ from: dateOff(-30),to: today },
-                '90days':{ from: dateOff(-90),to: today },
-                year:   { from: new Date().getFullYear() + '-01-01', to: today },
-            };
-            if (this.value === 'custom') { cDiv.style.display = 'flex'; return; }
-            if (map[this.value]) { state.from = map[this.value].from; state.to = map[this.value].to; }
-            loadAll();
-        });
-
-        document.getElementById('eng-apply').addEventListener('click', function () {
-            var f = document.getElementById('eng-from').value;
-            var t = document.getElementById('eng-to').value;
-            if (f && t) { state.from = f; state.to = t; loadAll(); }
-        });
-
-        // Toggles graphique
-        document.querySelectorAll('[data-eng-dataset]').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                document.querySelectorAll('[data-eng-dataset]').forEach(function (b) { b.classList.remove('active'); });
-                this.classList.add('active');
-                currentDataset = this.getAttribute('data-eng-dataset');
-                if (engChart) updateEngChartDataset();
-            });
-        });
-    }
-
-    // ── Fetch ─────────────────────────────────────────────────────────────────
-
-    function apiFetch(endpoint, extra, cb) {
-        var qs = 'from=' + enc(state.from) + '&to=' + enc(state.to) + '&_t=' + Date.now();
-        if (extra) qs += '&' + extra;
-        fetch(API + endpoint + '?' + qs, {
-            cache: 'no-store',
-            headers: { 'X-WP-Nonce': NONCE, 'Cache-Control': 'no-cache, no-store', 'Pragma': 'no-cache' },
-        }).then(function (r) { return r.json(); }).then(cb).catch(function (e) { console.error(e); });
-    }
-
-    // ── Load ──────────────────────────────────────────────────────────────────
-
-    var _overviewPageViews = 0;
-
-    function loadAll() {
-        apiFetch('engagement', null, renderMain);
-        apiFetch('engagement/pages', 'limit=50', renderPages);
-        apiFetch('overview', null, function(d) {
-            _overviewPageViews = d.page_views || 0;
-            if (window._lastScrollDist) renderScrollDist(window._lastScrollDist, _overviewPageViews);
-        });
-    }
-
-    // ── Render KPIs + charts principaux ──────────────────────────────────────
-
-    var _chartData = null;
-
-    function renderMain(d) {
-        var k = d.kpis || {};
-        setText('eng-kpi-rate',     (k.engagement_rate || 0) + '%');
-        setText('eng-kpi-duration', fmtDur(k.avg_duration || 0));
-        setText('eng-kpi-pages',    parseFloat(k.avg_pages || 0).toFixed(1));
-        setText('eng-kpi-scroll',   parseFloat(k.avg_scroll_depth || 0).toFixed(0) + '%');
-        setText('eng-kpi-deepread', (k.deep_read_rate || 0) + '%');
-
-        _chartData = d.chart || [];
-        renderEngChart(_chartData);
-        renderScrollDist(d.scroll_distribution || {}, _overviewPageViews);
-        renderDurationChart(d.chart || []);
-    }
-
-    // ── Graphique engagement temporel ─────────────────────────────────────────
-
-    function renderEngChart(data) {
-        var ctx = document.getElementById('eng-chart');
-        if (!ctx) return;
-        if (engChart) { engChart.destroy(); }
-
-        var labels = data.map(function (d) { return d.label; });
-        var colors = { engaged: '#6c63ff', avg_dur: '#10b981', avg_scroll: '#f59e0b' };
-        var titles = { engaged: 'Sessions engagées', avg_dur: 'Durée moy. (s)', avg_scroll: 'Scroll moyen (%)' };
-
-        var datasets = {
-            engaged:    data.map(function (d) { return d.future ? null : d.engaged; }),
-            avg_dur:    data.map(function (d) { return d.future ? null : d.avg_dur; }),
-            avg_scroll: data.map(function (d) { return d.future ? null : d.avg_scroll; }),
-        };
-
-        engChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: Object.keys(datasets).map(function (key) {
-                    return {
-                        label:           titles[key],
-                        data:            datasets[key],
-                        borderColor:     colors[key],
-                        backgroundColor: colors[key] + '18',
-                        fill:            true,
-                        tension:         0.4,
-                        borderWidth:     2.5,
-                        hidden:          key !== currentDataset,
-                        spanGaps:        false,
-                        pointRadius:     0,
-                        pointHoverRadius:5,
-                    };
-                }),
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { intersect: false, mode: 'index' },
-                scales: {
-                    x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 11 } } },
-                    y: { beginAtZero: true, border: { display: false }, grid: { color: 'rgba(0,0,0,0.04)' },
-                         ticks: { font: { size: 11 } } },
-                },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { backgroundColor: '#1d2327', cornerRadius: 8, padding: 10,
-                        callbacks: {
-                            label: function (ctx) {
-                                if (ctx.parsed.y === null) return null;
-                                if (currentDataset === 'avg_dur') return ctx.dataset.label + ': ' + fmtDur(ctx.parsed.y);
-                                if (currentDataset === 'avg_scroll') return ctx.dataset.label + ': ' + ctx.parsed.y + '%';
-                                return ctx.dataset.label + ': ' + ctx.parsed.y;
-                            }
-                        }
-                    },
-                },
-            },
-        });
-    }
-
-    function updateEngChartDataset() {
-        if (!engChart) return;
-        engChart.data.datasets.forEach(function (ds) {
-            ds.hidden = (ds.label !== { engaged: 'Sessions engagées', avg_dur: 'Durée moy. (s)', avg_scroll: 'Scroll moyen (%)' }[currentDataset]);
-        });
-        engChart.update();
-    }
-
-    // ── Funnel scroll ─────────────────────────────────────────────────────────
-    // L'API retourne maintenant le seuil MAXIMUM atteint par session (tranches exclusives).
-    // 25 = s'est arrêté entre 25–49%, 50 = entre 50–74%, 75 = entre 75–99%, 100 = jusqu'au bout.
-    // La somme des 4 tranches = sessions avec scroll mesuré.
-
-    function renderScrollDist(dist, totalPageViews) {
-        window._lastScrollDist = dist;
-        window._lastTotalPV    = totalPageViews || 0;
-        var container = document.getElementById('eng-scroll-dist');
-        if (!container) return;
-
-        var measured   = (dist[25] || 0) + (dist[50] || 0) + (dist[75] || 0) + (dist[100] || 0);
-        var grandTotal = totalPageViews > 0 ? totalPageViews : measured;
-        var noScroll   = Math.max(0, grandTotal - measured);
-
-        var buckets = [
-            { label: 'Non mesuré (< 25%)', val: noScroll,       color: '#d1d5db', faded: true  },
-            { label: '25–49%',             val: dist[25]  || 0, color: '#6c63ff', faded: false },
-            { label: '50–74%',             val: dist[50]  || 0, color: '#10b981', faded: false },
-            { label: '75–99%',             val: dist[75]  || 0, color: '#f59e0b', faded: false },
-            { label: '100%',               val: dist[100] || 0, color: '#ef4444', faded: false },
-        ];
-
-        var max = Math.max.apply(null, buckets.map(function (b) { return b.val; })) || 1;
-
-        var html = '<div style="display:flex;flex-direction:column;gap:14px;">';
-        buckets.forEach(function (b) {
-            var pct        = Math.round((b.val / max) * 100);
-            var sharePct   = grandTotal > 0 ? ' (' + Math.round(b.val / grandTotal * 100) + '%)' : '';
-            var labelStyle = b.faded ? 'font-weight:500;color:#9ca3af;font-style:italic;' : 'font-weight:600;color:#1d2327;';
-            var valStyle   = b.faded ? 'color:#b0b8c1;' : 'color:#646970;font-weight:500;';
-            var barOpacity = b.faded ? 'opacity:0.45;' : '';
-            html += '<div>'
-                  + '<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:13px;">'
-                  + '<span style="' + labelStyle + '">' + b.label + '</span>'
-                  + '<span style="' + valStyle + '">' + b.val.toLocaleString('fr-FR') + ' pages vues' + sharePct + '</span>'
-                  + '</div>'
-                  + '<div style="background:#f0f2f5;border-radius:6px;height:10px;overflow:hidden;">'
-                  + '<div style="height:100%;width:' + pct + '%;background:' + b.color + ';border-radius:6px;transition:width .5s ease;' + barOpacity + '"></div>'
-                  + '</div>'
-                  + '</div>';
-        });
-        html += '</div>';
-
-        html += '<p style="margin-top:16px;font-size:12px;color:#9ca3af;line-height:1.6;">'
-              + 'Chaque page vue est comptée <strong>une seule fois</strong> dans la tranche la plus haute atteinte.'
-              + (grandTotal > 0 ? ' Total : <strong>' + grandTotal.toLocaleString('fr-FR') + ' pages vues</strong> dont <strong>' + measured.toLocaleString('fr-FR') + '</strong> avec scroll mesuré.' : '')
-              + '</p>';
-
-        container.innerHTML = html;
-    }
-
-    // ── Graphique durée sessions (barres) ─────────────────────────────────────
-
-    function renderDurationChart(data) {
-        var ctx = document.getElementById('eng-duration-chart');
-        if (!ctx) return;
-        if (durChart) { durChart.destroy(); }
-
-        // Buckets durée : <15s, 15-30s, 30-60s, 1-3m, 3-10m, >10m
-        // On utilise avg_dur comme proxy sur le graphique temporel
-        var labels = data.map(function (d) { return d.label; });
-        var values = data.map(function (d) { return d.future ? null : (d.avg_dur || 0); });
-
-        durChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Durée moy. (s)',
-                    data: values,
-                    backgroundColor: 'rgba(16,185,129,0.6)',
-                    borderColor: '#10b981',
-                    borderWidth: 1,
-                    borderRadius: 4,
-                }],
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: function (ctx) { return 'Durée moy. : ' + fmtDur(ctx.parsed.y); }
-                        }
-                    }
-                },
-                scales: {
-                    x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45 } },
-                    y: { beginAtZero: true, border: { display: false },
-                         ticks: { font: { size: 11 }, callback: function (v) { return fmtDur(v); } } },
-                },
-            },
-        });
-    }
-
-    // ── Tableau pages engagement ───────────────────────────────────────────────
-
-    function renderPages(data) {
-        var tbody = document.querySelector('#eng-pages-table tbody');
-        if (!tbody) return;
-
-        if (!data || !data.length) {
-            tbody.innerHTML = '<tr><td colspan="3" class="aa-no-data">Aucune donnée pour cette période</td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = data.map(function (p, idx) {
-            var score      = parseFloat(p.engagement_score || 0);
-            var sig        = p.score_signals || {};
-            var scoreColor = score >= 70 ? '#10b981' : score >= 40 ? '#f59e0b' : '#ef4444';
-            var scoreBg    = score >= 70 ? 'rgba(16,185,129,0.1)' : score >= 40 ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)';
-            var title      = p.page_title || p.page_url || '—';
-            var medal      = idx === 0 ? '🥇 ' : idx === 1 ? '🥈 ' : idx === 2 ? '🥉 ' : '';
-
-            // Définition des 5 signaux + facteur Wilson
-            var signals = [
-                {
-                    score: parseFloat((sig.duration  || {}).score || 0),
-                    label: fmtDur(p.avg_duration || 0),
-                    title: 'Durée moyenne · signal ' + parseFloat((sig.duration  || {}).score || 0).toFixed(0) + '/100 (poids ~24%)'
-                },
-                {
-                    score: parseFloat((sig.scroll    || {}).score || 0),
-                    label: (sig.scroll && (sig.scroll.raw || sig.scroll.raw === 0)) ? sig.scroll.raw + '%' : '—',
-                    title: 'Scroll moyen · signal ' + parseFloat((sig.scroll    || {}).score || 0).toFixed(0) + '/100 (poids ~22%)'
-                },
-                {
-                    score: parseFloat((sig.engagement|| {}).score || 0),
-                    label: (sig.engagement && sig.engagement.raw !== null && sig.engagement.raw !== undefined) ? sig.engagement.raw + '%' : '—',
-                    title: 'Sessions engagées · signal ' + parseFloat((sig.engagement|| {}).score || 0).toFixed(0) + '/100 (poids ~22%)'
-                },
-                {
-                    score: parseFloat((sig['return'] || {}).score || 0),
-                    label: (sig['return'] && (sig['return'].raw || sig['return'].raw === 0)) ? sig['return'].raw + '%' : '—',
-                    title: 'Visiteurs de retour · signal ' + parseFloat((sig['return'] || {}).score || 0).toFixed(0) + '/100 (poids ~20%)'
-                },
-                {
-                    score: parseFloat((sig.depth     || {}).score || 0),
-                    label: (sig.depth && sig.depth.raw > 0) ? sig.depth.raw + ' p.' : '—',
-                    title: 'Pages par session (depuis cette page) · signal ' + parseFloat((sig.depth     || {}).score || 0).toFixed(0) + '/100 (poids ~13%)'
-                },
-                {
-                    score: parseFloat((sig.confidence|| {}).score || 0),
-                    label: fmt(p.total_sessions) + ' sess.',
-                    title: 'Fiabilité statistique (Wilson) · ' + fmt(p.total_sessions) + ' sessions · facteur de rétention ' + parseFloat((sig.confidence|| {}).score || 0).toFixed(0) + '% (100% = aucune pénalité)'
-                },
-            ];
-
-            // Grille 6 signaux : barre de score + valeur brute lisible
-            var signalGrid = '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px;padding:0 4px;">'
-                + signals.map(function(s) {
-                    var v        = s.score;
-                    var barColor = v >= 70 ? '#10b981' : v >= 40 ? '#f59e0b' : '#ef4444';
-                    var barW     = Math.round(v);
-                    return '<div style="display:flex;flex-direction:column;gap:3px;" title="' + s.title + '">'
-                        + '<div style="background:#f1f5f9;border-radius:3px;height:5px;overflow:hidden;">'
-                        +   '<div style="width:' + barW + '%;height:100%;background:' + barColor + ';border-radius:3px;"></div>'
-                        + '</div>'
-                        + '<div style="font-size:11px;font-weight:600;color:#374151;">' + s.label + '</div>'
-                        + '</div>';
-                }).join('')
-                + '</div>';
-
-            return '<tr>'
-                // Col 1 : Page
-                + '<td style="vertical-align:middle;">'
-                +   '<div style="font-size:13px;font-weight:600;color:#1d2327;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px;" title="' + esc(p.page_url) + '">'
-                +   medal + esc(title)
-                +   '</div>'
-                +   '<div style="font-size:11px;color:#9ca3af;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px;">' + esc(p.page_url) + '</div>'
-                +   '<div style="font-size:11px;color:#b0b8c1;margin-top:1px;">' + fmt(p.page_views) + ' vues</div>'
-                + '</td>'
-                // Col 2 : Score
-                + '<td style="text-align:center;vertical-align:middle;width:90px;">'
-                +   '<span style="display:inline-flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:50%;background:' + scoreBg + ';color:' + scoreColor + ';font-weight:800;font-size:16px;">'
-                +   score.toFixed(0)
-                +   '</span>'
-                + '</td>'
-                // Col 3 : Grille 6 signaux
-                + '<td style="vertical-align:middle;padding-top:10px;padding-bottom:10px;">'
-                +   signalGrid
-                + '</td>'
-                + '</tr>';
-        }).join('');
-    }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    function setText(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
-    function fmt(n) { return (parseInt(n, 10) || 0).toLocaleString('fr-FR'); }
-    function fmtDur(s) {
-        s = Math.round(+s || 0);
-        if (s <= 0) return '0s';
-        var m = Math.floor(s / 60); return m > 0 ? m + 'm ' + (s % 60) + 's' : s + 's';
-    }
-    function dateOff(d) {
-        var dt = new Date(); dt.setDate(dt.getDate() + d);
-        return dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0');
-    }
-    function enc(s) { return encodeURIComponent(s || ''); }
-    function esc(s) { var d = document.createElement('div'); d.appendChild(document.createTextNode(s||'')); return d.innerHTML; }
-
-    }); // fin waitForConfig
-
-})();
-</script>

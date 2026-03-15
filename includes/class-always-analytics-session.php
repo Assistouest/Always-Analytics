@@ -15,58 +15,55 @@ class Always_Analytics_Session {
 
     /**
      * Crée ou met à jour une session à chaque hit de page.
+     *
+     * P-03 — Optimisation : remplace le pattern SELECT + INSERT/UPDATE (2 round-trips)
+     * par un INSERT … ON DUPLICATE KEY UPDATE atomique (1 seul round-trip).
+     *
+     * Logique métier identique à l'ancienne implémentation :
+     *   - Nouvelle session  : page_count = 1, started_at = now, is_bounce = 1 (défaut).
+     *   - Session existante : page_count++, duration recalculée, exit_page mis à jour,
+     *                         is_bounce passé à 0 si page_count > 1 OU duration >= 10 s.
+     *
+     * Précaution ON DUPLICATE KEY :
+     *   - started_at, visitor_hash, entry_page, referrer, device_type, country_code
+     *     ne sont PAS mis à jour sur conflit (VALUES ignorés) — ils conservent leur valeur d'origine.
+     *   - page_count est incrémenté atomiquement via page_count = page_count + 1.
+     *   - duration = TIMESTAMPDIFF(SECOND, started_at, VALUES(ended_at)) recalculé en SQL.
+     *   - is_bounce = 0 si page_count (après incrément) > 1 ou duration >= 10.
      */
     public static function update_session( $session_id, $hit_data ) {
         global $wpdb;
         $table = $wpdb->prefix . 'aa_sessions';
         $now   = current_time( 'mysql', true ); // UTC
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-        $existing = $wpdb->get_row( $wpdb->prepare(
-            "SELECT session_id, page_count, started_at, max_scroll_depth FROM {$table} WHERE session_id = %s",
-            $session_id
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $wpdb->query( $wpdb->prepare(
+            "INSERT INTO {$table}
+                (session_id, visitor_hash, started_at, ended_at, duration,
+                 page_count, entry_page, exit_page, referrer,
+                 device_type, country_code, is_bounce, max_scroll_depth, engagement_time)
+             VALUES (%s, %s, %s, %s, 0, 1, %s, %s, %s, %s, %s, 1, 0, 0)
+             ON DUPLICATE KEY UPDATE
+                ended_at   = VALUES(ended_at),
+                duration   = GREATEST(0, TIMESTAMPDIFF(SECOND, started_at, VALUES(ended_at))),
+                page_count = page_count + 1,
+                exit_page  = VALUES(exit_page),
+                is_bounce  = CASE
+                    WHEN page_count + 1 > 1
+                      OR GREATEST(0, TIMESTAMPDIFF(SECOND, started_at, VALUES(ended_at))) >= 10
+                    THEN 0
+                    ELSE is_bounce
+                END",
+            $session_id,
+            $hit_data['visitor_hash'],
+            $now,   // started_at  (ignoré sur conflit — conserve la valeur existante)
+            $now,   // ended_at    (mis à jour sur conflit via VALUES(ended_at))
+            $hit_data['page_url'],  // entry_page  (ignoré sur conflit)
+            $hit_data['page_url'],  // exit_page   (mis à jour sur conflit)
+            $hit_data['referrer'],  // referrer    (ignoré sur conflit)
+            $hit_data['device_type'],
+            $hit_data['country_code']
         ) );
-
-        if ( null === $existing ) {
-            // Nouvelle session
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-            $wpdb->insert( $table, array(
-                'session_id'       => $session_id,
-                'visitor_hash'     => $hit_data['visitor_hash'],
-                'started_at'       => $now,
-                'ended_at'         => $now,
-                'duration'         => 0,
-                'page_count'       => 1,
-                'entry_page'       => $hit_data['page_url'],
-                'exit_page'        => $hit_data['page_url'],
-                'referrer'         => $hit_data['referrer'],
-                'device_type'      => $hit_data['device_type'],
-                'country_code'     => $hit_data['country_code'],
-                'is_bounce'        => 1,    // bounce par défaut
-                'max_scroll_depth' => 0,
-                'engagement_time'  => 0,
-            ) );
-        } else {
-            $page_count = (int) $existing->page_count + 1;
-            $duration   = max( 0, (int) ( strtotime( $now ) - strtotime( $existing->started_at ) ) );
-            // Engagé si > 1 page ou > 10 s sur le site
-            $is_bounce  = ( $page_count > 1 || $duration >= 10 ) ? 0 : 1;
-
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-            $wpdb->update(
-                $table,
-                array(
-                    'ended_at'   => $now,
-                    'duration'   => $duration,
-                    'page_count' => $page_count,
-                    'exit_page'  => $hit_data['page_url'],
-                    'is_bounce'  => $is_bounce,
-                ),
-                array( 'session_id' => $session_id ),
-                array( '%s', '%d', '%d', '%s', '%d' ),
-                array( '%s' )
-            );
-        }
     }
 
     /**

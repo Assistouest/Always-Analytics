@@ -51,7 +51,7 @@ function as_checked($o, $k)
     <!-- Header -->
     <div class="aa-header">
         <h1>
-            <img src="<?php echo esc_url(AA_PLUGIN_URL . 'always-analytics.svg'); ?>" alt="" style="width:32px;height:32px;vertical-align:middle;">
+            <img src="<?php echo esc_url(AA_PLUGIN_URL . 'always-analytics.svg'); ?>" alt="" class="aa-logo-img">
             <?php esc_html_e('Réglages', 'always-analytics'); ?>
         </h1>
         <div class="aa-header-actions">
@@ -171,9 +171,9 @@ endif; ?></button>
                                 <strong><?php esc_html_e('Bannière de consentement obligatoire en mode cookie', 'always-analytics'); ?></strong>
                                 <?php esc_html_e('En passant en mode cookie, un fichier est déposé sur l\'appareil du visiteur pour le reconnaître d\'une visite à l\'autre. Or la loi est claire : on ne peut pas déposer un cookie de tracking sans avoir obtenu le consentement préalable et explicite du visiteur.', 'always-analytics'); ?>
                                 <div class="as-inline-alert__laws">
-                                    <span class="as-law-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;flex-shrink:0;vertical-align:middle;margin-right:3px"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>RGPD art. 7</span>
-                                    <span class="as-law-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;flex-shrink:0;vertical-align:middle;margin-right:3px"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Directive ePrivacy 2002/58/CE art. 5.3</span>
-                                    <span class="as-law-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;flex-shrink:0;vertical-align:middle;margin-right:3px"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>CNIL délibération n°2020-091</span>
+                                    <span class="as-law-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="as-law-svg"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>RGPD art. 7</span>
+                                    <span class="as-law-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="as-law-svg"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Directive ePrivacy 2002/58/CE art. 5.3</span>
+                                    <span class="as-law-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="as-law-svg"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>CNIL délibération n°2020-091</span>
                                 </div>
                                 <?php esc_html_e('Concrètement : sans bannière active, vos visiteurs sont trackés sans le savoir, ce qui constitue une infraction. En cas de contrôle, la CNIL peut prononcer une mise en demeure, voire une sanction financière.', 'always-analytics'); ?>
                                 <a href="#" class="as-inline-alert__link aa-settings-tab-link" data-tab="consent"><?php esc_html_e('→ Activer la bannière dans l\'onglet Consentement', 'always-analytics'); ?></a>
@@ -271,8 +271,8 @@ endforeach; ?>
                                 <strong><?php esc_html_e('La géolocalisation traite l\'IP complète de vos visiteurs', 'always-analytics'); ?></strong>
                                 <?php esc_html_e('Pour localiser un visiteur (pays, région, ville), le plugin utilise son adresse IP. Sans anonymisation préalable, cette IP complète est traitée comme donnée personnelle identifiante. Ce n\'est pas interdit, mais cela oblige à une base légale explicite et à en informer les visiteurs.', 'always-analytics'); ?>
                                 <div class="as-inline-alert__laws">
-                                    <span class="as-law-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;flex-shrink:0;vertical-align:middle;margin-right:3px"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>RGPD art. 4.1 — l'IP est une donnée personnelle</span>
-                                    <span class="as-law-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;flex-shrink:0;vertical-align:middle;margin-right:3px"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>RGPD art. 25 — privacy by design</span>
+                                    <span class="as-law-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="as-law-svg"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>RGPD art. 4.1 — l'IP est une donnée personnelle</span>
+                                    <span class="as-law-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="as-law-svg"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>RGPD art. 25 — privacy by design</span>
                                 </div>
                                 <?php esc_html_e('Solution simple : activez l\'anonymisation IP dans l\'onglet Confidentialité. La géolocalisation continuera de fonctionner à l\'échelle du pays et de la ville, sans traiter d\'IP personnelle.', 'always-analytics'); ?>
                                 <a href="#" class="as-inline-alert__link aa-settings-tab-link" data-tab="privacy"><?php esc_html_e('→ Activer l\'anonymisation IP', 'always-analytics'); ?></a>
@@ -314,9 +314,9 @@ endforeach; ?>
                                 <strong><?php esc_html_e('L\'adresse IP de vos visiteurs est une donnée personnelle', 'always-analytics'); ?></strong>
                                 <?php esc_html_e('Sans anonymisation, l\'IP complète du visiteur (ex : 192.168.1.42) est utilisée pour calculer son identifiant. Or une IP permet d\'identifier une personne — c\'est donc une donnée personnelle au sens strict du RGPD. La CNIL recommande de tronquer systématiquement le dernier octet (ex : 192.168.1.0) avant tout traitement, rendant l\'identification impossible.', 'always-analytics'); ?>
                                 <div class="as-inline-alert__laws">
-                                    <span class="as-law-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;flex-shrink:0;vertical-align:middle;margin-right:3px"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>RGPD art. 4.1 — définition donnée personnelle</span>
-                                    <span class="as-law-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;flex-shrink:0;vertical-align:middle;margin-right:3px"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>RGPD art. 25 — protection des données dès la conception</span>
-                                    <span class="as-law-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;flex-shrink:0;vertical-align:middle;margin-right:3px"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>CNIL recommandation anonymisation IP</span>
+                                    <span class="as-law-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="as-law-svg"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>RGPD art. 4.1 — définition donnée personnelle</span>
+                                    <span class="as-law-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="as-law-svg"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>RGPD art. 25 — protection des données dès la conception</span>
+                                    <span class="as-law-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="as-law-svg"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>CNIL recommandation anonymisation IP</span>
                                 </div>
                                 <?php esc_html_e('Activer cette option ne change rien à vos statistiques : vous verrez toujours les pays, villes et visites uniques — mais sans risque RGPD.', 'always-analytics'); ?>
                             </div>
@@ -331,23 +331,23 @@ endforeach; ?>
                         <span class="as-row__desc"><?php esc_html_e('Définit la durée pendant laquelle un visiteur est considéré unique en mode sans cookie et en pré-consentement RGPD.', 'always-analytics'); ?></span>
                     </div>
                     <div class="as-row__control">
-                        <div style="display:flex;flex-direction:column;gap:10px;">
-                            <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;">
+                        <div class="as-radio-group">
+                            <label class="as-cookieless-label">
                                 <input type="radio" name="always_analytics_options[cookieless_window]" value="daily"
                                        <?php checked($cookieless_window, 'daily'); ?>
-                                       style="margin-top:3px;flex-shrink:0;">
+                                       >
                                 <span>
                                     <strong><?php esc_html_e('Journalière', 'always-analytics'); ?></strong><br>
                                     <span class="as-row__desc"><?php esc_html_e('SHA256(IP + UA + Langue + date du jour). Un visiteur unique par jour, remis à zéro à minuit UTC.', 'always-analytics'); ?></span>
                                 </span>
                             </label>
-                            <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;">
+                            <label class="as-cookieless-label">
                                 <input type="radio" name="always_analytics_options[cookieless_window]" value="session"
                                        <?php checked($cookieless_window, 'session'); ?>
-                                       style="margin-top:3px;flex-shrink:0;">
+                                       >
                                 <span>
                                     <strong><?php esc_html_e('Session uniquement', 'always-analytics'); ?></strong>
-                                    &nbsp;<span class="as-inline-badge" style="background:#e8f5e9;color:#2e7d32;font-size:10px;padding:1px 6px;border-radius:4px;">CNIL</span><br>
+                                    &nbsp;<span class="as-inline-badge as-inline-badge--cnil">CNIL</span><br>
                                     <span class="as-row__desc"><?php esc_html_e('SHA256(IP + UA + Langue + sessionId). Hash lié à l\'onglet navigateur, disparu à sa fermeture. Aucune persistance cross-session. Recommandé par la CNIL pour l\'exemption de consentement.', 'always-analytics'); ?></span>
                                 </span>
                             </label>
@@ -359,7 +359,7 @@ endforeach; ?>
                     <div class="as-row__label">
                         <span class="as-row__title">
                             <?php esc_html_e('Durée de rétention', 'always-analytics'); ?>
-                            <?php if ($ret_warn): ?><span class="as-inline-badge mod-warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;vertical-align:middle;margin-right:3px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>CNIL</span><?php
+                            <?php if ($ret_warn): ?><span class="as-inline-badge mod-warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="as-law-svg"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>CNIL</span><?php
 endif; ?>
                         </span>
                         <span class="as-row__desc"><?php esc_html_e('Après cette période, les données brutes sont anonymisées (les agrégats sont conservés indéfiniment). La CNIL recommande 13 mois maximum.', 'always-analytics'); ?></span>
@@ -382,16 +382,16 @@ endif; ?>
                                 <strong><?php esc_html_e('Rétention illimitée : vos données ne sont jamais effacées', 'always-analytics'); ?></strong>
                                 <?php esc_html_e('Le RGPD pose un principe fondamental : on ne peut pas garder des données personnelles plus longtemps que nécessaire. Avec une rétention illimitée, les visites de vos utilisateurs restent en base indéfiniment — sans aucune base légale. La CNIL fixe un maximum de 13 mois pour les données d\'audience web.', 'always-analytics'); ?>
                                 <div class="as-inline-alert__laws">
-                                    <span class="as-law-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;flex-shrink:0;vertical-align:middle;margin-right:3px"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>RGPD art. 5.1.e — limitation de la conservation</span>
-                                    <span class="as-law-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;flex-shrink:0;vertical-align:middle;margin-right:3px"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>CNIL recommandation — 13 mois max (390 jours)</span>
+                                    <span class="as-law-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="as-law-svg"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>RGPD art. 5.1.e — limitation de la conservation</span>
+                                    <span class="as-law-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="as-law-svg"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>CNIL recommandation — 13 mois max (390 jours)</span>
                                 </div>
                                 <?php esc_html_e('Bonne nouvelle : choisir 365 jours suffit pour avoir un historique annuel complet, tout en étant pleinement conforme.', 'always-analytics'); ?>
                                 <?php else: ?>
                                 <strong><?php printf(esc_html__('Rétention de %d jours : au-delà du seuil CNIL', 'always-analytics'), $retention); ?></strong>
                                 <?php printf(esc_html__('Vous conservez des données de visite pendant %d jours, soit plus de 13 mois. La CNIL recommande de ne pas dépasser 390 jours pour les statistiques d\'audience. Au-delà, vous devrez justifier d\'une nécessité particulière — ce qui est rarement le cas pour de la mesure d\'audience simple.', 'always-analytics'), $retention); ?>
                                 <div class="as-inline-alert__laws">
-                                    <span class="as-law-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;flex-shrink:0;vertical-align:middle;margin-right:3px"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>RGPD art. 5.1.e — limitation de la conservation</span>
-                                    <span class="as-law-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;flex-shrink:0;vertical-align:middle;margin-right:3px"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>CNIL recommandation — 13 mois max (390 jours)</span>
+                                    <span class="as-law-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="as-law-svg"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>RGPD art. 5.1.e — limitation de la conservation</span>
+                                    <span class="as-law-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="as-law-svg"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>CNIL recommandation — 13 mois max (390 jours)</span>
                                 </div>
                                 <?php esc_html_e('→ Passez à 365 jours : vous gardez un an d\'historique complet, en toute conformité.', 'always-analytics'); ?>
                                 <?php endif; ?>
@@ -586,11 +586,11 @@ endif; ?>
             <div class="aa-kpi-card"><div class="aa-kpi-value"><?php echo esc_html(number_format_i18n($db_sessions)); ?></div><div class="aa-kpi-label"><?php esc_html_e('Sessions', 'always-analytics'); ?></div></div>
             <div class="aa-kpi-card"><div class="aa-kpi-value"><?php echo esc_html(number_format_i18n($db_scroll)); ?></div><div class="aa-kpi-label"><?php esc_html_e('Scroll events', 'always-analytics'); ?></div></div>
             <div class="aa-kpi-card"><div class="aa-kpi-value"><?php echo esc_html(number_format_i18n($db_daily)); ?></div><div class="aa-kpi-label"><?php esc_html_e('Agrégats', 'always-analytics'); ?></div></div>
-            <div class="aa-kpi-card"><div class="aa-kpi-value" style="color:var(--aa-success)"><?php echo esc_html(number_format_i18n($db_anon)); ?></div><div class="aa-kpi-label"><?php esc_html_e('Hits anonymisés', 'always-analytics'); ?></div></div>
+            <div class="aa-kpi-card"><div class="aa-kpi-value aa-kpi-value--success"><?php echo esc_html(number_format_i18n($db_anon)); ?></div><div class="aa-kpi-label"><?php esc_html_e('Hits anonymisés', 'always-analytics'); ?></div></div>
         </div>
 
         <?php if ($db_anon > 0): ?>
-        <div class="as-note" style="margin-bottom:24px;">
+        <div class="as-note">
             <span class="as-note__icon"><svg class="as-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
             <div><?php printf(esc_html__('%s hits anonymisés — statistiques conservées, identité effacée.', 'always-analytics'), '<strong>' . esc_html(number_format_i18n($db_anon)) . '</strong>'); ?></div>
         </div>
@@ -604,10 +604,10 @@ endif; ?>
             </div>
             <div class="as-card__body">
                 <button id="aa-purge-btn" class="button button-secondary"
-                        style="border-radius:7px;">
+                        >
                     <svg class="as-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> <?php esc_html_e('Lancer l\'anonymisation', 'always-analytics'); ?>
                 </button>
-                <span id="aa-purge-result" style="margin-left:12px;display:none;"></span>
+                <span id="aa-purge-result"></span>
             </div>
         </div>
     </div>
@@ -917,7 +917,7 @@ endif; ?>
             </div>
         </div>
         <p class="as-rgpd-score__scope">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;flex-shrink:0;vertical-align:middle;margin-right:4px;opacity:.6"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="as-rgpd-scope-icon"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
             <?php esc_html_e('Ce score évalue uniquement la configuration d\'Always Analytics. Il ne couvre pas les autres traitements de données de votre site (formulaires, commentaires, plugins tiers, publicité…) qui peuvent nécessiter des mesures RGPD complémentaires.', 'always-analytics'); ?>
         </p>
 
@@ -961,7 +961,7 @@ endif; ?>
                     <?php if (!empty($d['laws'])): ?>
                     <div class="as-diag-item__laws">
                         <?php foreach ($d['laws'] as $law): ?>
-                        <span class="as-law-tag as-law-tag--diag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;flex-shrink:0;vertical-align:middle;margin-right:3px"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><?php echo esc_html($law); ?></span>
+                        <span class="as-law-tag as-law-tag--diag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="as-law-svg"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><?php echo esc_html($law); ?></span>
                         <?php endforeach; ?>
                     </div>
                     <?php endif; ?>
@@ -969,7 +969,7 @@ endif; ?>
                         <?php if (!empty($d['link'])): ?>
                             <a href="<?php echo esc_url($d['link']); ?>" class="as-diag-item__cta" target="_blank">
                                 <?php echo esc_html($d['action']); ?>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px;vertical-align:middle;margin-left:3px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="as-cta-icon"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                             </a>
                         <?php else: ?>
                             <a href="#" class="as-diag-item__cta aa-settings-tab-link" data-tab="<?php echo esc_attr($d['tab']); ?>">
@@ -984,7 +984,7 @@ endif; ?>
 
         <!-- Note légale -->
         <div class="as-rgpd-footer-note">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;flex-shrink:0;opacity:.5;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="as-rgpd-footer-icon"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
             <span><?php esc_html_e('Ce diagnostic est basé sur les recommandations CNIL (délibération n°2020-091) et le RGPD (règlement EU 2016/679). Il ne constitue pas un avis juridique. En cas de doute, consultez un délégué à la protection des données (DPO).', 'always-analytics'); ?></span>
         </div>
 
@@ -995,588 +995,3 @@ endif; ?>
     </div>
 
 </div><!-- .wrap -->
-
-<style>
-/* ─── Misc header ──────────────────────────────────────────────────────────── */
-.as-version-badge {
-    font-size: 12px; font-weight: 500;
-    color: var(--aa-text-secondary);
-    background: var(--aa-bg);
-    border: 1px solid var(--aa-border);
-    border-radius: 20px;
-    padding: 3px 11px;
-}
-
-/* ─── Status banner ────────────────────────────────────────────────────────── */
-.as-status-banner {
-    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-    padding: 16px 20px;
-    background: #fff;
-    border: 1px solid var(--aa-border);
-    border-radius: var(--aa-radius);
-    box-shadow: var(--aa-shadow);
-    margin-bottom: 16px;
-}
-/* No colored border on banner — chips carry the status signal */
-.as-status-banner__icon { font-size: 22px; flex-shrink: 0; }
-.as-status-banner__body { flex: 1; font-size: 13px; line-height: 1.5; color: var(--aa-text-secondary); }
-.as-status-banner__body strong { display: block; font-size: 13px; font-weight: 700; color: var(--aa-text); margin-bottom: 2px; }
-.as-status-banner__chips { display: flex; gap: 8px; flex-wrap: wrap; }
-
-/* ─── Chips ────────────────────────────────────────────────────────────────── */
-.as-chip {
-    font-size: 11px; font-weight: 500;
-    padding: 3px 10px; border-radius: 20px;
-    background: var(--aa-bg);
-    color: var(--aa-text-secondary);
-    border: 1px solid var(--aa-border);
-    white-space: nowrap;
-}
-.as-chip.mod-ok     { color: #065f46; background: rgba(16,185,129,.08); border-color: rgba(16,185,129,.25); }
-.as-chip.mod-warn   { color: #92400e; background: rgba(245,158,11,.08); border-color: rgba(245,158,11,.25); }
-.as-chip.mod-danger { color: #b91c1c; background: rgba(239,68,68,.08);  border-color: rgba(239,68,68,.25); }
-a.as-chip { text-decoration: none; cursor: pointer; transition: opacity .15s; }
-a.as-chip:hover { opacity: .8; }
-
-/* ─── Inline alerts ────────────────────────────────────────────────────────── */
-.as-alert {
-    display: flex; align-items: flex-start; gap: 12px;
-    padding: 13px 18px;
-    background: #fff;
-    border: 1px solid var(--aa-border);
-    border-radius: var(--aa-radius);
-    box-shadow: var(--aa-shadow);
-    margin-bottom: 14px;
-    font-size: 13px;
-}
-.as-alert.mod-warn   { border-left: 3px solid var(--aa-warning); }
-.as-alert.mod-danger { border-left: 3px solid var(--aa-danger); }
-.as-alert__icon {
-    flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: 800; margin-top: 1px;
-}
-.as-alert.mod-warn   .as-alert__icon { background: rgba(245,158,11,.12); color: #92400e; }
-.as-alert.mod-danger .as-alert__icon { background: rgba(239,68,68,.12);  color: #b91c1c; }
-.as-alert__body { flex: 1; color: var(--aa-text-secondary); line-height: 1.5; }
-.as-alert__body strong { display: block; font-weight: 700; color: var(--aa-text); margin-bottom: 3px; }
-.as-alert__cta {
-    align-self: center; flex-shrink: 0;
-    font-size: 12px; font-weight: 600;
-    color: var(--aa-primary) !important;
-    border: 1px solid var(--aa-primary);
-    border-radius: 6px; padding: 5px 14px;
-    text-decoration: none; transition: all .15s; white-space: nowrap;
-}
-.as-alert__cta:hover { background: var(--aa-primary); color: #fff !important; }
-
-/* ─── Tab bar ──────────────────────────────────────────────────────────────── */
-.as-tabs {
-    display: flex; gap: 2px; flex-wrap: wrap;
-    background: #fff;
-    border: 1px solid var(--aa-border);
-    border-radius: var(--aa-radius);
-    padding: 5px;
-    margin-bottom: 24px;
-    box-shadow: var(--aa-shadow);
-}
-.as-tab {
-    padding: 8px 16px;
-    border: none; background: transparent;
-    border-radius: 7px;
-    font-size: 13px; font-weight: 500;
-    color: var(--aa-text-secondary);
-    cursor: pointer; transition: all .15s;
-    position: relative; white-space: nowrap;
-}
-.as-tab:hover:not(.active) { background: var(--aa-bg); color: var(--aa-text); }
-.as-tab.active { background: var(--aa-primary); color: #fff; font-weight: 600; }
-.as-tab-dot {
-    position: absolute; top: 6px; right: 6px;
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--aa-danger);
-}
-.as-panel { display: none; }
-.as-panel.active { display: block; }
-
-/* ─── Card ─────────────────────────────────────────────────────────────────── */
-.as-card {
-    background: #fff;
-    border: 1px solid var(--aa-border);
-    border-radius: var(--aa-radius);
-    box-shadow: var(--aa-shadow);
-    margin-bottom: 20px;
-    overflow: hidden;
-}
-.as-card__head {
-    padding: 20px 28px 16px;
-    border-bottom: 1px solid var(--aa-border);
-}
-.as-card__head h2 {
-    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-    font-size: 15px; font-weight: 700; color: var(--aa-text);
-    margin: 0 0 5px; padding: 0;
-}
-.as-card__head p {
-    font-size: 13px; color: var(--aa-text-secondary);
-    margin: 0; line-height: 1.5;
-}
-.as-card__body { padding: 24px 28px; }
-
-/* ─── Setting row ──────────────────────────────────────────────────────────── */
-.as-row {
-    display: grid;
-    grid-template-columns: 280px 1fr;
-    gap: 0 32px;
-    padding: 22px 28px;
-    border-bottom: 1px solid var(--aa-border);
-    align-items: start;
-}
-.as-row--last { border-bottom: none; }
-.as-row--warn { background: rgba(245,158,11,.04); }
-.as-row__label { display: flex; flex-direction: column; gap: 5px; }
-.as-row__title { font-size: 13px; font-weight: 600; color: var(--aa-text); display: flex; align-items: center; gap: 8px; }
-.as-row__desc  { font-size: 12px; color: var(--aa-text-secondary); line-height: 1.6; }
-.as-row__control { padding-top: 2px; }
-.as-row__control--inline { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
-.as-row__alert {
-    grid-column: 1 / -1;
-    padding: 0 0 16px;
-}
-.as-row__alert .as-inline-alert {
-    margin-top: 0;
-    border-radius: 8px;
-}
-
-/* ─── Toggle switch ────────────────────────────────────────────────────────── */
-.as-toggle { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
-.as-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
-.as-toggle__track {
-    position: relative; width: 38px; height: 22px;
-    background: var(--aa-border); border-radius: 11px;
-    transition: background .2s; flex-shrink: 0;
-}
-.as-toggle__track::after {
-    content: ''; position: absolute;
-    top: 3px; left: 3px;
-    width: 16px; height: 16px;
-    background: #fff; border-radius: 50%;
-    box-shadow: 0 1px 3px rgba(0,0,0,.2);
-    transition: transform .2s;
-}
-.as-toggle input:checked ~ .as-toggle__track { background: var(--aa-primary); }
-.as-toggle input:checked ~ .as-toggle__track::after { transform: translateX(16px); }
-.as-toggle__label { font-size: 13px; color: var(--aa-text-secondary); }
-
-/* ─── Radio group ──────────────────────────────────────────────────────────── */
-.as-radio-group { display: flex; flex-direction: column; gap: 12px; }
-.as-radio { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
-.as-radio input { position: absolute; opacity: 0; width: 0; height: 0; }
-.as-radio__box {
-    width: 18px; height: 18px; border-radius: 50%;
-    border: 2px solid var(--aa-border);
-    flex-shrink: 0; margin-top: 2px;
-    background: #fff; transition: border-color .15s;
-    position: relative;
-}
-.as-radio__box::after {
-    content: ''; position: absolute;
-    top: 3px; left: 3px;
-    width: 8px; height: 8px;
-    border-radius: 50%; background: var(--aa-primary);
-    opacity: 0; transform: scale(.5); transition: all .15s;
-}
-.as-radio input:checked ~ .as-radio__box { border-color: var(--aa-primary); }
-.as-radio input:checked ~ .as-radio__box::after { opacity: 1; transform: scale(1); }
-.as-radio span:last-child { display: flex; flex-direction: column; gap: 2px; }
-.as-radio span:last-child strong { font-size: 13px; font-weight: 600; color: var(--aa-text); }
-.as-radio span:last-child small  { font-size: 12px; color: var(--aa-text-secondary); }
-
-/* ─── Checkbox group ───────────────────────────────────────────────────────── */
-.as-checkbox-group { display: flex; flex-wrap: wrap; gap: 10px 20px; }
-.as-checkbox { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: var(--aa-text); }
-.as-checkbox input { position: absolute; opacity: 0; width: 0; height: 0; }
-.as-checkbox__box {
-    width: 16px; height: 16px; border-radius: 4px;
-    border: 2px solid var(--aa-border);
-    flex-shrink: 0; background: #fff;
-    transition: all .15s; position: relative;
-}
-.as-checkbox__box::after {
-    content: ''; position: absolute;
-    top: 1px; left: 4px;
-    width: 5px; height: 9px;
-    border: 2px solid #fff; border-top: none; border-left: none;
-    transform: rotate(45deg) scale(0); transition: transform .15s;
-}
-.as-checkbox input:checked ~ .as-checkbox__box { background: var(--aa-primary); border-color: var(--aa-primary); }
-.as-checkbox input:checked ~ .as-checkbox__box::after { transform: rotate(45deg) scale(1); }
-
-/* ─── Form inputs ──────────────────────────────────────────────────────────── */
-.as-input, .as-input-full, .as-textarea, .as-select, .as-input-number {
-    border: 1px solid var(--aa-border);
-    border-radius: 7px;
-    padding: 8px 12px;
-    font-size: 13px;
-    background: #fff;
-    color: var(--aa-text);
-    transition: border-color .2s, box-shadow .2s;
-}
-.as-input-full, .as-textarea { width: 100%; max-width: 520px; }
-.as-textarea { resize: vertical; }
-.as-input-number { width: 90px; }
-.as-select { min-width: 180px; cursor: pointer; }
-.as-input:focus, .as-input-full:focus, .as-textarea:focus,
-.as-select:focus, .as-input-number:focus {
-    border-color: var(--aa-primary);
-    box-shadow: 0 0 0 3px rgba(108,99,255,.1);
-    outline: none;
-}
-
-.as-input-group { display: flex; flex-direction: column; gap: 5px; }
-.as-input-group__label { font-size: 11px; font-weight: 600; color: var(--aa-text-secondary); text-transform: uppercase; letter-spacing: .4px; }
-.as-input-group .as-input { width: 180px; }
-
-.as-input-suffix { display: inline-flex; align-items: center; gap: 8px; }
-.as-input-suffix__unit { font-size: 12px; color: var(--aa-text-secondary); }
-
-/* ─── Color pickers ────────────────────────────────────────────────────────── */
-.as-color-group { display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
-.as-color-group label { font-size: 11px; font-weight: 600; color: var(--aa-text-secondary); text-transform: uppercase; letter-spacing: .4px; }
-.as-color { width: 48px; height: 32px; padding: 2px; border: 1px solid var(--aa-border); border-radius: 6px; cursor: pointer; }
-
-/* ─── Inline badge ─────────────────────────────────────────────────────────── */
-.as-inline-badge {
-    font-size: 11px; font-weight: 600;
-    padding: 2px 9px; border-radius: 20px;
-    background: var(--aa-bg); color: var(--aa-text-secondary);
-    border: 1px solid var(--aa-border);
-}
-.as-inline-badge.mod-ok     { background: rgba(16,185,129,.1); color: #065f46; border-color: rgba(16,185,129,.25); }
-.as-inline-badge.mod-warn   { background: rgba(245,158,11,.1); color: #92400e; border-color: rgba(245,158,11,.25); }
-.as-inline-badge.mod-danger { background: rgba(239,68,68,.1);  color: #b91c1c; border-color: rgba(239,68,68,.25); }
-
-/* ─── Note ─────────────────────────────────────────────────────────────────── */
-.as-note {
-    display: flex; gap: 12px;
-    padding: 14px 18px;
-    background: var(--aa-bg);
-    border: 1px solid var(--aa-border);
-    border-radius: var(--aa-radius);
-    font-size: 13px; color: var(--aa-text-secondary);
-    line-height: 1.6; margin-bottom: 20px;
-}
-.as-note__icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; opacity: .6; }
-.as-note strong { display: block; font-weight: 600; color: var(--aa-text); margin-bottom: 3px; }
-
-/* ─── Notice banners ────────────────────────────────────────────────────────── */
-.as-notice {
-    display: flex; gap: 12px; align-items: flex-start;
-    padding: 14px 18px;
-    border-radius: var(--aa-radius);
-    font-size: 13px; line-height: 1.6;
-    margin-top: 12px; margin-bottom: 4px;
-    border: 1px solid transparent;
-}
-.as-notice--success {
-    background: rgba(16,185,129,.08);
-    border-color: rgba(16,185,129,.25);
-    color: #065f46;
-}
-.as-notice__icon {
-    width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px;
-    stroke: #059669;
-}
-.as-notice strong { display: block; font-weight: 600; margin-bottom: 3px; color: #065f46; }
-
-/* ─── Save bar ─────────────────────────────────────────────────────────────── */
-.as-save-bar {
-    position: sticky; bottom: 16px; z-index: 99;
-    margin-bottom: 32px;
-}
-.as-save-btn {
-    background: var(--aa-primary) !important;
-    border-color: var(--aa-primary-dark) !important;
-    border-radius: 8px !important;
-    padding: 9px 30px !important;
-    font-size: 13px !important; font-weight: 600 !important;
-    box-shadow: 0 2px 8px rgba(108,99,255,.3) !important;
-}
-.as-save-btn:hover { background: var(--aa-primary-dark) !important; }
-
-/* ─── RGPD checklist ───────────────────────────────────────────────────────── */
-.as-checklist { }
-.as-checklist__row {
-    display: flex; align-items: flex-start; gap: 14px;
-    padding: 16px 28px;
-    border-bottom: 1px solid var(--aa-border);
-    transition: background .12s;
-}
-.as-checklist__row:last-child { border-bottom: none; }
-.as-checklist__row:hover { background: var(--aa-bg); }
-.as-checklist__icon {
-    width: 24px; height: 24px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 800; flex-shrink: 0; margin-top: 1px;
-    background: rgba(16,185,129,.1); color: #065f46;
-}
-.as-checklist__row:has(.mod-warn) .as-checklist__icon,
-.as-checklist__row:has(.mod-danger) .as-checklist__icon {
-    background: rgba(239,68,68,.1); color: #b91c1c;
-}
-.as-checklist__body { flex: 1; display: flex; flex-direction: column; gap: 3px; }
-.as-checklist__label  { font-size: 13px; font-weight: 600; color: var(--aa-text); }
-.as-checklist__detail { font-size: 12px; color: var(--aa-text-secondary); line-height: 1.5; }
-.as-checklist__badge {
-    flex-shrink: 0; align-self: flex-start; margin-top: 2px;
-    font-size: 11px; font-weight: 600;
-    padding: 3px 11px; border-radius: 20px;
-    background: var(--aa-bg); color: var(--aa-text-secondary);
-    border: 1px solid var(--aa-border); white-space: nowrap;
-}
-.as-checklist__badge.mod-warn   { background: rgba(245,158,11,.1); color: #92400e; border-color: rgba(245,158,11,.25); }
-.as-checklist__badge.mod-danger { background: rgba(239,68,68,.1);  color: #b91c1c; border-color: rgba(239,68,68,.25); }
-
-/* ─── Responsive ───────────────────────────────────────────────────────────── */
-@media (max-width: 900px) {
-    .as-row { grid-template-columns: 1fr; gap: 6px; padding: 18px 20px; }
-    .as-row__control { padding-top: 0; }
-}
-@media (max-width: 768px) {
-    .as-tab { font-size: 12px; padding: 7px 12px; }
-    .as-status-banner { flex-direction: column; align-items: flex-start; }
-}
-
-/* ─── RGPD Diagnostic system ────────────────────────────────────────────────── */
-
-/* Score card */
-.as-rgpd-score {
-    display: flex; align-items: center; gap: 24px;
-    padding: 24px 28px;
-    border: 1px solid;
-    border-radius: var(--aa-radius);
-    margin-bottom: 20px;
-    background: #fff;
-}
-.as-rgpd-score__gauge { flex-shrink: 0; }
-.as-score-svg { width: 100px; height: 100px; }
-.as-rgpd-score__body { flex: 1; }
-.as-rgpd-score__label { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
-.as-rgpd-score__sub { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-.as-rgpd-score__desc { font-size: 12px; color: var(--aa-text-secondary); margin: 0 0 8px; line-height: 1.6; }
-.as-rgpd-score__scope {
-    font-size: 11px; color: var(--aa-text-secondary);
-    line-height: 1.55; margin: 12px 0 0;
-    padding: 8px 12px;
-    background: var(--aa-bg);
-    border: 1px solid var(--aa-border);
-    border-radius: 6px;
-    display: flex; align-items: flex-start; gap: 4px;
-}
-.as-score-chip {
-    font-size: 11px; font-weight: 600; padding: 2px 10px;
-    border-radius: 20px; border: 1px solid transparent;
-}
-.as-score-chip.mod-danger { background: rgba(220,38,38,.1); color: #b91c1c; border-color: rgba(220,38,38,.2); }
-.as-score-chip.mod-warn   { background: rgba(217,119,6,.1);  color: #92400e; border-color: rgba(217,119,6,.2); }
-.as-score-chip.mod-ok     { background: rgba(5,150,105,.1);  color: #065f46; border-color: rgba(5,150,105,.2); }
-.as-score-chip.mod-info   { background: rgba(100,116,139,.1); color: #475569; border-color: rgba(100,116,139,.2); }
-.as-rgpd-score__desc { font-size: 13px; color: var(--aa-text-secondary); line-height: 1.6; margin: 0; }
-
-/* Diagnostic list */
-.as-diag-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
-.as-diag-item {
-    display: flex; gap: 14px; align-items: flex-start;
-    padding: 16px 20px;
-    background: #fff;
-    border: 1px solid var(--aa-border);
-    border-left: 4px solid transparent;
-    border-radius: var(--aa-radius);
-    box-shadow: var(--aa-shadow);
-    transition: box-shadow .15s;
-}
-.as-diag-item:hover { box-shadow: 0 2px 12px rgba(0,0,0,.08); }
-.as-diag-item--danger { border-left-color: #dc2626; }
-.as-diag-item--warn   { border-left-color: #d97706; }
-.as-diag-item--ok     { border-left-color: var(--aa-border); }
-.as-diag-item--exempt { border-left-color: var(--aa-border); }
-.as-diag-item--info   { border-left-color: var(--aa-border); border-left-style: solid; opacity: .85; }
-
-.as-diag-item__icon {
-    flex-shrink: 0; width: 32px; height: 32px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    margin-top: 1px;
-}
-.as-diag-item--danger .as-diag-item__icon { background: rgba(220,38,38,.1); }
-.as-diag-item--warn   .as-diag-item__icon { background: rgba(217,119,6,.1); }
-.as-diag-item--ok     .as-diag-item__icon { background: rgba(5,150,105,.1); }
-.as-diag-item--exempt .as-diag-item__icon { background: rgba(108,99,255,.1); }
-.as-diag-item--info   .as-diag-item__icon { background: rgba(100,116,139,.08); }
-.as-diag-item--info   .as-diag-icon { stroke: #94a3b8; }
-.as-diag-icon { width: 16px; height: 16px; }
-.as-diag-item--danger .as-diag-icon { stroke: #dc2626; }
-.as-diag-item--warn   .as-diag-icon { stroke: #d97706; }
-.as-diag-item--ok     .as-diag-icon { stroke: #059669; }
-.as-diag-item--exempt .as-diag-icon { stroke: #6c63ff; }
-.as-diag-item--info   .as-diag-icon { stroke: #0ea5e9; }
-
-.as-diag-item__body { flex: 1; min-width: 0; }
-.as-diag-item__head {
-    display: flex; align-items: center; gap: 8px;
-    margin-bottom: 4px;
-}
-.as-diag-item__cat {
-    font-size: 11px; font-weight: 600; text-transform: uppercase;
-    letter-spacing: .05em; color: var(--aa-text-secondary);
-}
-.as-diag-item__badge {
-    font-size: 10px; font-weight: 700; padding: 1px 8px;
-    border-radius: 20px; border: 1px solid transparent;
-    text-transform: uppercase; letter-spacing: .04em;
-}
-.as-diag-badge--danger { background: rgba(220,38,38,.1); color: #b91c1c; border-color: rgba(220,38,38,.2); }
-.as-diag-badge--warn   { background: rgba(217,119,6,.1);  color: #92400e; border-color: rgba(217,119,6,.2); }
-.as-diag-badge--ok     { background: rgba(5,150,105,.1);  color: #065f46; border-color: rgba(5,150,105,.2); }
-.as-diag-badge--exempt { background: rgba(108,99,255,.1); color: #4c1d95; border-color: rgba(108,99,255,.2); }
-.as-diag-badge--info   { background: rgba(100,116,139,.08); color: #475569; border-color: rgba(100,116,139,.15); }
-
-.as-diag-item__title { display: block; font-size: 13px; font-weight: 600; color: var(--aa-text); margin-bottom: 5px; }
-.as-diag-item__detail { font-size: 12px; color: var(--aa-text-secondary); line-height: 1.65; margin: 0 0 7px; }
-.as-diag-item__laws {
-    display: flex; flex-wrap: wrap; gap: 5px;
-    margin: 4px 0 8px;
-}
-.as-law-tag--diag {
-    font-size: 10px; font-weight: 500;
-    padding: 2px 8px; border-radius: 4px;
-    background: var(--aa-bg); color: var(--aa-text-secondary);
-    border: 1px solid var(--aa-border);
-}
-.as-diag-item__cta {
-    display: inline-flex; align-items: center;
-    font-size: 12px; font-weight: 600;
-    color: var(--aa-primary) !important;
-    text-decoration: none; transition: opacity .15s;
-}
-.as-diag-item__cta:hover { opacity: .75; }
-
-/* Footer note */
-.as-rgpd-footer-note {
-    display: flex; gap: 8px; align-items: flex-start;
-    font-size: 11px; color: var(--aa-text-secondary);
-    line-height: 1.6; padding: 12px 16px;
-    background: var(--aa-bg); border-radius: var(--aa-radius);
-    border: 1px solid var(--aa-border);
-    margin-bottom: 16px;
-}
-
-@media (max-width: 600px) {
-    .as-rgpd-score { flex-direction: column; gap: 16px; }
-    .as-score-svg { width: 80px; height: 80px; }
-    .as-diag-item { padding: 14px 16px; }
-}
-</style>
-
-<style>
-/* ─── Inline RGPD alerts ────────────────────────────────────────────────────── */
-.as-inline-alert {
-    display: flex; gap: 10px; align-items: flex-start;
-    margin-top: 10px; padding: 11px 14px;
-    border-radius: 8px; font-size: 12px; line-height: 1.6;
-    border: 1px solid transparent;
-}
-.as-inline-alert.as-inline-alert--hidden { display: none; }
-.as-inline-alert.as-inline-alert--danger {
-    background: rgba(220,38,38,.07); border-color: rgba(220,38,38,.25); color: #7f1d1d;
-}
-.as-inline-alert.as-inline-alert--warn {
-    background: rgba(217,119,6,.07);  border-color: rgba(217,119,6,.25);  color: #78350f;
-}
-.as-inline-alert.as-inline-alert--ok-hidden { display: none; }
-.as-inline-alert__icon {
-    flex-shrink: 0; width: 16px; height: 16px; margin-top: 1px;
-}
-.as-inline-alert--danger .as-inline-alert__icon { stroke: #dc2626; }
-.as-inline-alert--warn   .as-inline-alert__icon { stroke: #d97706; }
-.as-inline-alert strong { display: block; font-weight: 700; margin-bottom: 2px; }
-.as-inline-alert__laws {
-    display: flex; flex-wrap: wrap; gap: 5px;
-    margin: 7px 0 5px;
-}
-.as-law-tag {
-    display: inline-flex; align-items: center;
-    font-size: 10px; font-weight: 600;
-    padding: 2px 8px; border-radius: 4px;
-    background: rgba(0,0,0,.05); color: inherit;
-    border: 1px solid rgba(0,0,0,.1);
-    white-space: nowrap;
-}
-.as-inline-alert--danger .as-law-tag { background: rgba(220,38,38,.08); border-color: rgba(220,38,38,.15); }
-.as-inline-alert--warn   .as-law-tag { background: rgba(217,119,6,.08);  border-color: rgba(217,119,6,.15); }
-.as-inline-alert__link {
-    display: inline-block; margin-top: 5px;
-    font-weight: 600; font-size: 12px;
-    color: var(--aa-primary) !important; text-decoration: none;
-}
-.as-inline-alert__link:hover { text-decoration: underline; }
-</style>
-
-<script>
-(function () {
-    'use strict';
-    var tabs    = document.querySelectorAll('.as-tab');
-    var panels  = document.querySelectorAll('.as-panel');
-    var savebar = document.getElementById('aa-save-bar');
-    var tabField = document.getElementById('aa-active-tab-field');
-    var formTabs = ['tracking','privacy','consent','performance'];
-    var STORE_KEY = 'aa_active_tab';
-
-    function show(tab) {
-        tabs.forEach(function(t)   { t.classList.toggle('active', t.dataset.tab === tab); });
-        panels.forEach(function(p) { p.classList.toggle('active', p.dataset.panel === tab); });
-        if (savebar) savebar.style.display = formTabs.indexOf(tab) !== -1 ? '' : 'none';
-        if (tabField) tabField.value = tab;
-    }
-
-    tabs.forEach(function(t) {
-        t.addEventListener('click', function() {
-            show(t.dataset.tab);
-            try { sessionStorage.setItem(STORE_KEY, t.dataset.tab); } catch(e) {}
-        });
-    });
-
-    document.querySelectorAll('.aa-settings-tab-link').forEach(function(a) {
-        a.addEventListener('click', function(e) {
-            e.preventDefault();
-            if (a.dataset.tab) {
-                show(a.dataset.tab);
-                try { sessionStorage.setItem(STORE_KEY, a.dataset.tab); } catch(e) {}
-                window.scrollTo({top:0,behavior:'smooth'});
-            }
-        });
-    });
-
-    /* Mémoriser l'onglet actif avant soumission du formulaire */
-    var form = document.getElementById('aa-settings-form');
-    if (form) {
-        form.addEventListener('submit', function() {
-            var active = document.querySelector('.as-tab.active');
-            if (active) {
-                try { sessionStorage.setItem(STORE_KEY, active.dataset.tab); } catch(e) {}
-            }
-        });
-    }
-
-    /* Restaurer l'onglet après sauvegarde (settings-updated=true dans l'URL) */
-    var urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('settings-updated') === 'true') {
-        try {
-            var saved = sessionStorage.getItem(STORE_KEY);
-            if (saved) { show(saved); sessionStorage.removeItem(STORE_KEY); }
-        } catch(e) {}
-    } else if (window.location.hash === '#tab-consent') {
-        show('consent');
-    }
-})();
-</script>

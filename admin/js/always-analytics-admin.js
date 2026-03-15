@@ -39,29 +39,18 @@
         var periodSel = document.getElementById('aa-period');
         if (periodSel) {
             periodSel.addEventListener('change', function () {
-                var v = this.value;
-                var customDiv = document.getElementById('aa-custom-dates');
-                if (v === 'custom') { if (customDiv) customDiv.style.display = 'flex'; return; }
-                if (customDiv) customDiv.style.display = 'none';
+                var v     = this.value;
                 var today = dateOffset(0);
                 var map = {
-                    today:  { from: today,                 to: today },
-                    '7days':  { from: dateOffset(-7),        to: today },
-                    '30days': { from: dateOffset(-30),       to: today },
-                    '90days': { from: dateOffset(-90),       to: today },
-                    year:   { from: new Date().getFullYear() + '-01-01', to: today },
+                    today:     { from: today,                              to: today },
+                    yesterday: { from: dateOffset(-1),                     to: dateOffset(-1) },
+                    '7days':   { from: dateOffset(-7),                     to: today },
+                    '30days':  { from: dateOffset(-30),                    to: today },
+                    '90days':  { from: dateOffset(-90),                    to: today },
+                    year:      { from: new Date().getFullYear() + '-01-01', to: today },
                 };
                 if (map[v]) { state.from = map[v].from; state.to = map[v].to; }
                 loadAllData();
-            });
-        }
-
-        var applyBtn = document.getElementById('aa-apply-dates');
-        if (applyBtn) {
-            applyBtn.addEventListener('click', function () {
-                var f = document.getElementById('aa-from').value;
-                var t = document.getElementById('aa-to').value;
-                if (f && t) { state.from = f; state.to = t; loadAllData(); }
             });
         }
 
@@ -178,35 +167,51 @@
             }
             var now = new Date();
             tbody.innerHTML = data.map(function (s) {
-                var flag    = flag2(s.country_code);
+                var flag       = flag2(s.country_code);
                 var deviceIcon = s.device_type === 'mobile'
-                    ? '<svg class="aa-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="17" r="1"/></svg>'
+                    ? '<svg class="aa-visitor-device-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="17" r="1"/></svg>'
                     : s.device_type === 'tablet'
-                    ? '<svg class="aa-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="2" width="18" height="20" rx="2"/><circle cx="12" cy="17" r="1"/></svg>'
-                    : '<svg class="aa-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 20h8M12 18v2"/></svg>';
-                var vid     = s.visitor_hash.substring(0, 8);
-                var ended   = new Date(s.ended_at + 'Z');
-                var sec     = Math.floor((now - ended) / 1000);
-                var time    = sec < 60 ? 'En ce moment' : 'Il y a ' + Math.floor(sec / 60) + ' min';
-                var dur     = parseInt(s.total_duration, 10) || 0;
-                var pages   = parseInt(s.total_pages, 10) || parseInt(s.last_page_count, 10) || 0;
-                var multi   = parseInt(s.session_count, 10) > 1 ? ' <small style="color:#64748b">(' + s.session_count + ' visites)</small>' : '';
-                var href    = '?page=always-analytics-visitor&visitor_hash=' + enc(s.visitor_hash);
-                // Favicon du référent si disponible
+                    ? '<svg class="aa-visitor-device-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="2" width="18" height="20" rx="2"/><circle cx="12" cy="17" r="1"/></svg>'
+                    : '<svg class="aa-visitor-device-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 20h8M12 18v2"/></svg>';
+                var vid    = s.visitor_hash.substring(0, 8);
+                var ended  = new Date(s.ended_at + 'Z');
+                var sec    = Math.floor((now - ended) / 1000);
+                var isLive = sec < 120;
+                var time   = isLive ? 'En ce moment' : (sec < 3600 ? 'Il y a ' + Math.floor(sec / 60) + ' min' : 'Il y a ' + Math.floor(sec / 3600) + 'h');
+                var dur    = parseInt(s.total_duration, 10) || 0;
+                var pages  = parseInt(s.total_pages, 10) || parseInt(s.last_page_count, 10) || 0;
+                var visits = parseInt(s.session_count, 10) || 1;
+                var href   = '?page=always-analytics-visitor&visitor_hash=' + enc(s.visitor_hash);
+
                 var refFavicon = '';
                 if (s.last_referrer_domain) {
-                    var refFaviconUrl = getFaviconUrl(s.last_referrer_domain);
-                    refFavicon = ' <img src="' + refFaviconUrl + '" width="13" height="13" alt="' + esc(s.last_referrer_domain) + '" title="' + esc(s.last_referrer_domain) + '" loading="lazy" style="vertical-align:middle;border-radius:2px;opacity:.7;" onerror="this.style.display=\'none\'">';
+                    refFavicon = '<img src="' + getFaviconUrl(s.last_referrer_domain) + '" width="12" height="12" alt="" loading="lazy" class="aa-visitor-ref-favicon" onerror="this.style.display=\'none\'">';
                 }
-                return '<tr>'
-                    + '<td>'
-                    +   '<a href="' + href + '" class="aa-visitor-link"><strong>Visiteur ' + vid + '</strong></a>'
-                    +   multi
-                    +   '<br><small>' + flag + ' ' + deviceIcon + refFavicon + ' &middot; ' + pages + ' page' + (pages > 1 ? 's' : '') + '</small>'
+
+                // Live dot SVG (circle filled)
+                var liveDot = isLive
+                    ? '<span class="aa-visitor-live-dot" title="En ce moment"></span>'
+                    : '';
+
+                return '<tr class="aa-visitor-row">'
+                    // Col 1 : identité + méta
+                    + '<td class="aa-visitor-cell">'
+                    +   '<div class="aa-visitor-row__top">'
+                    +     liveDot
+                    +     '<a href="' + href + '" class="aa-visitor-link">Visiteur <strong>' + vid + '</strong></a>'
+                    +     (visits > 1 ? '<span class="aa-visitor-visits">' + visits + ' visites</span>' : '')
+                    +   '</div>'
+                    +   '<div class="aa-visitor-row__meta">'
+                    +     flag
+                    +     deviceIcon
+                    +     refFavicon
+                    +     '<span class="aa-visitor-pages">' + pages + ' page' + (pages > 1 ? 's' : '') + '</span>'
+                    +     '<span class="aa-visitor-dur">' + fmtDuration(dur) + '</span>'
+                    +   '</div>'
                     + '</td>'
-                    + '<td style="text-align:right">'
-                    +   '<span class="aa-time-badge">' + time + '</span>'
-                    +   '<br><small>' + fmtDuration(dur) + '</small>'
+                    // Col 2 : temps
+                    + '<td class="aa-visitor-cell aa-visitor-cell--right">'
+                    +   '<span class="aa-time-badge' + (isLive ? ' aa-time-badge--live' : '') + '">' + time + '</span>'
                     + '</td>'
                     + '</tr>';
             }).join('');
@@ -415,11 +420,6 @@
     }
 
     function loadCountries() {
-        var link = document.getElementById('aa-all-countries-link');
-        if (link) {
-            var base = link.href.split('?')[0];
-            link.href = base + '?page=always-analytics-countries&from=' + enc(state.from) + '&to=' + enc(state.to);
-        }
         apiFetch('countries', 'limit=8', function (data) {
             var tbody = document.querySelector('#aa-countries tbody');
             if (!tbody) return;
@@ -714,7 +714,7 @@
             })
             .finally(function () {
                 purgeBtn.disabled    = false;
-                purgeBtn.textContent = '🔄 Lancer l\'anonymisation';
+                purgeBtn.textContent = 'Lancer l\'anonymisation…';
             });
         });
     }

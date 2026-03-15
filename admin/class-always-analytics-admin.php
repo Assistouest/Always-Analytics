@@ -72,14 +72,6 @@ class Always_Analytics_Admin {
             array( $this, 'render_top_pages_page' )
         );
 
-        add_submenu_page(
-            null,
-            __( 'Pays', 'always-analytics' ),
-            __( 'Pays', 'always-analytics' ),
-            'manage_options',
-            'always-analytics-countries',
-            array( $this, 'render_countries_page' )
-        );
     }
 
     /**
@@ -133,7 +125,7 @@ class Always_Analytics_Admin {
             true
         );
 
-        // Admin interactions
+        // Admin interactions (dashboard)
         wp_enqueue_script(
             'always-analytics-admin',
             AA_PLUGIN_URL . 'admin/js/always-analytics-admin.js',
@@ -142,10 +134,43 @@ class Always_Analytics_Admin {
             true
         );
 
+        // Engagement page script
+        wp_register_script(
+            'always-analytics-engagement',
+            AA_PLUGIN_URL . 'admin/js/always-analytics-engagement.js',
+            array( 'chartjs' ),
+            filemtime( AA_PLUGIN_DIR . 'admin/js/always-analytics-engagement.js' ),
+            true
+        );
+
+        // Pages script (top-pages, settings)
+        wp_register_script(
+            'always-analytics-pages',
+            AA_PLUGIN_URL . 'admin/js/always-analytics-pages.js',
+            array(),
+            filemtime( AA_PLUGIN_DIR . 'admin/js/always-analytics-pages.js' ),
+            true
+        );
+
+        // Enqueue page-specific scripts based on current screen
+        $screen = get_current_screen();
+        if ( $screen ) {
+            if ( false !== strpos( $screen->id, 'always-analytics-engagement' ) ) {
+                wp_enqueue_script( 'always-analytics-engagement' );
+            }
+            if (
+                false !== strpos( $screen->id, 'always-analytics-top-pages' ) ||
+                false !== strpos( $screen->id, 'always-analytics-settings' )
+            ) {
+                wp_enqueue_script( 'always-analytics-pages' );
+            }
+        }
+
         // Chargement des sources référents depuis le fichier de données
         $referrer_sources_file = AA_PLUGIN_DIR . 'data/referrer-sources.php';
         $referrer_sources = file_exists( $referrer_sources_file ) ? include $referrer_sources_file : array();
 
+        // Shared config for dashboard + engagement scripts
         wp_localize_script( 'always-analytics-admin', 'alwaysAnalyticsAdmin', array(
             'restBase'        => esc_url_raw( rest_url( 'always-analytics/v1/' ) ),
             'flagsUrl'        => esc_url_raw( AA_PLUGIN_URL . 'assets/flags/' ),
@@ -166,6 +191,18 @@ class Always_Analytics_Admin {
                 'purgeError'    => __( 'Erreur lors de l\'anonymisation.', 'always-analytics' ),
             ),
         ) );
+
+        // Also expose config for the engagement script (same object name, different handle)
+        wp_localize_script( 'always-analytics-engagement', 'alwaysAnalyticsAdmin', array(
+            'restBase' => esc_url_raw( rest_url( 'always-analytics/v1/' ) ),
+            'nonce'    => wp_create_nonce( 'wp_rest' ),
+            'adminUrl' => esc_url_raw( admin_url() ),
+        ) );
+
+        // Page URLs for the pages script (top-pages navigation)
+        wp_localize_script( 'always-analytics-pages', 'alwaysAnalyticsPages', array(
+            'topPagesUrl'  => esc_url( admin_url( 'admin.php?page=always-analytics-top-pages' ) ),
+        ) );
         
      
 
@@ -177,6 +214,9 @@ class Always_Analytics_Admin {
     public function render_refresh_button() {
         $screen = get_current_screen();
         if ( ! $screen || strpos( $screen->id, 'always-analytics' ) === false ) {
+            return;
+        }
+        if ( $screen->id === 'always-analytics_page_always-analytics-settings' ) {
             return;
         }
         ?>
@@ -208,8 +248,8 @@ class Always_Analytics_Admin {
         </style>
 
         <a id="aa-coffee-btn" href="https://buymeacoffee.com/assistouest" target="_blank" rel="noopener noreferrer">
-            <i class="fa-solid fa-mug-hot"></i>
-            <?php esc_html_e( 'Offrir un café au créateur', 'always-analytics' ); ?>
+            <i class="fa-solid fa-heart"></i>
+            <?php esc_html_e( 'Soutenir le projet', 'always-analytics' ); ?>
         </a>
         <?php
     }
@@ -252,16 +292,6 @@ class Always_Analytics_Admin {
             return;
         }
         require_once AA_PLUGIN_DIR . 'admin/views/top-pages.php';
-    }
-
-    /**
-     * Render the countries full view.
-     */
-    public function render_countries_page() {
-        if ( ! current_user_can( 'manage_options' ) ) {
-            return;
-        }
-        require_once AA_PLUGIN_DIR . 'admin/views/countries.php';
     }
 
     /**
