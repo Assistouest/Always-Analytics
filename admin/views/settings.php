@@ -867,7 +867,7 @@ endif; ?>
 
         if ($n_danger > 0)      { $score_label = __('Non conforme', 'always-analytics');   $score_color = '#dc2626'; $score_bg = 'rgba(220,38,38,.08)'; }
         elseif ($n_warn > 0)    { $score_label = __('À améliorer', 'always-analytics');     $score_color = '#d97706'; $score_bg = 'rgba(217,119,6,.08)'; }
-        else                    { $score_label = __('Conforme RGPD', 'always-analytics');   $score_color = '#059669'; $score_bg = 'rgba(5,150,105,.08)'; }
+        else                    { $score_label = __('Conforme RGPD', 'always-analytics');   $score_color = '#6c63ff'; $score_bg = 'rgba(108,99,255,.07)'; }
 
         /* ── SVG icônes inline ───────────────────────────────────────────── */
         $ico_ok     = '<svg class="as-diag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
@@ -942,15 +942,113 @@ endif; ?>
             'exempt' => $ico_exempt,
             'info'   => $ico_info,
         );
+
+        /* Séparer en deux groupes : prioritaire (danger/warn) et conforme (ok/exempt/info) */
+        $diag_priority = array_filter($diag, function($d){ return in_array($d['level'], array('danger','warn'), true); });
+        $diag_ok       = array_filter($diag, function($d){ return in_array($d['level'], array('ok','exempt','info'), true); });
+        $n_ok_group    = count($diag_ok);
         ?>
 
-        <!-- Liste des diagnostics -->
+        <?php if (!empty($diag_priority)): ?>
+        <!-- Groupe : points à corriger -->
+        <div class="as-diag-group as-diag-group--priority">
+            <div class="as-diag-group__header">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="as-diag-group__icon as-diag-group__icon--alert"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <span><?php esc_html_e('Points à corriger', 'always-analytics'); ?></span>
+                <span class="as-diag-group__count"><?php echo count($diag_priority); ?></span>
+            </div>
+            <div class="as-diag-list">
+                <?php foreach ($diag_priority as $d): ?>
+                <?php $is_collapsible = false; ?>
+                <div class="as-diag-item as-diag-item--<?php echo esc_attr($d['level']); ?>">
+                    <div class="as-diag-item__icon"><?php echo $level_icons[$d['level']]; ?></div>
+                    <div class="as-diag-item__body">
+                        <div class="as-diag-item__head">
+                            <span class="as-diag-item__cat"><?php echo esc_html($d['cat']); ?></span>
+                            <span class="as-diag-item__badge as-diag-badge--<?php echo esc_attr($d['level']); ?>"><?php echo esc_html($level_labels[$d['level']]); ?></span>
+                        </div>
+                        <strong class="as-diag-item__title"><?php echo esc_html($d['title']); ?></strong>
+                        <p class="as-diag-item__detail"><?php echo esc_html($d['detail']); ?></p>
+                        <?php if (!empty($d['laws'])): ?>
+                        <div class="as-diag-item__laws">
+                            <?php foreach ($d['laws'] as $law): ?>
+                            <span class="as-law-tag as-law-tag--diag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="as-law-svg"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><?php echo esc_html($law); ?></span>
+                            <?php endforeach; ?>
+                        </div>
+                        <?php endif; ?>
+                        <?php if (!empty($d['action'])): ?>
+                            <?php if (!empty($d['link'])): ?>
+                                <a href="<?php echo esc_url($d['link']); ?>" class="as-diag-item__cta" target="_blank">
+                                    <?php echo esc_html($d['action']); ?>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="as-cta-icon"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                                </a>
+                            <?php else: ?>
+                                <a href="#" class="as-diag-item__cta aa-settings-tab-link" data-tab="<?php echo esc_attr($d['tab']); ?>">
+                                    <?php echo esc_html($d['action']); ?>
+                                </a>
+                            <?php endif; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <?php if (!empty($diag_ok)): ?>
+        <!-- Groupe : points conformes (accordéon) -->
+        <div class="as-diag-group as-diag-group--ok">
+            <button class="as-diag-group__header as-diag-accordion-toggle" type="button" aria-expanded="false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="as-diag-group__icon as-diag-group__icon--ok"><polyline points="20 6 9 17 4 12"/></svg>
+                <span><?php esc_html_e('Points conformes', 'always-analytics'); ?></span>
+                <span class="as-diag-group__count as-diag-group__count--ok"><?php echo $n_ok_group; ?></span>
+                <svg class="as-diag-accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="as-diag-accordion-body" hidden>
+                <div class="as-diag-list">
+                    <?php foreach ($diag_ok as $d): ?>
+                    <div class="as-diag-item as-diag-item--<?php echo esc_attr($d['level']); ?>">
+                        <div class="as-diag-item__icon"><?php echo $level_icons[$d['level']]; ?></div>
+                        <div class="as-diag-item__body">
+                            <div class="as-diag-item__head">
+                                <span class="as-diag-item__cat"><?php echo esc_html($d['cat']); ?></span>
+                                <span class="as-diag-item__badge as-diag-badge--<?php echo esc_attr($d['level']); ?>"><?php echo esc_html($level_labels[$d['level']]); ?></span>
+                            </div>
+                            <strong class="as-diag-item__title"><?php echo esc_html($d['title']); ?></strong>
+                            <p class="as-diag-item__detail"><?php echo esc_html($d['detail']); ?></p>
+                            <?php if (!empty($d['laws'])): ?>
+                            <div class="as-diag-item__laws">
+                                <?php foreach ($d['laws'] as $law): ?>
+                                <span class="as-law-tag as-law-tag--diag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="as-law-svg"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><?php echo esc_html($law); ?></span>
+                                <?php endforeach; ?>
+                            </div>
+                            <?php endif; ?>
+                            <?php if (!empty($d['action'])): ?>
+                                <?php if (!empty($d['link'])): ?>
+                                    <a href="<?php echo esc_url($d['link']); ?>" class="as-diag-item__cta" target="_blank">
+                                        <?php echo esc_html($d['action']); ?>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="as-cta-icon"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                                    </a>
+                                <?php else: ?>
+                                    <a href="#" class="as-diag-item__cta aa-settings-tab-link" data-tab="<?php echo esc_attr($d['tab']); ?>">
+                                        <?php echo esc_html($d['action']); ?>
+                                    </a>
+                                <?php endif; ?>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <?php if (empty($diag_priority) && empty($diag_ok)): ?>
+        <!-- Fallback liste complète -->
         <div class="as-diag-list">
             <?php foreach ($diag as $d): ?>
             <div class="as-diag-item as-diag-item--<?php echo esc_attr($d['level']); ?>">
-                <div class="as-diag-item__icon">
-                    <?php echo $level_icons[$d['level']]; ?>
-                </div>
+                <div class="as-diag-item__icon"><?php echo $level_icons[$d['level']]; ?></div>
                 <div class="as-diag-item__body">
                     <div class="as-diag-item__head">
                         <span class="as-diag-item__cat"><?php echo esc_html($d['cat']); ?></span>
@@ -958,29 +1056,11 @@ endif; ?>
                     </div>
                     <strong class="as-diag-item__title"><?php echo esc_html($d['title']); ?></strong>
                     <p class="as-diag-item__detail"><?php echo esc_html($d['detail']); ?></p>
-                    <?php if (!empty($d['laws'])): ?>
-                    <div class="as-diag-item__laws">
-                        <?php foreach ($d['laws'] as $law): ?>
-                        <span class="as-law-tag as-law-tag--diag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="as-law-svg"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><?php echo esc_html($law); ?></span>
-                        <?php endforeach; ?>
-                    </div>
-                    <?php endif; ?>
-                    <?php if (!empty($d['action'])): ?>
-                        <?php if (!empty($d['link'])): ?>
-                            <a href="<?php echo esc_url($d['link']); ?>" class="as-diag-item__cta" target="_blank">
-                                <?php echo esc_html($d['action']); ?>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="as-cta-icon"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                            </a>
-                        <?php else: ?>
-                            <a href="#" class="as-diag-item__cta aa-settings-tab-link" data-tab="<?php echo esc_attr($d['tab']); ?>">
-                                <?php echo esc_html($d['action']); ?>
-                            </a>
-                        <?php endif; ?>
-                    <?php endif; ?>
                 </div>
             </div>
             <?php endforeach; ?>
         </div>
+        <?php endif; ?>
 
         <!-- Note légale -->
         <div class="as-rgpd-footer-note">
@@ -995,3 +1075,107 @@ endif; ?>
     </div>
 
 </div><!-- .wrap -->
+
+<script>
+(function () {
+    'use strict';
+
+    /* ── Tabs navigation ─────────────────────────────────────────────── */
+    var tabs   = document.querySelectorAll('.as-tab');
+    var panels = document.querySelectorAll('.as-panel');
+    var field  = document.getElementById('aa-active-tab-field');
+
+    function activateTab(name) {
+        tabs.forEach(function (t) {
+            t.classList.toggle('active', t.getAttribute('data-tab') === name);
+        });
+        panels.forEach(function (p) {
+            p.classList.toggle('active', p.getAttribute('data-panel') === name);
+        });
+        if (field) field.value = name;
+    }
+
+    tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+            activateTab(tab.getAttribute('data-tab'));
+        });
+    });
+
+    /* Restore active tab after save */
+    var saved = (function () {
+        var f = document.getElementById('aa-active-tab-field');
+        return f ? f.getAttribute('value') : null;
+    })();
+    if (saved && saved !== 'tracking') activateTab(saved);
+
+    /* Links that jump to a specific tab */
+    document.querySelectorAll('.aa-settings-tab-link').forEach(function (a) {
+        a.addEventListener('click', function (e) {
+            e.preventDefault();
+            activateTab(a.getAttribute('data-tab'));
+        });
+    });
+
+    /* ── Accordéon "Points conformes" ───────────────────────────────── */
+    document.querySelectorAll('.as-diag-accordion-toggle').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var body     = btn.nextElementSibling;
+            var expanded = btn.getAttribute('aria-expanded') === 'true';
+
+            if (expanded) {
+                btn.setAttribute('aria-expanded', 'false');
+                body.hidden = true;
+            } else {
+                btn.setAttribute('aria-expanded', 'true');
+                body.hidden = false;
+            }
+        });
+    });
+
+    /* ── Auto-ouvrir l'accordéon si tout est conforme ───────────────── */
+    var hasPriority = document.querySelector('.as-diag-group--priority');
+    if (!hasPriority) {
+        document.querySelectorAll('.as-diag-accordion-toggle').forEach(function (btn) {
+            btn.setAttribute('aria-expanded', 'true');
+            var body = btn.nextElementSibling;
+            if (body) body.hidden = false;
+        });
+    }
+
+    /* ── Bouton purge ────────────────────────────────────────────────── */
+    var purgeBtn = document.getElementById('aa-purge-btn');
+    if (purgeBtn) {
+        purgeBtn.addEventListener('click', function () {
+            if (!confirm('Lancer l\'anonymisation maintenant ?')) return;
+            purgeBtn.disabled = true;
+            purgeBtn.textContent = '⏳ …';
+            var result = document.getElementById('aa-purge-result');
+            var data = new FormData();
+            data.append('action', 'always_analytics_manual_purge');
+            data.append('_wpnonce', (window.alwaysAnalyticsAdmin || {}).nonce || '');
+            fetch(ajaxurl, { method: 'POST', body: data })
+                .then(function (r) { return r.json(); })
+                .then(function (json) {
+                    if (result) result.textContent = json.data || 'Terminé.';
+                    purgeBtn.disabled = false;
+                    purgeBtn.textContent = 'Relancer';
+                })
+                .catch(function () {
+                    if (result) result.textContent = 'Erreur réseau.';
+                    purgeBtn.disabled = false;
+                    purgeBtn.textContent = 'Réessayer';
+                });
+        });
+    }
+
+    /* ── Save bar : afficher quand un champ change ───────────────────── */
+    var saveBar = document.getElementById('aa-save-bar');
+    var form    = document.getElementById('aa-settings-form');
+    if (saveBar && form) {
+        form.addEventListener('change', function () {
+            saveBar.classList.add('is-dirty');
+        });
+    }
+
+})();
+</script>

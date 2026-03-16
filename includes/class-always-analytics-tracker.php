@@ -233,14 +233,14 @@ class Always_Analytics_Tracker
         $table = $wpdb->prefix . 'aa_hits';
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery
         $recent_js = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM {$table}
+            "SELECT 1 FROM {$table}
              WHERE visitor_hash = %s
                AND hit_source IN ('js','pre_consent')
                AND hit_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 60 SECOND)
              LIMIT 1",
             $visitor_hash
         ));
-        if ((int)$recent_js > 0) {
+        if ( null !== $recent_js ) {
             return false; // hit JS déjà présent — on ignore le pixel noscript
         }
 

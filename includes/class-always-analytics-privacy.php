@@ -115,7 +115,11 @@ class Always_Analytics_Privacy {
             return;
         }
 
-        $c .= '<p>' . esc_html__( 'Ce site utilise Always Analytics pour mesurer son audience. L\'objectif est de comprendre comment le site est consulté (pages les plus visitées, sources de trafic, comportement de navigation) afin d\'en améliorer le contenu et l\'expérience.', 'always-analytics' ) . '</p>';
+        $c .= '<p>' . sprintf(
+            /* translators: %s: linked plugin name */
+            __( 'Ce site utilise %s pour mesurer son audience. L\'objectif est de comprendre comment le site est consulté (pages les plus visitées, sources de trafic, comportement de navigation) afin d\'en améliorer le contenu et l\'expérience.', 'always-analytics' ),
+            '<a href="https://assistouest.fr/always-analytics-wordpress/" target="_blank" rel="noopener noreferrer">Always Analytics</a>'
+        ) . '</p>';
 
         // ── 2. Base légale et consentement ─────────────────────────────────────
         $c .= '<h3>' . esc_html__( 'Base légale du traitement', 'always-analytics' ) . '</h3>';
@@ -126,7 +130,8 @@ class Always_Analytics_Privacy {
                 . esc_html__( '. Ce type de mesure est exempté de l\'obligation de consentement par la CNIL (délibération n°2020-091) car il ne permet pas de vous suivre dans le temps ni entre différents sites.', 'always-analytics' )
                 . '</p>';
         } elseif ( $consent_on ) {
-            $c .= '<p>' . esc_html__( 'Ce site utilise des cookies de mesure d\'audience. Conformément au RGPD (article 7) et à la directive ePrivacy, ces cookies ne sont déposés qu\'après avoir recueilli votre consentement explicite via la bannière de cookies. Vous pouvez retirer ce consentement à tout moment en cliquant sur le lien « Gérer mes préférences » présent dans le pied de page du site.', 'always-analytics' ) . '</p>';
+            $c .= '<p>' . esc_html__( 'Ce site utilise des cookies de mesure d\'audience. Conformément au RGPD (article 7) et à la directive ePrivacy, le cookie visiteur persistant n\'est déposé qu\'après avoir recueilli votre consentement explicite via la bannière de cookies. Vous pouvez retirer ce consentement à tout moment en cliquant sur le lien « Gérer mes préférences » présent dans le pied de page du site.', 'always-analytics' ) . '</p>';
+            $c .= '<p>' . esc_html__( 'Avant toute décision de votre part, une visite anonyme est enregistrée en mode sans cookie (empreinte non persistante, identique au mode sans cookie décrit ci-dessus) afin de ne pas perdre les données de navigation si vous acceptez ensuite. Si vous refusez ou fermez la page sans répondre, cette visite reste en base sous forme anonyme et n\'est jamais reliée à un identifiant persistant.', 'always-analytics' ) . '</p>';
         } else {
             $c .= '<p>' . esc_html__( 'Ce site utilise des cookies de mesure d\'audience. La base légale de ce traitement est votre consentement (RGPD art. 7).', 'always-analytics' ) . '</p>';
         }
@@ -143,12 +148,13 @@ class Always_Analytics_Privacy {
 
         if ( $geo_on ) {
             if ( $anon_ip ) {
-                $c .= '<li>' . esc_html__( 'Pays et région d\'origine (déterminés à partir de l\'adresse IP tronquée — la géolocalisation est effectuée sur l\'IP anonymisée, sans possibilité d\'identifier précisément le visiteur)', 'always-analytics' ) . '</li>';
+                $c .= '<li>' . esc_html__( 'Pays, région et ville d\'origine (déterminés à partir de l\'adresse IP tronquée — la géolocalisation est effectuée sur l\'IP anonymisée, sans possibilité d\'identifier précisément le visiteur)', 'always-analytics' ) . '</li>';
             } else {
-                $c .= '<li>' . esc_html__( 'Pays et région d\'origine (déterminés à partir de l\'adresse IP complète, utilisée uniquement pour la géolocalisation puis écartée — non stockée en base de données)', 'always-analytics' ) . '</li>';
+                $c .= '<li>' . esc_html__( 'Pays, région et ville d\'origine (déterminés à partir de l\'adresse IP complète, utilisée uniquement pour la géolocalisation puis écartée — non stockée en base de données)', 'always-analytics' ) . '</li>';
             }
         }
 
+        $c .= '<li>' . esc_html__( 'Pour les visiteurs connectés à un compte WordPress : l\'identifiant interne de l\'utilisateur (ID numérique) est associé à la visite afin de permettre l\'export ou l\'effacement de vos données sur demande (droits RGPD art. 15–17). Cet identifiant n\'est visible que par les administrateurs du site.', 'always-analytics' ) . '</li>';
         $c .= '</ul>';
 
         // ── 4. Ce qui n'est PAS collecté ───────────────────────────────────────
@@ -171,6 +177,9 @@ class Always_Analytics_Privacy {
             }
         } else {
             $c .= '<p>' . esc_html__( 'En mode cookie, un identifiant de visite anonyme est stocké dans un cookie sur votre appareil. Cet identifiant est un hash SHA-256 non réversible : il ne contient aucune information personnelle et ne permet pas de vous identifier directement. Il est utilisé uniquement pour distinguer les visiteurs uniques sur ce site et compter les sessions de navigation.', 'always-analytics' ) . '</p>';
+            if ( $consent_on ) {
+                $c .= '<p>' . esc_html__( 'Avant votre décision sur la bannière, une empreinte anonyme temporaire (sans cookie) est calculée pour la durée de votre visite en cours. Si vous acceptez, cette visite est fusionnée avec votre identifiant cookie permanent. Si vous refusez ou quittez sans répondre, aucun cookie n\'est déposé et la visite reste anonyme.', 'always-analytics' ) . '</p>';
+            }
         }
 
         // ── 6. Adresse IP et anonymisation ─────────────────────────────────────
@@ -180,6 +189,7 @@ class Always_Analytics_Privacy {
             $c .= '<p>' . esc_html__( 'Votre adresse IP est automatiquement tronquée dès réception, avant tout traitement : le dernier groupe de chiffres est masqué (ex : 192.168.1.42 devient 192.168.1.0 pour IPv4). Cette adresse tronquée ne permet plus d\'identifier précisément un foyer ou un individu. Elle est ensuite utilisée pour calculer l\'identifiant anonyme décrit ci-dessus, puis écartée. Elle n\'est jamais enregistrée en base de données.', 'always-analytics' ) . '</p>';
         } else {
             $c .= '<p>' . esc_html__( 'Votre adresse IP est utilisée en mémoire vive pour calculer l\'identifiant de visite anonyme, puis immédiatement écartée. Elle n\'est jamais enregistrée en base de données. Nous vous recommandons d\'activer l\'anonymisation IP dans les réglages du plugin pour une protection maximale.', 'always-analytics' ) . '</p>';
+            $c .= '<p>' . esc_html__( 'Exception : les visites enregistrées lorsque JavaScript est désactivé (pixel de secours) utilisent systématiquement une adresse IP tronquée, indépendamment de ce réglage.', 'always-analytics' ) . '</p>';
         }
 
         // ── 7. Cookies ─────────────────────────────────────────────────────────
@@ -189,9 +199,9 @@ class Always_Analytics_Privacy {
             $c .= '<p>' . esc_html__( 'Aucun cookie de tracking n\'est déposé sur votre appareil. Ce site utilise le mode de mesure d\'audience sans cookie, conforme à l\'exemption de consentement de la CNIL.', 'always-analytics' ) . '</p>';
             $c .= '<p>' . esc_html__( 'Un stockage de session temporaire (sessionStorage du navigateur) peut être utilisé pour regrouper vos pages vues en une seule visite cohérente. Ce stockage disparaît automatiquement à la fermeture de l\'onglet et n\'est jamais transmis à notre serveur.', 'always-analytics' ) . '</p>';
         } else {
-            $c .= '<p>' . esc_html__( 'Ce site dépose un cookie de mesure d\'audience sur votre appareil', 'always-analytics' );
+            $c .= '<p>' . esc_html__( 'Ce site dépose les cookies suivants sur votre appareil', 'always-analytics' );
             if ( $consent_on ) {
-                $c .= ' ' . esc_html__( 'après avoir recueilli votre consentement', 'always-analytics' );
+                $c .= ' ' . esc_html__( '(le cookie visiteur uniquement après recueil de votre consentement)', 'always-analytics' );
             }
             $c .= '.</p>';
             $c .= '<table style="border-collapse:collapse;width:100%;font-size:13px;">';
@@ -201,14 +211,21 @@ class Always_Analytics_Privacy {
                 . '<th style="padding:6px 10px;border:1px solid #ddd;text-align:left;">' . esc_html__( 'Durée', 'always-analytics' ) . '</th>'
                 . '</tr></thead><tbody>';
             $c .= '<tr>'
-                . '<td style="padding:6px 10px;border:1px solid #ddd;"><code>aa_visitor</code></td>'
-                . '<td style="padding:6px 10px;border:1px solid #ddd;">' . esc_html__( 'Identifiant visiteur unique anonyme (hash SHA-256 non réversible) pour compter les visites uniques', 'always-analytics' ) . '</td>'
-                . '<td style="padding:6px 10px;border:1px solid #ddd;">' . esc_html__( '13 mois maximum', 'always-analytics' ) . '</td>'
+                . '<td style="padding:6px 10px;border:1px solid #ddd;"><code>aa_vid</code></td>'
+                . '<td style="padding:6px 10px;border:1px solid #ddd;">' . esc_html__( 'Identifiant visiteur unique anonyme (hash SHA-256 non réversible) pour compter les visites uniques et les sessions de retour', 'always-analytics' ) . '</td>'
+                . '<td style="padding:6px 10px;border:1px solid #ddd;">' . esc_html__( '13 mois (395 jours)', 'always-analytics' ) . '</td>'
                 . '</tr>';
+            if ( $consent_on ) {
+                $c .= '<tr>'
+                    . '<td style="padding:6px 10px;border:1px solid #ddd;"><code>aa_consent</code></td>'
+                    . '<td style="padding:6px 10px;border:1px solid #ddd;">' . esc_html__( 'Mémorisation de votre choix sur la bannière de cookies (valeur : granted ou denied)', 'always-analytics' ) . '</td>'
+                    . '<td style="padding:6px 10px;border:1px solid #ddd;">' . esc_html__( '6 mois (182 jours)', 'always-analytics' ) . '</td>'
+                    . '</tr>';
+            }
             $c .= '<tr>'
-                . '<td style="padding:6px 10px;border:1px solid #ddd;"><code>aa_session</code></td>'
+                . '<td style="padding:6px 10px;border:1px solid #ddd;"><code>aa_session_id</code><br><small style="color:#666;">' . esc_html__( '(sessionStorage)', 'always-analytics' ) . '</small></td>'
                 . '<td style="padding:6px 10px;border:1px solid #ddd;">' . esc_html__( 'Identifiant de session pour regrouper les pages vues d\'une même visite', 'always-analytics' ) . '</td>'
-                . '<td style="padding:6px 10px;border:1px solid #ddd;">' . esc_html__( 'Session (disparaît à la fermeture du navigateur)', 'always-analytics' ) . '</td>'
+                . '<td style="padding:6px 10px;border:1px solid #ddd;">' . esc_html__( 'Durée de l\'onglet (disparaît à sa fermeture — pas un cookie)', 'always-analytics' ) . '</td>'
                 . '</tr>';
             $c .= '</tbody></table>';
         }
@@ -233,21 +250,26 @@ class Always_Analytics_Privacy {
 
         // ── 10. Droits ─────────────────────────────────────────────────────────
         $c .= '<h3>' . esc_html__( 'Vos droits', 'always-analytics' ) . '</h3>';
-        $c .= '<p>' . esc_html__( 'Conformément au RGPD (articles 15 à 22), vous disposez des droits suivants concernant vos données :', 'always-analytics' ) . '</p>';
+        $c .= '<p>' . esc_html__( 'Conformément au RGPD (articles 15 à 22), vous disposez des droits suivants. Leur portée dépend de votre situation lors de votre visite :', 'always-analytics' ) . '</p>';
+
+        $c .= '<h4>' . esc_html__( 'Visiteurs non connectés (anonymes)', 'always-analytics' ) . '</h4>';
+        $c .= '<p>' . esc_html__( 'Les données de visite ne contiennent aucun élément permettant de vous identifier : l\'adresse IP n\'est pas stockée, l\'identifiant de visite est un hash non réversible sans lien avec votre identité. Il est techniquement impossible de retrouver et d\'isoler vos données parmi celles des autres visiteurs.', 'always-analytics' ) . '</p>';
+        $c .= '<p>' . esc_html__( 'En conséquence, les droits d\'accès, de rectification et d\'effacement ne peuvent pas être exercés individuellement pour ces données — non par refus, mais par impossibilité technique inhérente à la conception anonyme du système. Cette situation est conforme au RGPD (considérant 26) : les obligations ne s\'appliquent pas aux données véritablement anonymes.', 'always-analytics' ) . '</p>';
+        if ( $is_cookieless ) {
+            $c .= '<p>' . esc_html__( 'Si vous souhaitez ne pas être comptabilisé, vous pouvez utiliser le mode navigation privée de votre navigateur ou un bloqueur de scripts.', 'always-analytics' ) . '</p>';
+        } else {
+            $c .= '<p>' . esc_html__( 'Si vous souhaitez ne pas être comptabilisé, vous pouvez refuser les cookies via la bannière ou supprimer le cookie aa_vid depuis les paramètres de votre navigateur.', 'always-analytics' ) . '</p>';
+        }
+
+        $c .= '<h4>' . esc_html__( 'Visiteurs connectés à un compte WordPress', 'always-analytics' ) . '</h4>';
+        $c .= '<p>' . esc_html__( 'Si vous étiez connecté à votre compte lors de vos visites, vos données sont reliées à votre identifiant utilisateur. Dans ce cas, vous pouvez exercer les droits suivants via l\'outil intégré à WordPress (Outils → Effacement de données / Exportation de données) :', 'always-analytics' ) . '</p>';
         $c .= '<ul>';
         $c .= '<li><strong>' . esc_html__( 'Droit d\'accès', 'always-analytics' ) . '</strong> — '
-            . esc_html__( 'vous pouvez demander quelles données de visite sont associées à votre compte utilisateur (si vous êtes connecté au moment de votre visite).', 'always-analytics' ) . '</li>';
-        $c .= '<li><strong>' . esc_html__( 'Droit à l\'effacement (droit à l\'oubli)', 'always-analytics' ) . '</strong> — '
-            . esc_html__( 'vous pouvez demander l\'anonymisation de vos données de visite. Les données seront rendues non identifiables (visitor_hash remplacé par une valeur aléatoire) plutôt que supprimées, afin de préserver l\'intégrité des statistiques globales du site.', 'always-analytics' ) . '</li>';
-        $c .= '<li><strong>' . esc_html__( 'Droit d\'opposition', 'always-analytics' ) . '</strong> — ';
-        if ( $is_cookieless ) {
-            $c .= esc_html__( 'la mesure d\'audience sans cookie ne nécessitant pas de consentement, le droit d\'opposition ne s\'applique pas au sens strict. Vous pouvez toutefois utiliser un bloqueur de traqueurs ou le mode navigation privée pour ne pas être comptabilisé.', 'always-analytics' );
-        } else {
-            $c .= esc_html__( 'vous pouvez retirer votre consentement à tout moment en cliquant sur le bouton de gestion des cookies présent en pied de page.', 'always-analytics' );
-        }
-        $c .= '</li>';
+            . esc_html__( 'obtenir l\'export des pages visitées, dates, appareils et sessions associés à votre compte.', 'always-analytics' ) . '</li>';
+        $c .= '<li><strong>' . esc_html__( 'Droit à l\'effacement', 'always-analytics' ) . '</strong> — '
+            . esc_html__( 'vos données sont anonymisées : l\'identifiant visiteur est remplacé par une valeur aléatoire irréversible et votre identifiant utilisateur est effacé. Les métriques statistiques agrégées (durée, scroll, type d\'appareil) sont conservées sous forme non identifiable afin de préserver l\'intégrité des statistiques globales du site.', 'always-analytics' ) . '</li>';
         $c .= '</ul>';
-        $c .= '<p>' . esc_html__( 'Pour exercer ces droits, contactez l\'administrateur de ce site via la page de contact ou en utilisant l\'outil de demande de données personnelles disponible dans votre espace utilisateur WordPress.', 'always-analytics' ) . '</p>';
+        $c .= '<p>' . esc_html__( 'Pour exercer ces droits, utilisez l\'outil de demande de données personnelles disponible dans votre espace utilisateur WordPress, ou contactez l\'administrateur du site.', 'always-analytics' ) . '</p>';
 
         wp_add_privacy_policy_content( 'Always Analytics', $c );
     }

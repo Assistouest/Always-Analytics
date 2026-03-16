@@ -2054,7 +2054,7 @@
     border: 1px solid var(--aa-border);
     white-space: nowrap;
 }
-.as-chip.mod-ok     { color: #065f46; background: rgba(16,185,129,.08); border-color: rgba(16,185,129,.25); }
+.as-chip.mod-ok     { color: #4c1d95; background: rgba(108,99,255,.08); border-color: rgba(108,99,255,.25); }
 .as-chip.mod-warn   { color: #92400e; background: rgba(245,158,11,.08); border-color: rgba(245,158,11,.25); }
 .as-chip.mod-danger { color: #b91c1c; background: rgba(239,68,68,.08);  border-color: rgba(239,68,68,.25); }
 a.as-chip { text-decoration: none; cursor: pointer; transition: opacity .15s; }
@@ -2297,7 +2297,7 @@ a.as-chip:hover { opacity: .8; }
     color: var(--aa-text-secondary);
     border: 1px solid var(--aa-border);
 }
-.as-inline-badge.mod-ok     { background: rgba(16,185,129,.1); color: #065f46; border-color: rgba(16,185,129,.25); }
+.as-inline-badge.mod-ok     { background: rgba(108,99,255,.1); color: #4c1d95; border-color: rgba(108,99,255,.25); }
 .as-inline-badge.mod-warn   { background: rgba(245,158,11,.1); color: #92400e; border-color: rgba(245,158,11,.25); }
 .as-inline-badge.mod-danger { background: rgba(239,68,68,.1);  color: #b91c1c; border-color: rgba(239,68,68,.25); }
 
@@ -2374,12 +2374,12 @@ a.as-chip:hover { opacity: .8; }
     border: 1px solid transparent;
 }
 .as-notice--success {
-    background: rgba(16,185,129,.08);
-    border-color: rgba(16,185,129,.25);
-    color: #065f46;
+    background: rgba(108,99,255,.07);
+    border-color: rgba(108,99,255,.25);
+    color: #4c1d95;
 }
-.as-notice__icon { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; stroke: #059669; }
-.as-notice strong { display: block; font-weight: 600; margin-bottom: 3px; color: #065f46; }
+.as-notice__icon { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; stroke: #6c63ff; }
+.as-notice strong { display: block; font-weight: 600; margin-bottom: 3px; color: #4c1d95; }
 
 /* Save bar */
 .as-save-bar {
@@ -2438,7 +2438,7 @@ a.as-chip:hover { opacity: .8; }
 }
 .as-score-chip.mod-danger { background: rgba(220,38,38,.1);    color: #b91c1c; border-color: rgba(220,38,38,.2); }
 .as-score-chip.mod-warn   { background: rgba(217,119,6,.1);    color: #92400e; border-color: rgba(217,119,6,.2); }
-.as-score-chip.mod-ok     { background: rgba(5,150,105,.1);    color: #065f46; border-color: rgba(5,150,105,.2); }
+.as-score-chip.mod-ok     { background: rgba(108,99,255,.1);   color: #4c1d95; border-color: rgba(108,99,255,.2); }
 .as-score-chip.mod-info   { background: rgba(100,116,139,.1);  color: #475569; border-color: rgba(100,116,139,.2); }
 
 /* RGPD Diagnostic list */
@@ -2458,7 +2458,7 @@ a.as-chip:hover { opacity: .8; }
 .as-diag-item:hover { box-shadow: 0 2px 12px rgba(0,0,0,.08); }
 .as-diag-item--danger { border-left-color: #dc2626; }
 .as-diag-item--warn   { border-left-color: #d97706; }
-.as-diag-item--ok     { border-left-color: var(--aa-border); }
+.as-diag-item--ok     { border-left-color: rgba(108,99,255,.4); }
 .as-diag-item--exempt { border-left-color: var(--aa-border); }
 .as-diag-item--info   { border-left-color: var(--aa-border); opacity: .85; }
 .as-diag-item__icon {
@@ -2473,13 +2473,13 @@ a.as-chip:hover { opacity: .8; }
 }
 .as-diag-item--danger .as-diag-item__icon { background: rgba(220,38,38,.1); }
 .as-diag-item--warn   .as-diag-item__icon { background: rgba(217,119,6,.1); }
-.as-diag-item--ok     .as-diag-item__icon { background: rgba(5,150,105,.1); }
+.as-diag-item--ok     .as-diag-item__icon { background: rgba(108,99,255,.1); }
 .as-diag-item--exempt .as-diag-item__icon { background: rgba(108,99,255,.1); }
 .as-diag-item--info   .as-diag-item__icon { background: rgba(100,116,139,.08); }
 .as-diag-icon { width: 16px; height: 16px; }
 .as-diag-item--danger .as-diag-icon { stroke: #dc2626; }
 .as-diag-item--warn   .as-diag-icon { stroke: #d97706; }
-.as-diag-item--ok     .as-diag-icon { stroke: #059669; }
+.as-diag-item--ok     .as-diag-icon { stroke: #6c63ff; }
 .as-diag-item--exempt .as-diag-icon { stroke: #6c63ff; }
 .as-diag-item--info   .as-diag-icon { stroke: #0ea5e9; }
 .as-diag-item__body { flex: 1; min-width: 0; }
@@ -2502,7 +2502,7 @@ a.as-chip:hover { opacity: .8; }
 }
 .as-diag-badge--danger { background: rgba(220,38,38,.1);    color: #b91c1c; border-color: rgba(220,38,38,.2); }
 .as-diag-badge--warn   { background: rgba(217,119,6,.1);    color: #92400e; border-color: rgba(217,119,6,.2); }
-.as-diag-badge--ok     { background: rgba(5,150,105,.1);    color: #065f46; border-color: rgba(5,150,105,.2); }
+.as-diag-badge--ok     { background: rgba(108,99,255,.1);   color: #4c1d95; border-color: rgba(108,99,255,.2); }
 .as-diag-badge--exempt { background: rgba(108,99,255,.1);   color: #4c1d95; border-color: rgba(108,99,255,.2); }
 .as-diag-badge--info   { background: rgba(100,116,139,.08); color: #475569; border-color: rgba(100,116,139,.15); }
 .as-diag-item__title { display: block; font-size: 13px; font-weight: 600; color: var(--aa-text); margin-bottom: 5px; }
@@ -2539,6 +2539,118 @@ a.as-chip:hover { opacity: .8; }
     border-radius: var(--aa-radius);
     border: 1px solid var(--aa-border);
     margin-bottom: 16px;
+}
+
+/* ============================================
+   DIAG GROUPS — Conformité RGPD
+   ============================================ */
+
+.as-diag-group {
+    margin-bottom: 12px;
+    border-radius: var(--aa-radius);
+    overflow: hidden;
+    border: 1px solid var(--aa-border);
+}
+.as-diag-group--priority {
+    border-color: rgba(220,38,38,.2);
+}
+.as-diag-group--ok {
+    border-color: rgba(108,99,255,.2);
+}
+
+.as-diag-group__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+    background: var(--aa-bg);
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: default;
+    color: var(--aa-text);
+}
+button.as-diag-group__header {
+    cursor: pointer;
+    transition: background .15s;
+}
+button.as-diag-group__header:hover {
+    background: var(--aa-surface);
+}
+.as-diag-group--priority .as-diag-group__header {
+    background: rgba(220,38,38,.04);
+}
+.as-diag-group--ok .as-diag-group__header {
+    background: rgba(108,99,255,.04);
+}
+
+.as-diag-group__icon {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+}
+.as-diag-group__icon--alert { stroke: #dc2626; }
+.as-diag-group__icon--ok    { stroke: #6c63ff; }
+
+.as-diag-group__count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    background: rgba(220,38,38,.1);
+    color: #b91c1c;
+    margin-left: 2px;
+}
+.as-diag-group__count--ok {
+    background: rgba(108,99,255,.1);
+    color: #4c1d95;
+}
+
+.as-diag-accordion-chevron {
+    width: 14px;
+    height: 14px;
+    margin-left: auto;
+    transition: transform .2s ease;
+    stroke: var(--aa-text-secondary);
+    flex-shrink: 0;
+}
+.as-diag-accordion-toggle[aria-expanded="true"] .as-diag-accordion-chevron {
+    transform: rotate(180deg);
+}
+
+.as-diag-accordion-body {
+    border-top: 1px solid rgba(108,99,255,.15);
+    animation: aa-slide-down .18s ease;
+}
+.as-diag-accordion-body[hidden] {
+    display: none;
+}
+
+.as-diag-group .as-diag-list {
+    margin-bottom: 0;
+    gap: 0;
+}
+.as-diag-group .as-diag-item {
+    border-radius: 0;
+    border-left-width: 3px;
+    border-top: 1px solid var(--aa-border);
+}
+.as-diag-group .as-diag-item:first-child {
+    border-top: none;
+}
+
+@keyframes aa-slide-down {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ============================================

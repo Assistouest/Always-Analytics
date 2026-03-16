@@ -17,7 +17,13 @@ class Always_Analytics_Activator
     public static function activate()
     {
         self::check_requirements();
-        self::maybe_update();
+        // Sur activation (nouveau install ou réactivation), on force toujours
+        // la création des tables, indépendamment de la version stockée.
+        // Cela couvre le cas où la table n'a jamais été créée malgré une
+        // version déjà enregistrée (ex: dbDelta silencieusement échoué).
+        self::create_tables();
+        self::migrate_from_statify();
+        self::migrate_from_advstats();
         self::set_default_options();
         self::schedule_crons();
         flush_rewrite_rules();
@@ -25,7 +31,7 @@ class Always_Analytics_Activator
 
     /**
      * Check if an update is needed and run migrations.
-     * Called on admin_init.
+     * Called on admin_init pour les mises à jour sans réactivation.
      */
     public static function maybe_update()
     {
@@ -39,7 +45,12 @@ class Always_Analytics_Activator
             self::create_tables();
             self::migrate_from_statify();   // upgrade depuis Statify (nom précédent)
             self::migrate_from_advstats();  // upgrade depuis advstats (nom d'origine)
-            update_option('always_analytics_version', AA_VERSION);
+            // Ne marquer la version comme à jour QUE si la table principale existe.
+            // Évite le verrou définitif si dbDelta échoue silencieusement.
+            global $wpdb;
+            if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->prefix . 'aa_hits' ) ) ) {
+                update_option('always_analytics_version', AA_VERSION);
+            }
         }
     }
 
@@ -87,13 +98,13 @@ class Always_Analytics_Activator
             post_id         BIGINT UNSIGNED DEFAULT 0,
             post_type       VARCHAR(20)     DEFAULT '',
             referrer        VARCHAR(2048)   DEFAULT '',
-            referrer_domain VARCHAR(255)    DEFAULT '',
+            referrer_domain  VARCHAR(255)    DEFAULT '',
             utm_source      VARCHAR(255)    DEFAULT '',
             utm_medium      VARCHAR(255)    DEFAULT '',
             utm_campaign    VARCHAR(255)    DEFAULT '',
             device_type     VARCHAR(20)     DEFAULT 'unknown',
             browser         VARCHAR(100)    DEFAULT '',
-            browser_version VARCHAR(20)     DEFAULT '',
+            browser_version  VARCHAR(20)     DEFAULT '',
             os              VARCHAR(100)    DEFAULT '',
             os_version      VARCHAR(20)     DEFAULT '',
             screen_width    SMALLINT UNSIGNED DEFAULT 0,
@@ -106,6 +117,7 @@ class Always_Analytics_Activator
             user_id         BIGINT UNSIGNED DEFAULT 0,
             scroll_depth    TINYINT UNSIGNED DEFAULT 0,
             hit_source      VARCHAR(20)     DEFAULT 'js',
+            is_superseded   TINYINT(1)      DEFAULT 0,
             hit_at          DATETIME        NOT NULL,
             PRIMARY KEY  (id),
             KEY idx_hit_at       (hit_at),
@@ -130,7 +142,7 @@ class Always_Analytics_Activator
             device_type     VARCHAR(20)     DEFAULT 'unknown',
             country_code    CHAR(2)         DEFAULT '',
             is_bounce       TINYINT(1)      DEFAULT 1,
-            max_scroll_depth TINYINT UNSIGNED DEFAULT 0,
+            max_scroll_depth  TINYINT UNSIGNED DEFAULT 0,
             engagement_time  INT UNSIGNED    DEFAULT 0,
             PRIMARY KEY  (session_id),
             KEY idx_started  (started_at),
@@ -142,7 +154,7 @@ class Always_Analytics_Activator
             stat_date       DATE            NOT NULL,
             page_url        VARCHAR(2048)   NOT NULL,
             post_id         BIGINT UNSIGNED DEFAULT 0,
-            unique_visitors INT UNSIGNED    DEFAULT 0,
+            unique_visitors  INT UNSIGNED    DEFAULT 0,
             page_views      INT UNSIGNED    DEFAULT 0,
             sessions        INT UNSIGNED    DEFAULT 0,
             avg_duration    FLOAT           DEFAULT 0,
@@ -204,28 +216,33 @@ class Always_Analytics_Activator
 
         // ── v1.2 migrations ────────────────────────────────────────────────────
         // Colonne hit_source : distingue hits JS, noscript, pre_consent
+        // Rafraîchissement de $cols ici car scroll_depth a pu être ajouté juste avant.
         $cols = $wpdb->get_col($wpdb->prepare("DESCRIBE {$table_hits}"), 0);
         if (!in_array('hit_source', $cols, true)) {
             $wpdb->query($wpdb->prepare("ALTER TABLE {$table_hits} ADD COLUMN hit_source VARCHAR(20) DEFAULT 'js' AFTER scroll_depth"));
+            // Rafraîchir $cols après l'ALTER pour que les vérifications suivantes soient exactes.
+            $cols = $wpdb->get_col($wpdb->prepare("DESCRIBE {$table_hits}"), 0);
         }
 
         // Index sur hit_source pour les filtrages dashboard
-        $indexes = $wpdb->get_results($wpdb->prepare("SHOW INDEX FROM {$table_hits}"), ARRAY_A);
+        $indexes  = $wpdb->get_results($wpdb->prepare("SHOW INDEX FROM {$table_hits}"), ARRAY_A);
         $idx_names = array_column($indexes, 'Key_name');
         if (!in_array('idx_hit_source', $idx_names, true)) {
             $wpdb->query($wpdb->prepare("ALTER TABLE {$table_hits} ADD INDEX idx_hit_source (hit_source)"));
         }
 
-        // Colonne is_superseded sur hits (pre_consent fusionné → marquer pour exclusion)
+        // Colonne is_superseded sur hits (pre_consent fusionné → marquer pour exclusion).
+        // IMPORTANT : doit être ajoutée AVANT les index idx_hit_at_ns qui la référencent.
         if (!in_array('is_superseded', $cols, true)) {
             $wpdb->query($wpdb->prepare("ALTER TABLE {$table_hits} ADD COLUMN is_superseded TINYINT(1) DEFAULT 0 AFTER hit_source"));
         }
 
-        // ── P-11 / P-12 / P-13 — Index composites pour les gros volumes ──────────
+        // ── P-11 / P-12 / P-13 — Index composites ────────────────────────────────
         // idx_hit_at_ns : couvre le filtre hit_at + is_superseded = 0 présent sur toutes les requêtes.
         // idx_vh_hit_at : accélère is_new_visitor() mode cookieless (visitor_hash + hit_at range).
-        // Ajout conditionnel : sans impact sur les installations fraîches (colonnes dans le CREATE TABLE).
-        $indexes = $wpdb->get_results( $wpdb->prepare( "SHOW INDEX FROM {$table_hits}" ), ARRAY_A );
+        // Rechargement de SHOW INDEX après les ALTERs ci-dessus pour avoir l'état réel.
+        // Ajout conditionnel (idempotent) : safe sur installations fraîches comme sur mises à jour.
+        $indexes   = $wpdb->get_results( $wpdb->prepare( "SHOW INDEX FROM {$table_hits}" ), ARRAY_A );
         $idx_names = array_column( $indexes, 'Key_name' );
         if ( ! in_array( 'idx_hit_at_ns', $idx_names, true ) ) {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -235,8 +252,6 @@ class Always_Analytics_Activator
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
             $wpdb->query( "ALTER TABLE {$table_hits} ADD INDEX idx_vh_hit_at (visitor_hash, hit_at)" );
         }
-
-        update_option('always_analytics_version', AA_VERSION);
     }
 
 
