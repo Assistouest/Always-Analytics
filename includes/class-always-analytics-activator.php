@@ -1,95 +1,184 @@
 <?php
 namespace Always_Analytics;
 
-if (!defined('ABSPATH')) {
-    exit;
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
 }
 
 /**
  * Plugin activator — creates database tables and default options.
  */
-class Always_Analytics_Activator
-{
+class Always_Analytics_Activator {
 
-    /**
-     * Run activation tasks.
-     */
-    public static function activate()
-    {
-        self::check_requirements();
-        // Sur activation (nouveau install ou réactivation), on force toujours
-        // la création des tables, indépendamment de la version stockée.
-        // Cela couvre le cas où la table n'a jamais été créée malgré une
-        // version déjà enregistrée (ex: dbDelta silencieusement échoué).
-        self::create_tables();
-        self::migrate_from_statify();
-        self::migrate_from_advstats();
-        self::set_default_options();
-        self::schedule_crons();
-        flush_rewrite_rules();
-    }
 
-    /**
-     * Check if an update is needed and run migrations.
-     * Called on admin_init pour les mises à jour sans réactivation.
-     */
-    public static function maybe_update()
-    {
-        // Clear object cache to avoid stale version values
-        wp_cache_delete('always_analytics_version', 'options');
-        wp_cache_delete('alloptions', 'options');
+	/**
+	 * Run activation tasks.
+	 */
+	public static function activate() {
+		self::check_requirements();
+		self::migrate_legacy_table_names();
+		self::create_tables();
+		self::migrate_from_advstats();
+		self::set_default_options();
+		self::clean_internal_referrers();
+		self::schedule_crons();
+		add_option( 'always_analytics_activated_at', time() );
+		flush_rewrite_rules();
+	}
 
-        $current_version = get_option('always_analytics_version', '0');
 
-        if (version_compare($current_version, AA_VERSION, '<')) {
-            self::create_tables();
-            self::migrate_from_statify();   // upgrade depuis Statify (nom précédent)
-            self::migrate_from_advstats();  // upgrade depuis advstats (nom d'origine)
-            // Ne marquer la version comme à jour QUE si la table principale existe.
-            // Évite le verrou définitif si dbDelta échoue silencieusement.
-            global $wpdb;
-            if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->prefix . 'aa_hits' ) ) ) {
-                update_option('always_analytics_version', AA_VERSION);
-            }
-        }
-    }
 
-    /**
-     * Check minimum requirements.
-     */
-    private static function check_requirements()
-    {
-        if (version_compare(PHP_VERSION, '7.4', '<')) {
-            deactivate_plugins(AA_PLUGIN_BASENAME);
-            wp_die(
-                esc_html__('Advanced Stats requires PHP 7.4 or higher.', 'always-analytics'),
-                'Plugin Activation Error',
-                array('back_link' => true)
-            );
-        }
-        if (version_compare(get_bloginfo('version'), '5.8', '<')) {
-            deactivate_plugins(AA_PLUGIN_BASENAME);
-            wp_die(
-                esc_html__('Advanced Stats requires WordPress 5.8 or higher.', 'always-analytics'),
-                'Plugin Activation Error',
-                array('back_link' => true)
-            );
-        }
-    }
 
-    /**
-     * Create custom database tables.
-     */
-    private static function create_tables()
-    {
-        global $wpdb;
-        $charset_collate = $wpdb->get_charset_collate();
+	public static function maybe_update() {
 
-        $table_hits = $wpdb->prefix . 'aa_hits';
-        $table_daily = $wpdb->prefix . 'aa_daily';
-        $table_sessions = $wpdb->prefix . 'aa_sessions';
+		wp_cache_delete( 'always_analytics_version', 'options' );
+		wp_cache_delete( 'alloptions', 'options' );
 
-        $sql_hits = "CREATE TABLE {$table_hits} (
+		$current_version = get_option( 'always_analytics_version', '0' );
+
+		if ( version_compare( $current_version, ALWAYS_ANALYTICS_VERSION, '<' ) ) {
+			self::migrate_legacy_table_names();
+			self::create_tables();
+			self::migrate_from_advstats();
+			self::set_default_options();
+			self::clean_internal_referrers();
+			self::schedule_crons();
+
+			global $wpdb;
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time upgrade verification against a plugin-owned table; caching schema existence would be incorrect.
+			if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->prefix . 'always_analytics_hits' ) ) ) {
+				update_option( 'always_analytics_version', ALWAYS_ANALYTICS_VERSION );
+			}
+		}
+	}
+
+	/**
+	 * Check minimum requirements.
+	 */
+	private static function check_requirements() {
+		if ( version_compare( PHP_VERSION, '7.4', '<' ) ) {
+			deactivate_plugins( ALWAYS_ANALYTICS_PLUGIN_BASENAME );
+			wp_die(
+				esc_html__( 'Always Analytics requires PHP 7.4 or later.', 'always-analytics' ),
+				esc_html__( 'Plugin activation error', 'always-analytics' ),
+				array( 'back_link' => true )
+			);
+		}
+		if ( version_compare( get_bloginfo( 'version' ), '5.8', '<' ) ) {
+			deactivate_plugins( ALWAYS_ANALYTICS_PLUGIN_BASENAME );
+			wp_die(
+				esc_html__( 'Always Analytics requires WordPress 5.8 or later.', 'always-analytics' ),
+				esc_html__( 'Plugin activation error', 'always-analytics' ),
+				array( 'back_link' => true )
+			);
+		}
+	}
+
+	/**
+	 * Rename tables created by versions that used the short aa_ prefix.
+	 *
+	 * The rename runs before schema creation so existing data remains available after
+	 * the plugin adopts the full WordPress.org-safe prefix.
+	 *
+	 * @return void
+	 */
+	private static function migrate_legacy_table_names() {
+		global $wpdb;
+
+		$suffixes = array(
+			'hits',
+			'sessions',
+			'daily',
+			'scroll',
+			'campaigns',
+			'link_clicks',
+		);
+
+		foreach ( $suffixes as $suffix ) {
+			$legacy_table  = $wpdb->prefix . 'aa_' . $suffix;
+			$current_table = $wpdb->prefix . 'always_analytics_' . $suffix;
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time existence check for a legacy plugin-owned table assembled from a fixed suffix list.
+			$legacy_exists = (bool) $wpdb->get_var(
+				$wpdb->prepare( 'SHOW TABLES LIKE %s', $legacy_table )
+			);
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time existence check for the destination plugin-owned table assembled from a fixed suffix list.
+			$current_exists = (bool) $wpdb->get_var(
+				$wpdb->prepare( 'SHOW TABLES LIKE %s', $current_table )
+			);
+
+			if ( ! $legacy_exists || $current_exists ) {
+				continue;
+			}
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Both identifiers are constructed from $wpdb->prefix and the fixed suffix allowlist above; WordPress 5.8 has no %i identifier placeholder.
+			$wpdb->query( "RENAME TABLE `{$legacy_table}` TO `{$current_table}`" );
+		}
+
+		$legacy_hooks = array(
+			'aa_daily_aggregate',
+			'aa_daily_purge',
+			'aa_expire_sessions',
+		);
+
+		foreach ( $legacy_hooks as $hook ) {
+			wp_clear_scheduled_hook( $hook );
+		}
+	}
+
+
+	/**
+	 * Create a table without relying on dbDelta's index parser.
+	 *
+	 * dbDelta can emit undefined-array-key warnings for valid index definitions
+	 * on some WordPress, database, and PHP combinations. Frameworks that convert
+	 * warnings to exceptions can then make plugin activation fail. Table creation
+	 * is therefore performed directly, while explicit migrations below handle
+	 * schema changes for existing installations.
+	 *
+	 * @param string $create_sql Complete CREATE TABLE statement.
+	 * @return void
+	 */
+	private static function create_table_if_missing( $create_sql ) {
+		global $wpdb;
+
+		$query = preg_replace(
+			'/^CREATE\s+TABLE\s+/i',
+			'CREATE TABLE IF NOT EXISTS ',
+			ltrim( $create_sql ),
+			1
+		);
+
+		if ( ! is_string( $query ) || '' === $query ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- Query is derived only from the plugin's fixed CREATE TABLE definitions; there are no runtime values to prepare.
+		$result = $wpdb->query( $query );
+
+		if ( false === $result && ! empty( $wpdb->last_error ) ) {
+			wp_die(
+				esc_html(
+					sprintf(
+						/* translators: %s: database error message. */
+						__( 'Always Analytics could not create its database tables: %s', 'always-analytics' ),
+						$wpdb->last_error
+					)
+				),
+				esc_html__( 'Plugin activation error', 'always-analytics' ),
+				array( 'back_link' => true )
+			);
+		}
+	}
+
+	/**
+	 * Create custom database tables.
+	 */
+	private static function create_tables() {
+		global $wpdb;
+		$charset_collate = $wpdb->get_charset_collate();
+
+		$sql_hits = "CREATE TABLE {$wpdb->prefix}always_analytics_hits (
             id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
             visitor_hash    VARCHAR(64)     NOT NULL,
             session_id      VARCHAR(64)     NOT NULL,
@@ -109,9 +198,6 @@ class Always_Analytics_Activator
             os_version      VARCHAR(20)     DEFAULT '',
             screen_width    SMALLINT UNSIGNED DEFAULT 0,
             screen_height   SMALLINT UNSIGNED DEFAULT 0,
-            country_code    CHAR(2)         DEFAULT '',
-            region          VARCHAR(100)    DEFAULT '',
-            city            VARCHAR(100)    DEFAULT '',
             is_new_visitor  TINYINT(1)      DEFAULT 1,
             is_logged_in    TINYINT(1)      DEFAULT 0,
             user_id         BIGINT UNSIGNED DEFAULT 0,
@@ -119,17 +205,15 @@ class Always_Analytics_Activator
             hit_source      VARCHAR(20)     DEFAULT 'js',
             is_superseded   TINYINT(1)      DEFAULT 0,
             hit_at          DATETIME        NOT NULL,
+
             PRIMARY KEY  (id),
-            KEY idx_hit_at       (hit_at),
             KEY idx_hit_at_ns    (hit_at, is_superseded),
             KEY idx_vh_hit_at    (visitor_hash, hit_at),
-            KEY idx_visitor_hash (visitor_hash),
             KEY idx_session_id   (session_id),
-            KEY idx_post_id      (post_id),
-            KEY idx_country      (country_code)
+            KEY idx_post_id      (post_id)
         ) {$charset_collate};";
 
-        $sql_sessions = "CREATE TABLE {$table_sessions} (
+		$sql_sessions = "CREATE TABLE {$wpdb->prefix}always_analytics_sessions (
             session_id      VARCHAR(64)     NOT NULL,
             visitor_hash    VARCHAR(64)     NOT NULL,
             started_at      DATETIME        NOT NULL,
@@ -140,7 +224,6 @@ class Always_Analytics_Activator
             exit_page       VARCHAR(2048)   DEFAULT '',
             referrer        VARCHAR(2048)   DEFAULT '',
             device_type     VARCHAR(20)     DEFAULT 'unknown',
-            country_code    CHAR(2)         DEFAULT '',
             is_bounce       TINYINT(1)      DEFAULT 1,
             max_scroll_depth  TINYINT UNSIGNED DEFAULT 0,
             engagement_time  INT UNSIGNED    DEFAULT 0,
@@ -149,7 +232,7 @@ class Always_Analytics_Activator
             KEY idx_visitor  (visitor_hash)
         ) {$charset_collate};";
 
-        $sql_daily = "CREATE TABLE {$table_daily} (
+		$sql_daily = "CREATE TABLE {$wpdb->prefix}always_analytics_daily (
             id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
             stat_date       DATE            NOT NULL,
             page_url        VARCHAR(2048)   NOT NULL,
@@ -166,9 +249,7 @@ class Always_Analytics_Activator
             KEY idx_post_id (post_id)
         ) {$charset_collate};";
 
-        $table_scroll = $wpdb->prefix . 'aa_scroll';
-
-        $sql_scroll = "CREATE TABLE {$table_scroll} (
+		$sql_scroll = "CREATE TABLE {$wpdb->prefix}always_analytics_scroll (
             id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
             session_id      VARCHAR(64)     NOT NULL,
             visitor_hash    VARCHAR(64)     NOT NULL,
@@ -182,343 +263,369 @@ class Always_Analytics_Activator
             KEY idx_recorded (recorded_at)
         ) {$charset_collate};";
 
-        $table_campaigns = $wpdb->prefix . 'aa_campaigns';
-        $sql_campaigns = "CREATE TABLE {$table_campaigns} (
+		$sql_campaigns = "CREATE TABLE {$wpdb->prefix}always_analytics_campaigns (
             id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
             event_date      DATE            NOT NULL,
             label           VARCHAR(255)    NOT NULL,
-            description     TEXT            DEFAULT '',
+            description     TEXT            NOT NULL,
             color           VARCHAR(7)      DEFAULT '#6c63ff',
             created_at      DATETIME        NOT NULL,
             PRIMARY KEY  (id),
             KEY idx_event_date (event_date)
         ) {$charset_collate};";
 
-        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-        dbDelta($sql_hits);
-        dbDelta($sql_sessions);
-        dbDelta($sql_daily);
-        dbDelta($sql_scroll);
-        dbDelta($sql_campaigns);
+		$sql_link_clicks = "CREATE TABLE {$wpdb->prefix}always_analytics_link_clicks (
+            id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            session_id      VARCHAR(64)     NOT NULL,
+            visitor_hash    VARCHAR(64)     NOT NULL,
+            page_url        VARCHAR(2048)   NOT NULL,
+            link_url        VARCHAR(2048)   NOT NULL,
+            link_domain     VARCHAR(255)    DEFAULT '',
+            link_type       VARCHAR(10)     NOT NULL DEFAULT 'outbound',
+            clicked_at      DATETIME        NOT NULL,
+            PRIMARY KEY  (id),
+            KEY idx_clicked_at   (clicked_at),
+            KEY idx_link_type    (link_type, clicked_at),
+            KEY idx_session      (session_id),
+            KEY idx_link_domain  (link_domain)
+        ) {$charset_collate};";
 
-        // Migration si table existante : ajouter les colonnes manquantes
-        $cols = $wpdb->get_col($wpdb->prepare("DESCRIBE {$table_hits}"), 0);
-        if (!in_array('scroll_depth', $cols, true)) {
-            $wpdb->query($wpdb->prepare("ALTER TABLE {$table_hits} ADD COLUMN scroll_depth TINYINT UNSIGNED DEFAULT 0 AFTER user_id"));
-        }
-        $cols_s = $wpdb->get_col($wpdb->prepare("DESCRIBE {$table_sessions}"), 0);
-        if (!in_array('max_scroll_depth', $cols_s, true)) {
-            $wpdb->query($wpdb->prepare("ALTER TABLE {$table_sessions} ADD COLUMN max_scroll_depth TINYINT UNSIGNED DEFAULT 0"));
-        }
-        if (!in_array('engagement_time', $cols_s, true)) {
-            $wpdb->query($wpdb->prepare("ALTER TABLE {$table_sessions} ADD COLUMN engagement_time INT UNSIGNED DEFAULT 0 AFTER max_scroll_depth"));
-        }
+		$table_queries = array(
+			$sql_hits,
+			$sql_sessions,
+			$sql_daily,
+			$sql_scroll,
+			$sql_campaigns,
+			$sql_link_clicks,
+		);
 
-        // ── v1.2 migrations ────────────────────────────────────────────────────
-        // Colonne hit_source : distingue hits JS, noscript, pre_consent
-        // Rafraîchissement de $cols ici car scroll_depth a pu être ajouté juste avant.
-        $cols = $wpdb->get_col($wpdb->prepare("DESCRIBE {$table_hits}"), 0);
-        if (!in_array('hit_source', $cols, true)) {
-            $wpdb->query($wpdb->prepare("ALTER TABLE {$table_hits} ADD COLUMN hit_source VARCHAR(20) DEFAULT 'js' AFTER scroll_depth"));
-            // Rafraîchir $cols après l'ALTER pour que les vérifications suivantes soient exactes.
-            $cols = $wpdb->get_col($wpdb->prepare("DESCRIBE {$table_hits}"), 0);
-        }
+		foreach ( $table_queries as $table_query ) {
+			self::create_table_if_missing( $table_query );
+		}
 
-        // Index sur hit_source pour les filtrages dashboard
-        $indexes  = $wpdb->get_results($wpdb->prepare("SHOW INDEX FROM {$table_hits}"), ARRAY_A);
-        $idx_names = array_column($indexes, 'Key_name');
-        if (!in_array('idx_hit_source', $idx_names, true)) {
-            $wpdb->query($wpdb->prepare("ALTER TABLE {$table_hits} ADD INDEX idx_hit_source (hit_source)"));
-        }
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Schema inspection of a fixed plugin-owned table; current metadata is required during activation.
+		$cols = $wpdb->get_col( "DESCRIBE {$wpdb->prefix}always_analytics_hits", 0 );
+		if ( ! in_array( 'scroll_depth', $cols, true ) ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching -- Idempotent schema migration on a fixed plugin-owned table.
+			$wpdb->query( "ALTER TABLE {$wpdb->prefix}always_analytics_hits ADD COLUMN scroll_depth TINYINT UNSIGNED DEFAULT 0 AFTER user_id" );
+		}
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Schema inspection of a fixed plugin-owned table; current metadata is required during activation.
+		$cols_s = $wpdb->get_col( "DESCRIBE {$wpdb->prefix}always_analytics_sessions", 0 );
+		if ( ! in_array( 'max_scroll_depth', $cols_s, true ) ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching -- Idempotent schema migration on a fixed plugin-owned table.
+			$wpdb->query( "ALTER TABLE {$wpdb->prefix}always_analytics_sessions ADD COLUMN max_scroll_depth TINYINT UNSIGNED DEFAULT 0" );
+		}
+		if ( ! in_array( 'engagement_time', $cols_s, true ) ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching -- Idempotent schema migration on a fixed plugin-owned table.
+			$wpdb->query( "ALTER TABLE {$wpdb->prefix}always_analytics_sessions ADD COLUMN engagement_time INT UNSIGNED DEFAULT 0 AFTER max_scroll_depth" );
+		}
 
-        // Colonne is_superseded sur hits (pre_consent fusionné → marquer pour exclusion).
-        // IMPORTANT : doit être ajoutée AVANT les index idx_hit_at_ns qui la référencent.
-        if (!in_array('is_superseded', $cols, true)) {
-            $wpdb->query($wpdb->prepare("ALTER TABLE {$table_hits} ADD COLUMN is_superseded TINYINT(1) DEFAULT 0 AFTER hit_source"));
-        }
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Schema inspection of a fixed plugin-owned table; current metadata is required during activation.
+		$cols = $wpdb->get_col( "DESCRIBE {$wpdb->prefix}always_analytics_hits", 0 );
+		if ( ! in_array( 'hit_source', $cols, true ) ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching -- Idempotent schema migration on a fixed plugin-owned table.
+			$wpdb->query( "ALTER TABLE {$wpdb->prefix}always_analytics_hits ADD COLUMN hit_source VARCHAR(20) DEFAULT 'js' AFTER scroll_depth" );
 
-        // ── P-11 / P-12 / P-13 — Index composites ────────────────────────────────
-        // idx_hit_at_ns : couvre le filtre hit_at + is_superseded = 0 présent sur toutes les requêtes.
-        // idx_vh_hit_at : accélère is_new_visitor() mode cookieless (visitor_hash + hit_at range).
-        // Rechargement de SHOW INDEX après les ALTERs ci-dessus pour avoir l'état réel.
-        // Ajout conditionnel (idempotent) : safe sur installations fraîches comme sur mises à jour.
-        $indexes   = $wpdb->get_results( $wpdb->prepare( "SHOW INDEX FROM {$table_hits}" ), ARRAY_A );
-        $idx_names = array_column( $indexes, 'Key_name' );
-        if ( ! in_array( 'idx_hit_at_ns', $idx_names, true ) ) {
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-            $wpdb->query( "ALTER TABLE {$table_hits} ADD INDEX idx_hit_at_ns (hit_at, is_superseded)" );
-        }
-        if ( ! in_array( 'idx_vh_hit_at', $idx_names, true ) ) {
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-            $wpdb->query( "ALTER TABLE {$table_hits} ADD INDEX idx_vh_hit_at (visitor_hash, hit_at)" );
-        }
-    }
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Schema inspection of a fixed plugin-owned table; current metadata is required during activation.
+			$cols = $wpdb->get_col( "DESCRIBE {$wpdb->prefix}always_analytics_hits", 0 );
+		}
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Schema inspection of a fixed plugin-owned table; current metadata is required during activation.
+		$indexes   = $wpdb->get_results( "SHOW INDEX FROM {$wpdb->prefix}always_analytics_hits", ARRAY_A );
+		$idx_names = array_column( $indexes, 'Key_name' );
+		if ( ! in_array( 'idx_hit_source', $idx_names, true ) ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching -- Idempotent schema migration on a fixed plugin-owned table.
+			$wpdb->query( "ALTER TABLE {$wpdb->prefix}always_analytics_hits ADD INDEX idx_hit_source (hit_source)" );
+		}
+
+		if ( ! in_array( 'is_superseded', $cols, true ) ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching -- Idempotent schema migration on a fixed plugin-owned table.
+			$wpdb->query( "ALTER TABLE {$wpdb->prefix}always_analytics_hits ADD COLUMN is_superseded TINYINT(1) DEFAULT 0 AFTER hit_source" );
+		}
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Schema inspection of a fixed plugin-owned table; current metadata is required during activation.
+		$indexes   = (array) $wpdb->get_results( "SHOW INDEX FROM {$wpdb->prefix}always_analytics_hits", ARRAY_A );
+		$idx_names = ! empty( $indexes ) ? array_column( $indexes, 'Key_name' ) : array();
+		if ( ! in_array( 'idx_hit_at_ns', $idx_names, true ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching -- Idempotent index creation on a fixed plugin-owned table.
+			$wpdb->query( "ALTER TABLE {$wpdb->prefix}always_analytics_hits ADD INDEX idx_hit_at_ns (hit_at, is_superseded)" );
+		}
+		if ( ! in_array( 'idx_vh_hit_at', $idx_names, true ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching -- Idempotent index creation on a fixed plugin-owned table.
+			$wpdb->query( "ALTER TABLE {$wpdb->prefix}always_analytics_hits ADD INDEX idx_vh_hit_at (visitor_hash, hit_at)" );
+			$idx_names[] = 'idx_vh_hit_at';
+		}
+
+		// idx_hit_at and idx_visitor_hash are single-column indexes made redundant by the
+		// composite idx_hit_at_ns (hit_at, is_superseded) and idx_vh_hit_at (visitor_hash, hit_at)
+		// indexes above: MySQL/MariaDB can already serve any hit_at-only or visitor_hash-only
+		// lookup from the leftmost prefix of those composite indexes. Dropping the single-column
+		// duplicates removes write overhead and storage with no query-plan loss, but only once
+		// their composite replacement actually exists.
+		if ( in_array( 'idx_hit_at', $idx_names, true ) && in_array( 'idx_hit_at_ns', $idx_names, true ) ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching -- Idempotent schema migration on a fixed plugin-owned table.
+			$wpdb->query( "ALTER TABLE {$wpdb->prefix}always_analytics_hits DROP INDEX idx_hit_at" );
+		}
+		if ( in_array( 'idx_visitor_hash', $idx_names, true ) && in_array( 'idx_vh_hit_at', $idx_names, true ) ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching -- Idempotent schema migration on a fixed plugin-owned table.
+			$wpdb->query( "ALTER TABLE {$wpdb->prefix}always_analytics_hits DROP INDEX idx_visitor_hash" );
+		}
+
+		self::drop_geolocation_columns();
+	}
+
+	/**
+	 * Remove the country_code/region/city columns and their index, added by the
+	 * discontinued DB-IP-based geolocation feature. Runs on every activation;
+	 * each check is a no-op once the columns are gone.
+	 *
+	 * @return void
+	 */
+	private static function drop_geolocation_columns() {
+		global $wpdb;
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Schema inspection of a fixed plugin-owned table; current metadata is required during activation.
+		$hit_indexes = $wpdb->get_results( "SHOW INDEX FROM {$wpdb->prefix}always_analytics_hits", ARRAY_A );
+		$hit_idx     = ! empty( $hit_indexes ) ? array_column( $hit_indexes, 'Key_name' ) : array();
+		if ( in_array( 'idx_country', $hit_idx, true ) ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching -- Idempotent schema migration on a fixed plugin-owned table.
+			$wpdb->query( "ALTER TABLE {$wpdb->prefix}always_analytics_hits DROP INDEX idx_country" );
+		}
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Schema inspection of a fixed plugin-owned table; current metadata is required during activation.
+		$hit_cols = $wpdb->get_col( "DESCRIBE {$wpdb->prefix}always_analytics_hits", 0 );
+		foreach ( array( 'country_code', 'region', 'city' ) as $column ) {
+			if ( in_array( $column, $hit_cols, true ) ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Column is selected from the three-value hardcoded allowlist above; WordPress 5.8 has no identifier placeholder.
+				$wpdb->query( "ALTER TABLE {$wpdb->prefix}always_analytics_hits DROP COLUMN {$column}" );
+			}
+		}
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Schema inspection of a fixed plugin-owned table; current metadata is required during activation.
+		$session_cols = $wpdb->get_col( "DESCRIBE {$wpdb->prefix}always_analytics_sessions", 0 );
+		if ( in_array( 'country_code', $session_cols, true ) ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching -- Idempotent schema migration on a fixed plugin-owned table.
+			$wpdb->query( "ALTER TABLE {$wpdb->prefix}always_analytics_sessions DROP COLUMN country_code" );
+		}
+	}
 
 
-    /**
-     * Migrate data from the previous "Statify" branding (statify_* → aa_*).
-     * Runs only when statify_* tables or options exist — safe on fresh installs.
-     */
-    private static function migrate_from_statify()
-    {
-        global $wpdb;
+	/**
+	 * Migrate data from old advstats_* tables and option to always_analytics_* equivalents.
+	 * Runs only when the old tables/option exist — safe to call on fresh installs.
+	 */
+	private static function migrate_from_advstats() {
+		global $wpdb;
 
-        // ── Option ────────────────────────────────────────────────────────────
-        $old_option = get_option('statify_options', null);
-        if (null !== $old_option && false === get_option('always_analytics_options')) {
-            add_option('always_analytics_options', $old_option);
-        }
-        delete_option('statify_options');
-        delete_option('statify_db_version');
-        delete_option('statify_db_schema_version');
+		$old_option = get_option( 'advstats_options', null );
+		if ( null !== $old_option && false === get_option( 'always_analytics_options' ) ) {
+			add_option( 'always_analytics_options', $old_option );
+			delete_option( 'advstats_options' );
+		}
 
-        // ── Tables ────────────────────────────────────────────────────────────
-        $table_map = array(
-            'statify_hits'     => 'aa_hits',
-            'statify_sessions' => 'aa_sessions',
-            'statify_scroll'   => 'aa_scroll',
-            'statify_daily'    => 'aa_daily',
-        );
+		$table_map = array(
+			'advstats_hits'     => 'always_analytics_hits',
+			'advstats_sessions' => 'always_analytics_sessions',
+			'advstats_scroll'   => 'always_analytics_scroll',
+			'advstats_daily'    => 'always_analytics_daily',
+		);
 
-        foreach ($table_map as $old_suffix => $new_suffix) {
-            $old_table = $wpdb->prefix . $old_suffix;
-            $new_table = $wpdb->prefix . $new_suffix;
+		foreach ( $table_map as $old_suffix => $new_suffix ) {
+			$old_table = $wpdb->prefix . $old_suffix;
+			$new_table = $wpdb->prefix . $new_suffix;
 
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-            $old_exists = (bool) $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $old_table));
-            if (! $old_exists) {
-                continue;
-            }
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-            $new_exists = (bool) $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $new_table));
-            if (! $new_exists) {
-                continue;
-            }
-            // Skip if destination already has data
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-            $new_count = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM `{$new_table}` LIMIT 1")); // phpcs:ignore
-            if ($new_count > 0) {
-                continue;
-            }
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time source-table existence check; table name is assembled from the fixed migration map below.
+			$old_exists = (bool) $wpdb->get_var(
+				$wpdb->prepare( 'SHOW TABLES LIKE %s', $old_table )
+			);
+			if ( ! $old_exists ) {
+				continue;
+			}
 
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-            $old_cols = $wpdb->get_col($wpdb->prepare("DESCRIBE `{$old_table}`"), 0); // phpcs:ignore
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-            $new_cols = $wpdb->get_col($wpdb->prepare("DESCRIBE `{$new_table}`"), 0); // phpcs:ignore
-            $common   = array_intersect($old_cols, $new_cols);
-            if (empty($common)) {
-                continue;
-            }
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time destination-table existence check; table name is assembled from the fixed migration map below.
+			$new_exists = (bool) $wpdb->get_var(
+				$wpdb->prepare( 'SHOW TABLES LIKE %s', $new_table )
+			);
+			if ( ! $new_exists ) {
+				continue;
+			}
 
-            $cols_sql = implode(', ', array_map(function ($c) { return '`' . $c . '`'; }, $common));
-            $has_id   = in_array('id', $common, true);
+			$new_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM `{$new_table}` LIMIT 1" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Destination identifier is assembled from $wpdb->prefix and the fixed migration map; WordPress 5.8 has no %i placeholder.
+			if ( $new_count > 0 ) {
+				continue;
+			}
 
-            if ($has_id) {
-                $min_id = (int) $wpdb->get_var($wpdb->prepare("SELECT MIN(id) FROM `{$old_table}`")); // phpcs:ignore
-                $max_id = (int) $wpdb->get_var($wpdb->prepare("SELECT MAX(id) FROM `{$old_table}`")); // phpcs:ignore
-                $chunk  = 5000;
-                for ($offset = $min_id; $offset <= $max_id; $offset += $chunk) {
-                    $end = $offset + $chunk - 1;
-                    // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-                    $wpdb->query($wpdb->prepare(
-                        "INSERT IGNORE INTO `{$new_table}` ({$cols_sql}) SELECT {$cols_sql} FROM `{$old_table}` WHERE id BETWEEN %d AND %d",
-                        $offset, $end
-                    ));
-                }
-            } else {
-                // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-                $wpdb->query($wpdb->prepare(
-                    "INSERT IGNORE INTO `{$new_table}` ({$cols_sql}) SELECT {$cols_sql} FROM `{$old_table}`"
-                ));
-            }
+			$old_cols = $wpdb->get_col( "DESCRIBE `{$old_table}`", 0 ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Source identifier is assembled from $wpdb->prefix and the fixed migration map; WordPress 5.8 has no %i placeholder.
+			$new_cols = $wpdb->get_col( "DESCRIBE `{$new_table}`", 0 ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Destination identifier is assembled from $wpdb->prefix and the fixed migration map; WordPress 5.8 has no %i placeholder.
 
-            // Drop old table
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-            $wpdb->query($wpdb->prepare("DROP TABLE IF EXISTS `{$old_table}`")); // phpcs:ignore
-        }
+			$common = array_values(
+				array_filter(
+					array_intersect( $old_cols, $new_cols ),
+					static function ( $column ) {
+						return is_string( $column ) && 1 === preg_match( '/^[A-Za-z0-9_]+$/D', $column );
+					}
+				)
+			);
+			if ( empty( $common ) ) {
+				continue;
+			}
 
-        // ── Cron hooks ────────────────────────────────────────────────────────
-        $old_crons = array(
-            'statify_daily_aggregate',
-            'statify_daily_purge',
-            'statify_expire_sessions',
-        );
-        foreach ($old_crons as $hook) {
-            $timestamp = wp_next_scheduled($hook);
-            if ($timestamp) {
-                wp_unschedule_event($timestamp, $hook);
-            }
-        }
-    }
+			$cols_sql = implode(
+				', ',
+				array_map(
+					function ( $c ) {
+						return '`' . $c . '`';
+					},
+					$common
+				)
+			);
 
-    /**
-     * Migrate data from old advstats_* tables and option to aa_* equivalents.
-     * Runs only when the old tables/option exist — safe to call on fresh installs.
-     */
-    private static function migrate_from_advstats()
-    {
-        global $wpdb;
+			$has_id = in_array( 'id', $common, true );
 
-        // ── Option ────────────────────────────────────────────────────────────
-        $old_option = get_option('advstats_options', null);
-        if (null !== $old_option && false === get_option('always_analytics_options')) {
-            add_option('always_analytics_options', $old_option);
-            delete_option('advstats_options');
-        }
+			if ( $has_id ) {
+				$min_id = (int) $wpdb->get_var( "SELECT MIN(id) FROM `{$old_table}`" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Source identifier is assembled from $wpdb->prefix and the fixed migration map; WordPress 5.8 has no %i placeholder.
+				$max_id = (int) $wpdb->get_var( "SELECT MAX(id) FROM `{$old_table}`" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Source identifier is assembled from $wpdb->prefix and the fixed migration map; WordPress 5.8 has no %i placeholder.
 
-        // ── Tables ────────────────────────────────────────────────────────────
-        $table_map = array(
-            'advstats_hits' => 'aa_hits',
-            'advstats_sessions' => 'aa_sessions',
-            'advstats_scroll' => 'aa_scroll',
-            'advstats_daily' => 'aa_daily',
-        );
+				$chunk = 5000;
+				for ( $offset = $min_id; $offset <= $max_id; $offset += $chunk ) {
+					$end = $offset + $chunk - 1;
 
-        foreach ($table_map as $old_suffix => $new_suffix) {
-            $old_table = $wpdb->prefix . $old_suffix;
-            $new_table = $wpdb->prefix . $new_suffix;
+					// Table identifiers come from the fixed migration map; column identifiers are intersected
+					// DESCRIBE results restricted to [A-Za-z0-9_], and row bounds are prepared. phpcs:disable
+					// is used because the flagged token is on the line after $wpdb->prepare(, past the reach
+					// of a same-line/previous-line phpcs:ignore.
+                    // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					$wpdb->query(
+						$wpdb->prepare(
+							"INSERT IGNORE INTO `{$new_table}` ({$cols_sql}) SELECT {$cols_sql} FROM `{$old_table}` WHERE id BETWEEN %d AND %d",
+							$offset,
+							$end
+						)
+					);
+					// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				}
+			} else {
 
-            // Old table must exist
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-            $old_exists = (bool)$wpdb->get_var(
-                $wpdb->prepare('SHOW TABLES LIKE %s', $old_table)
-            );
-            if (!$old_exists) {
-                continue;
-            }
+				// Table identifiers come from the fixed migration map and column identifiers are intersected
+				// DESCRIBE results restricted to [A-Za-z0-9_]; the statement contains no runtime values.
+                // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$wpdb->query(
+					"INSERT IGNORE INTO `{$new_table}` ({$cols_sql}) SELECT {$cols_sql} FROM `{$old_table}`"
+				);
+				// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			}
 
-            // New table must exist (created just before by create_tables())
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-            $new_exists = (bool)$wpdb->get_var(
-                $wpdb->prepare('SHOW TABLES LIKE %s', $new_table)
-            );
-            if (!$new_exists) {
-                continue;
-            }
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Source identifier is assembled from $wpdb->prefix and the fixed migration map; the legacy table is dropped only after migration.
+			$wpdb->query( "DROP TABLE IF EXISTS `{$old_table}`" );
+		}
 
-            // Skip if new table already has data (migration already ran)
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-            $new_count = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM `{$new_table}` LIMIT 1")); // phpcs:ignore
-            if ($new_count > 0) {
-                continue;
-            }
+		delete_option( 'advstats_db_version' );
+		delete_option( 'advstats_db_schema_version' );
 
-            // Determine common columns between old and new table to avoid
-            // INSERT errors if schemas differ slightly.
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-            $old_cols = $wpdb->get_col($wpdb->prepare("DESCRIBE `{$old_table}`"), 0); // phpcs:ignore
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-            $new_cols = $wpdb->get_col($wpdb->prepare("DESCRIBE `{$new_table}`"), 0); // phpcs:ignore
+		$old_crons = array(
+			'advstats_daily_aggregate',
+			'advstats_daily_purge',
+			'advstats_expire_sessions',
+		);
+		foreach ( $old_crons as $hook ) {
+			$timestamp = wp_next_scheduled( $hook );
+			if ( $timestamp ) {
+				wp_unschedule_event( $timestamp, $hook );
+			}
+		}
+	}
 
-            $common = array_intersect($old_cols, $new_cols);
-            if (empty($common)) {
-                continue;
-            }
+	/**
+	 * Set default plugin options.
+	 */
+	private static function set_default_options() {
+		$defaults = array(
+			'disable_tracking'    => false,
+			'tracking_mode'       => 'cookieless',
+			'excluded_roles'      => array( 'administrator' ),
+			'excluded_ips'        => '',
+			'anonymize_ip'        => true,
+			'retention_days'      => 90,
+			'delete_on_uninstall' => false,
+			'cache_ttl'           => 300,
+			'export_format'       => 'csv',
+			'external_favicons'   => false,
+			'consent_enabled'     => false,
+			'consent_message'     => __( 'This site uses audience measurement cookies. Do you agree?', 'always-analytics' ),
+			'consent_accept'      => __( 'Accept', 'always-analytics' ),
+			'consent_decline'     => __( 'Decline', 'always-analytics' ),
+			'info_message'        => __( 'This site uses privacy-focused, cookieless audience measurement. The statistics help improve the site content.', 'always-analytics' ),
+			'info_ok'             => __( 'Got it', 'always-analytics' ),
+			'consent_bg_color'    => '#1a1a2e',
+			'consent_text_color'  => '#ffffff',
+			'consent_btn_color'   => '#6c63ff',
+		);
 
-            $cols_sql = implode(', ', array_map(function ($c) {
-                return '`' . $c . '`';
-            }, $common));
+		if ( false === get_option( 'always_analytics_options' ) ) {
+			add_option( 'always_analytics_options', $defaults );
+		}
+	}
 
-            // Batch copy in chunks of 5 000 rows to avoid memory issues on
-            // large sites. Uses AUTO_INCREMENT id when available, otherwise
-            // copies all at once.
-            $has_id = in_array('id', $common, true);
+	/**
+	 * Remove historical self-referrals from acquisition data.
+	 * Internal navigation is already measured by the dedicated link reports.
+	 *
+	 * @return void
+	 */
+	private static function clean_internal_referrers() {
+		global $wpdb;
 
-            if ($has_id) {
-                $min_id = (int)$wpdb->get_var($wpdb->prepare("SELECT MIN(id) FROM `{$old_table}`")); // phpcs:ignore
-                $max_id = (int)$wpdb->get_var($wpdb->prepare("SELECT MAX(id) FROM `{$old_table}`")); // phpcs:ignore
+		if ( ! class_exists( 'Always_Analytics\\Always_Analytics_Tracker' ) ) {
+			require_once ALWAYS_ANALYTICS_PLUGIN_DIR . 'includes/class-always-analytics-tracker.php';
+		}
 
-                $chunk = 5000;
-                for ($offset = $min_id; $offset <= $max_id; $offset += $chunk) {
-                    $end = $offset + $chunk - 1;
-                    // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-                    $wpdb->query($wpdb->prepare(
-                        "INSERT IGNORE INTO `{$new_table}` ({$cols_sql})
-                         SELECT {$cols_sql} FROM `{$old_table}`
-                         WHERE id BETWEEN %d AND %d",
-                        $offset, $end
-                    ));
-                }
-            }
-            else {
-                // No id column (sessions use session_id as PK)
-                // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-                $wpdb->query($wpdb->prepare(
-                    "INSERT IGNORE INTO `{$new_table}` ({$cols_sql})
-                     SELECT {$cols_sql} FROM `{$old_table}`"
-                ));
-            }
+		$table = $wpdb->prefix . 'always_analytics_hits';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time activation check against a plugin-owned table; caching schema existence would be incorrect.
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) !== $table ) {
+			return;
+		}
 
-            // Drop old table once data is safely in the new one
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-            $wpdb->query($wpdb->prepare("DROP TABLE IF EXISTS `{$old_table}`"));
-        }
+		$internal_hosts = Always_Analytics_Tracker::get_internal_hosts();
+		if ( empty( $internal_hosts ) ) {
+			return;
+		}
 
-        // Also clean up old db_version option
-        delete_option('advstats_db_version');
-        delete_option('advstats_db_schema_version');
+		$host_variants = array();
+		foreach ( $internal_hosts as $internal_host ) {
+			$host_variants[] = $internal_host;
+			$host_variants[] = 'www.' . $internal_host;
+		}
+		$host_variants = array_values( array_unique( $host_variants ) );
+		$placeholders  = implode( ', ', array_fill( 0, count( $host_variants ), '%s' ) );
 
-        // Clean up old cron hooks
-        $old_crons = array(
-            'advstats_daily_aggregate',
-            'advstats_daily_purge',
-            'advstats_expire_sessions',
-        );
-        foreach ($old_crons as $hook) {
-            $timestamp = wp_next_scheduled($hook);
-            if ($timestamp) {
-                wp_unschedule_event($timestamp, $hook);
-            }
-        }
-    }
+		// Placeholders are generated one-for-one from normalized internal host variants; values are passed
+		// separately to prepare() via the spread operator. phpcs:disable is used because the flagged token
+		// is 3 lines past this comment, and the spread call also trips the placeholder-count sniff, which
+		// cannot see through a variadic spread.
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+		$wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$wpdb->prefix}always_analytics_hits
+                 SET referrer = '', referrer_domain = ''
+                 WHERE LOWER(TRIM(TRAILING '.' FROM referrer_domain)) IN ({$placeholders})",
+				...$host_variants
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+	}
 
-    /**
-     * Set default plugin options.
-     */
-    private static function set_default_options()
-    {
-        $defaults = array(
-            'disable_tracking' => false,
-            'tracking_mode' => 'cookieless', // 'cookieless' or 'cookie'
-            'excluded_roles' => array('administrator'),
-            'excluded_ips' => '',
-            'anonymize_ip' => true, // FORCÉ true — requis RGPD mode cookieless
-            'retention_days' => 90,
-            'delete_on_uninstall' => true,
-            'geo_enabled' => true,
-            'geo_provider'    => 'native',
-            'maxmind_db_path' => '',
-            'cache_ttl' => 300, // 5 minutes
-            'bot_filter_mode' => 'normal', // 'normal' or 'off'
-            'export_format' => 'csv',
-            'consent_enabled' => false,
-            'consent_message' => __('Ce site utilise des cookies pour analyser le trafic. Acceptez-vous ?', 'always-analytics'),
-            'consent_accept' => __('Accepter', 'always-analytics'),
-            'consent_decline' => __('Refuser', 'always-analytics'),
-            'consent_bg_color' => '#1a1a2e',
-            'consent_text_color' => '#ffffff',
-            'consent_btn_color' => '#6c63ff',
-        );
-
-        // Only set defaults if option doesn't exist yet (fresh install or post-migration)
-        if (false === get_option('always_analytics_options')) {
-            add_option('always_analytics_options', $defaults);
-        }
-    }
-
-    /**
-     * Schedule WP-Cron events.
-     */
-    private static function schedule_crons()
-    {
-        if (!wp_next_scheduled('aa_daily_aggregate')) {
-            wp_schedule_event(strtotime('tomorrow 02:00:00'), 'daily', 'aa_daily_aggregate');
-        }
-        if (!wp_next_scheduled('aa_daily_purge')) {
-            wp_schedule_event(strtotime('tomorrow 03:00:00'), 'daily', 'aa_daily_purge');
-        }
-        if (!wp_next_scheduled('always_analytics_expire_sessions')) {
-            wp_schedule_event(time(), 'hourly', 'always_analytics_expire_sessions');
-        }
-    }
+	/**
+	 * Schedule WP-Cron events.
+	 */
+	private static function schedule_crons() {
+		if ( ! wp_next_scheduled( 'always_analytics_daily_aggregate' ) ) {
+			wp_schedule_event( strtotime( 'tomorrow 02:00:00' ), 'daily', 'always_analytics_daily_aggregate' );
+		}
+		if ( ! wp_next_scheduled( 'always_analytics_daily_purge' ) ) {
+			wp_schedule_event( strtotime( 'tomorrow 03:00:00' ), 'daily', 'always_analytics_daily_purge' );
+		}
+		if ( ! wp_next_scheduled( 'always_analytics_expire_sessions' ) ) {
+			wp_schedule_event( time(), 'hourly', 'always_analytics_expire_sessions' );
+		}
+	}
 }

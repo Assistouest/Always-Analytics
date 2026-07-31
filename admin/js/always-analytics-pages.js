@@ -1,19 +1,9 @@
-/**
- * Always Analytics — Page-specific scripts.
- *
- * Handles:
- *  - Top Pages view  (date filter + live search)
- *  - Settings view   (tab system + session-storage restore)
- *
- * All page URLs are passed via alwaysAnalyticsPages (wp_localize_script).
- *
- * @package Always_Analytics
- */
+
+
 
 ( function () {
 	'use strict';
 
-	// ── Top Pages view ──────────────────────────────────────────────────────
 
 	var tpApply = document.getElementById( 'tp-apply' );
 	if ( tpApply ) {
@@ -40,16 +30,15 @@
 		} );
 	}
 
-	// ── Settings view — tab system ──────────────────────────────────────────
 
-	var tabs     = document.querySelectorAll( '.as-tab' );
-	var panels   = document.querySelectorAll( '.as-panel' );
-	var savebar  = document.getElementById( 'aa-save-bar' );
-	var tabField = document.getElementById( 'aa-active-tab-field' );
+	var tabs     = document.querySelectorAll( '.always-analytics-tab' );
+	var panels   = document.querySelectorAll( '.always-analytics-panel' );
+	var savebar  = document.getElementById( 'always-analytics-save-bar' );
+	var tabField = document.getElementById( 'always-analytics-active-tab-field' );
 
 	if ( tabs.length ) {
 		var formTabs  = [ 'tracking', 'privacy', 'consent', 'performance' ];
-		var STORE_KEY = 'aa_active_tab';
+		var STORE_KEY = 'always_analytics_active_tab';
 
 		function showTab( tab ) {
 			tabs.forEach( function ( t ) {
@@ -73,7 +62,7 @@
 			} );
 		} );
 
-		document.querySelectorAll( '.aa-settings-tab-link' ).forEach( function ( a ) {
+		document.querySelectorAll( '.always-analytics-settings-tab-link' ).forEach( function ( a ) {
 			a.addEventListener( 'click', function ( e ) {
 				e.preventDefault();
 				if ( a.dataset.tab ) {
@@ -84,18 +73,18 @@
 			} );
 		} );
 
-		// Persist active tab across form submit.
-		var settingsForm = document.getElementById( 'aa-settings-form' );
+
+		var settingsForm = document.getElementById( 'always-analytics-settings-form' );
 		if ( settingsForm ) {
 			settingsForm.addEventListener( 'submit', function () {
-				var active = document.querySelector( '.as-tab.active' );
+				var active = document.querySelector( '.always-analytics-tab.active' );
 				if ( active ) {
 					try { sessionStorage.setItem( STORE_KEY, active.dataset.tab ); } catch ( e ) {}
 				}
 			} );
 		}
 
-		// Restore tab after save redirect (settings-updated=true in URL).
+
 		var urlParams = new URLSearchParams( window.location.search );
 		if ( urlParams.get( 'settings-updated' ) === 'true' ) {
 			try {

@@ -1,129 +1,244 @@
 <?php
+/**
+ * Front-end transparency, consent, and opt-out controls.
+ *
+ * @package AlwaysAnalytics
+ */
+
 namespace Always_Analytics;
 
 if ( ! defined( 'ABSPATH' ) ) {
-    exit;
+	exit;
 }
 
 /**
- * Consent banner — RGPD cookie consent management.
- * Active only when tracking_mode is 'cookie' and consent_enabled is true.
+ * Renders the appropriate privacy notice for the selected tracking mode.
  */
-class Always_Analytics_Consent {
+final class Always_Analytics_Consent {
 
-    /**
-     * Render the consent banner in the footer.
-     */
-    public function render_banner() {
-        $options = get_option( 'always_analytics_options', array() );
+	/**
+	 * Renders the front-end notice when enabled.
+	 *
+	 * @return void
+	 */
+	public function render_banner() {
+		$options = get_option( 'always_analytics_options', array() );
+		if ( empty( $options['consent_enabled'] ) || $this->is_excluded_user( $options ) ) {
+			return;
+		}
 
-        // Only show banner if cookie mode + consent is enabled
-        if ( empty( $options['consent_enabled'] ) ) {
-            return;
-        }
+		$tracking_mode = isset( $options['tracking_mode'] ) ? sanitize_key( $options['tracking_mode'] ) : 'cookieless';
+		if ( 'cookie' === $tracking_mode ) {
+			$this->render_cookie_consent( $options );
+			return;
+		}
 
-        $tracking_mode = isset( $options['tracking_mode'] ) ? $options['tracking_mode'] : 'cookieless';
-        if ( 'cookie' !== $tracking_mode ) {
-            return;
-        }
+		$this->render_cookieless_notice( $options );
+	}
 
-        // Don't show to logged-in users with excluded roles
-        if ( is_user_logged_in() ) {
-            $excluded_roles = isset( $options['excluded_roles'] ) ? (array) $options['excluded_roles'] : array();
-            $user           = wp_get_current_user();
-            if ( array_intersect( $excluded_roles, $user->roles ) ) {
-                return;
-            }
-        }
+	/**
+	 * Enqueue local notice assets when privacy controls are enabled.
+	 *
+	 * @return void
+	 */
+	public function maybe_enqueue_assets() {
+		$options = get_option( 'always_analytics_options', array() );
+		if ( empty( $options['consent_enabled'] ) || $this->is_excluded_user( $options ) ) {
+			return;
+		}
 
-        $message     = isset( $options['consent_message'] ) ? $options['consent_message'] : __( 'Ce site utilise des cookies pour analyser le trafic. Acceptez-vous ?', 'always-analytics' );
-        $accept_text = isset( $options['consent_accept'] ) ? $options['consent_accept'] : __( 'Accepter', 'always-analytics' );
-        $decline_text = isset( $options['consent_decline'] ) ? $options['consent_decline'] : __( 'Refuser', 'always-analytics' );
-        $bg_color    = isset( $options['consent_bg_color'] ) ? $options['consent_bg_color'] : '#1a1a2e';
-        $text_color  = isset( $options['consent_text_color'] ) ? $options['consent_text_color'] : '#ffffff';
-        $btn_color   = isset( $options['consent_btn_color'] ) ? $options['consent_btn_color'] : '#6c63ff';
-        ?>
-        <div id="aa-consent-banner"
-             style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:999999;padding:20px 24px;
-                    background:<?php echo esc_attr( $bg_color ); ?>;color:<?php echo esc_attr( $text_color ); ?>;
-                    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;
-                    box-shadow:0 -4px 24px rgba(0,0,0,0.3);backdrop-filter:blur(12px);">
-            <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
-                <p style="margin:0;flex:1;min-width:280px;line-height:1.5;">
-                    <?php echo esc_html( $message ); ?>
-                </p>
-                <div style="display:flex;gap:10px;flex-shrink:0;">
-                    <button id="aa-consent-decline"
-                            style="padding:10px 20px;border:1px solid <?php echo esc_attr( $text_color ); ?>;
-                                   background:transparent;color:<?php echo esc_attr( $text_color ); ?>;
-                                   border-radius:6px;cursor:pointer;font-size:14px;font-weight:500;
-                                   transition:opacity .2s;">
-                        <?php echo esc_html( $decline_text ); ?>
-                    </button>
-                    <button id="aa-consent-accept"
-                            style="padding:10px 24px;border:none;
-                                   background:<?php echo esc_attr( $btn_color ); ?>;color:#ffffff;
-                                   border-radius:6px;cursor:pointer;font-size:14px;font-weight:600;
-                                   transition:transform .15s,box-shadow .15s;
-                                   box-shadow:0 2px 8px rgba(108,99,255,0.4);">
-                        <?php echo esc_html( $accept_text ); ?>
-                    </button>
-                </div>
-            </div>
-        </div>
-        <script>
-        (function(){
-            var COOKIE_NAME = 'aa_consent';
-            var banner = document.getElementById('aa-consent-banner');
-            if (!banner) return;
+		$this->enqueue_assets();
+	}
 
-            // Check if consent already given
-            var consent = getCookie(COOKIE_NAME);
-            if (consent) {
-                // Consent already stored — notify tracker
-                window.alwaysAnalyticsConsentStatus = consent;
-                return;
-            }
+	/**
+	 * Load the local notice assets.
+	 *
+	 * @return void
+	 */
+	private function enqueue_assets() {
+		wp_enqueue_style(
+			'always-analytics-consent',
+			ALWAYS_ANALYTICS_PLUGIN_URL . 'public/css/always-analytics-consent.css',
+			array(),
+			ALWAYS_ANALYTICS_VERSION
+		);
 
-            // Show banner
-            banner.style.display = 'block';
+		wp_enqueue_script(
+			'always-analytics-consent',
+			ALWAYS_ANALYTICS_PLUGIN_URL . 'public/js/always-analytics-consent.js',
+			array(),
+			ALWAYS_ANALYTICS_VERSION,
+			true
+		);
 
-            document.getElementById('aa-consent-accept').addEventListener('click', function(){
-                setCookie(COOKIE_NAME, 'granted', 182);
-                window.alwaysAnalyticsConsentStatus = 'granted';
-                banner.style.display = 'none';
-                // Trigger tracking if it was waiting for consent
-                if (window.alwaysAnalyticsOnConsent) window.alwaysAnalyticsOnConsent('granted');
-            });
+		wp_localize_script(
+			'always-analytics-consent',
+			'alwaysAnalyticsPrivacyConfig',
+			array(
+				'consentCookie' => 'always_analytics_consent',
+				'optOutCookie'  => 'always_analytics_opt_out',
+				'visitorCookie' => 'always_analytics_vid',
+				'cookieDays'    => 395,
+			)
+		);
+	}
 
-            document.getElementById('aa-consent-decline').addEventListener('click', function(){
-                setCookie(COOKIE_NAME, 'denied', 182);
-                window.alwaysAnalyticsConsentStatus = 'denied';
-                banner.style.display = 'none';
-                if (window.alwaysAnalyticsOnConsent) window.alwaysAnalyticsOnConsent('denied');
-            });
+	/**
+	 * Renders a transparency notice and a persistent opt-out control.
+	 *
+	 * @param array<string, mixed> $options Plugin options.
+	 * @return void
+	 */
+	private function render_cookieless_notice( $options ) {
+		$site_name = get_bloginfo( 'name' );
+		$message   = ! empty( $options['info_message'] )
+			? (string) $options['info_message']
+			: sprintf(
+				/* translators: %s: site name. */
+				__( '%s uses self-hosted, cookieless audience measurement. You can opt out at any time.', 'always-analytics' ),
+				$site_name
+			);
+		$dismiss_text = ! empty( $options['info_ok'] ) ? (string) $options['info_ok'] : __( 'Continue', 'always-analytics' );
+		$colors       = $this->get_notice_colors( $options );
+		?>
+		<div
+			id="always-analytics-info-banner"
+			class="always-analytics-privacy-banner"
+			role="region"
+			aria-label="<?php echo esc_attr__( 'Audience measurement information', 'always-analytics' ); ?>"
+			style="--always-analytics-bg:<?php echo esc_attr( $colors['background'] ); ?>;--always-analytics-text:<?php echo esc_attr( $colors['text'] ); ?>;--always-analytics-accent:<?php echo esc_attr( $colors['button'] ); ?>;"
+			hidden
+		>
+			<div class="always-analytics-privacy-banner__inner">
+				<span class="always-analytics-privacy-banner__icon" aria-hidden="true"><?php echo wp_kses( $this->get_shield_icon(), $this->get_svg_kses_rules() ); ?></span>
+				<p class="always-analytics-privacy-banner__text"><?php echo esc_html( $message ); ?></p>
+				<div class="always-analytics-privacy-banner__actions">
+					<button id="always-analytics-info-opt-out" class="always-analytics-privacy-button always-analytics-privacy-button--secondary" type="button">
+						<?php echo esc_html__( 'Opt out', 'always-analytics' ); ?>
+					</button>
+					<button id="always-analytics-info-ok" class="always-analytics-privacy-button always-analytics-privacy-button--primary" type="button">
+						<?php echo esc_html( $dismiss_text ); ?>
+					</button>
+				</div>
+			</div>
+		</div>
+		<?php
+	}
 
-            function setCookie(name, value, days) {
-                var d = new Date();
-                d.setTime(d.getTime() + (days * 86400000));
-                var c = name + '=' + value + ';expires=' + d.toUTCString() + ';path=/;SameSite=Lax';
-                if (window.location.protocol === 'https:') c += ';Secure';
-                document.cookie = c;
-            }
 
-            function getCookie(name) {
-                var v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
-                return v ? v[2] : null;
-            }
-        })();
-        </script>
-        <?php
-    }
 
-    /**
-     * Enqueue consent-related assets if needed.
-     */
-    public function enqueue_assets() {
-        // Consent styles/scripts are inline for minimal overhead — nothing to enqueue here.
-    }
+
+	/**
+	 * Renders the cookie-based consent banner (accept/decline).
+	 *
+	 * @param array<string, mixed> $options Plugin options.
+	 * @return void
+	 */
+	private function render_cookie_consent( $options ) {
+		$message      = ! empty( $options['consent_message'] ) ? (string) $options['consent_message'] : __( 'This site would like to use an audience measurement cookie. Do you agree?', 'always-analytics' );
+		$accept_text  = ! empty( $options['consent_accept'] ) ? (string) $options['consent_accept'] : __( 'Accept', 'always-analytics' );
+		$decline_text = ! empty( $options['consent_decline'] ) ? (string) $options['consent_decline'] : __( 'Decline', 'always-analytics' );
+		$colors       = $this->get_notice_colors( $options );
+		?>
+		<div
+			id="always-analytics-consent-banner"
+			class="always-analytics-privacy-banner"
+			role="dialog"
+			aria-modal="false"
+			aria-label="<?php echo esc_attr__( 'Audience measurement consent', 'always-analytics' ); ?>"
+			style="--always-analytics-bg:<?php echo esc_attr( $colors['background'] ); ?>;--always-analytics-text:<?php echo esc_attr( $colors['text'] ); ?>;--always-analytics-accent:<?php echo esc_attr( $colors['button'] ); ?>;"
+			hidden
+		>
+			<div class="always-analytics-privacy-banner__inner">
+				<span class="always-analytics-privacy-banner__icon" aria-hidden="true"><?php echo wp_kses( $this->get_cookie_icon(), $this->get_svg_kses_rules() ); ?></span>
+				<p class="always-analytics-privacy-banner__text"><?php echo esc_html( $message ); ?></p>
+				<div class="always-analytics-privacy-banner__actions">
+					<button id="always-analytics-consent-decline" class="always-analytics-privacy-button always-analytics-privacy-button--secondary" type="button">
+						<?php echo esc_html( $decline_text ); ?>
+					</button>
+					<button id="always-analytics-consent-accept" class="always-analytics-privacy-button always-analytics-privacy-button--primary" type="button">
+						<?php echo esc_html( $accept_text ); ?>
+					</button>
+				</div>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Checks whether the current user belongs to an excluded role.
+	 *
+	 * @param array<string, mixed> $options Plugin options.
+	 * @return bool
+	 */
+	private function is_excluded_user( $options ) {
+		if ( ! is_user_logged_in() ) {
+			return false;
+		}
+
+		$excluded_roles = isset( $options['excluded_roles'] ) ? array_map( 'sanitize_key', (array) $options['excluded_roles'] ) : array();
+		$user           = wp_get_current_user();
+
+		return ! empty( array_intersect( $excluded_roles, (array) $user->roles ) );
+	}
+
+	/**
+	 * Returns validated notice colors.
+	 *
+	 * @param array<string, mixed> $options Plugin options.
+	 * @return array<string, string>
+	 */
+	private function get_notice_colors( $options ) {
+		$background = sanitize_hex_color( $options['consent_bg_color'] ?? '' );
+		$text       = sanitize_hex_color( $options['consent_text_color'] ?? '' );
+		$button     = sanitize_hex_color( $options['consent_btn_color'] ?? '' );
+
+		return array(
+			'background' => $background ? $background : '#0f172a',
+			'text'       => $text ? $text : '#f8fafc',
+			'button'     => $button ? $button : '#6366f1',
+		);
+	}
+
+	/**
+	 * Returns the shield icon markup.
+	 *
+	 * @return string
+	 */
+	private function get_shield_icon() {
+		return '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>';
+	}
+
+	/**
+	 * Returns the cookie icon markup.
+	 *
+	 * @return string
+	 */
+	private function get_cookie_icon() {
+		return '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"/><path d="M8.5 8.5v.01"/><path d="M16 15.5v.01"/><path d="M12 12v.01"/></svg>';
+	}
+
+	/**
+	 * Returns the allowlist used for inline SVG icons.
+	 *
+	 * @return array<string, array<string, bool>>
+	 */
+	private function get_svg_kses_rules() {
+		return array(
+			'svg'      => array(
+				'xmlns'           => true,
+				'width'           => true,
+				'height'          => true,
+				'viewbox'         => true,
+				'fill'            => true,
+				'stroke'          => true,
+				'stroke-width'    => true,
+				'stroke-linecap'  => true,
+				'stroke-linejoin' => true,
+				'focusable'       => true,
+			),
+			'path'     => array( 'd' => true ),
+			'polyline' => array( 'points' => true ),
+		);
+	}
 }

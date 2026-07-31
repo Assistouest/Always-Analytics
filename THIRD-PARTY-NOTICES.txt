@@ -1,18 +1,18 @@
 Third-Party Notices
 ===================
 
-This plugin includes third-party software. See individual notices below.
+This plugin bundles the following third-party software and data. Runtime files
+are served from the WordPress installation; the plugin does not fetch these
+components from their upstream projects.
 
 -------------------------------------------------------------------------------
-flag-icons
+Chart.js 4.5.1
 -------------------------------------------------------------------------------
-Source:    https://github.com/lipis/flag-icons
-Version:   7.x
-Location:  assets/flags/
-
-MIT License
-
-Copyright (c) 2013 Panayiotis Lipiridis
+Project:   Chart.js
+Source:    https://github.com/chartjs/Chart.js/tree/v4.5.1
+Location:  admin/js/chart.js
+License:   MIT
+Copyright: 2014-2025 Chart.js Contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -33,8 +33,24 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 -------------------------------------------------------------------------------
-Chart.js
+cloud-provider-ip-addresses-derived range data
 -------------------------------------------------------------------------------
-Source:    https://github.com/chartjs/Chart.js
-License:   MIT License
-Copyright (c) 2014-2022 Chart.js Contributors
+Project:   cloud-provider-ip-addresses
+Source:    https://github.com/rezmoss/cloud-provider-ip-addresses
+Location:  data/datacenter-v4-ranges.txt
+           data/datacenter-v6-ranges.txt
+License:   CC0-1.0
+Generated: 2026-07-18
+
+The bundled files contain normalized inclusive hexadecimal ranges derived from
+public cloud-provider address lists aggregated by the upstream project. The
+following providers were included in the source dataset: AWS, Azure, Google
+Cloud, OVHcloud, Hetzner, Scaleway, DigitalOcean, Linode, Vultr, Oracle,
+Alibaba, Leaseweb, UpCloud, Tencent, Huawei, IBM Cloud, Gcore, and Rackspace.
+Consumer VPN providers, iCloud Private Relay, and Tor were intentionally not
+included.
+
+CC0 1.0 Universal summary: to the extent possible under law, the upstream
+contributors have waived copyright and related or neighboring rights in the
+data. The full legal text is available from Creative Commons at:
+https://creativecommons.org/publicdomain/zero/1.0/

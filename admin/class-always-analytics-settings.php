@@ -1,394 +1,536 @@
 <?php
+/**
+ * Plugin settings registration and validation.
+ *
+ * @package AlwaysAnalytics
+ */
+
 namespace Always_Analytics;
 
-if (!defined('ABSPATH')) {
-    exit;
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
 }
 
 /**
- * Settings page — registers and manages plugin options.
+ * Registers and sanitizes plugin settings.
  */
-class Always_Analytics_Settings
-{
+final class Always_Analytics_Settings {
 
-    /**
-     * Register all settings.
-     */
-    public function register_settings()
-    {
-        register_setting('always_analytics_settings', 'always_analytics_options', array(
-            'type' => 'array',
-            'sanitize_callback' => array($this, 'sanitize_options'),
-        ));
+	/**
+	 * Registers the option and settings fields.
+	 *
+	 * @return void
+	 */
+	public function register_settings() {
+		register_setting(
+			'always_analytics_settings',
+			'always_analytics_options',
+			array(
+				'type'              => 'array',
+				'sanitize_callback' => array( $this, 'sanitize_options' ),
+				'default'           => array(),
+			)
+		);
 
-        // Section: General
-        add_settings_section('aa_general', __('Général', 'always-analytics'), null, 'always-analytics-settings');
+		$this->register_collection_section();
+		$this->register_data_section();
+		$this->register_visitor_controls_section();
+		$this->register_performance_section();
+	}
 
-        add_settings_field('disable_tracking', __('Désactiver le tracking', 'always-analytics'),
-            array($this, 'render_checkbox'), 'always-analytics-settings', 'aa_general',
-            array('field' => 'disable_tracking', 'desc' => __('Suspendre temporairement la collecte de données', 'always-analytics'))
-        );
+	/**
+	 * Sanitizes all settings before persistence.
+	 *
+	 * @param mixed $input Submitted settings.
+	 * @return array<string, mixed>
+	 */
+	public function sanitize_options( $input ) {
+		$input  = is_array( $input ) ? $input : array();
+		$output = get_option( 'always_analytics_options', array() );
 
-        add_settings_field('tracking_mode', __('Mode de tracking', 'always-analytics'),
-            array($this, 'render_tracking_mode'), 'always-analytics-settings', 'aa_general');
+		foreach ( array( 'disable_tracking', 'delete_on_uninstall', 'external_favicons' ) as $key ) {
+			$output[ $key ] = ! empty( $input[ $key ] );
+		}
 
-        add_settings_field('excluded_roles', __('Rôles exclus', 'always-analytics'),
-            array($this, 'render_excluded_roles'), 'always-analytics-settings', 'aa_general');
+		$output['tracking_mode'] = isset( $input['tracking_mode'] ) && in_array( $input['tracking_mode'], array( 'cookieless', 'cookie' ), true )
+			? $input['tracking_mode']
+			: 'cookieless';
 
-        add_settings_field('excluded_ips', __('IPs exclues', 'always-analytics'),
-            array($this, 'render_textarea'), 'always-analytics-settings', 'aa_general',
-            array('field' => 'excluded_ips', 'desc' => __('Une IP par ligne', 'always-analytics'))
-        );
+		$output['cookieless_window'] = isset( $input['cookieless_window'] ) && in_array( $input['cookieless_window'], array( 'daily', 'session' ), true )
+			? $input['cookieless_window']
+			: 'daily';
 
-        add_settings_field('trusted_proxy_mode', __('Proxy de confiance', 'always-analytics'),
-            array($this, 'render_trusted_proxy_mode'), 'always-analytics-settings', 'aa_general');
+		// Mode-specific safeguards are enforced server-side, even if a crafted request bypasses the interface.
+		$output['consent_enabled'] = 'cookie' === $output['tracking_mode'];
+		$output['anonymize_ip']    = 'cookieless' === $output['tracking_mode'] || ! empty( $input['anonymize_ip'] );
+		$output['retention_days']  = isset( $input['retention_days'] )
+			? min( 395, max( 30, absint( $input['retention_days'] ) ) )
+			: 90;
+		$output['cache_ttl']       = isset( $input['cache_ttl'] )
+			? min( 3600, max( 60, absint( $input['cache_ttl'] ) ) )
+			: 300;
 
-        add_settings_field('trusted_proxies', __('IPs des proxys personnalisés', 'always-analytics'),
-            array($this, 'render_textarea'), 'always-analytics-settings', 'aa_general',
-            array('field' => 'trusted_proxies', 'desc' => __('Si "Proxy spécifique" est sélectionné. Une IP ou CIDR par ligne.', 'always-analytics'))
-        );
+		$output['export_format'] = isset( $input['export_format'] ) && in_array( $input['export_format'], array( 'csv', 'json' ), true )
+			? $input['export_format']
+			: 'csv';
 
-        // Section: Privacy
-        add_settings_section('aa_privacy', __('Confidentialité & RGPD', 'always-analytics'), null, 'always-analytics-settings');
+		$output['trusted_proxy_mode'] = isset( $input['trusted_proxy_mode'] ) && in_array( $input['trusted_proxy_mode'], array( 'none', 'custom' ), true )
+			? $input['trusted_proxy_mode']
+			: 'none';
+		$output['excluded_ips']       = isset( $input['excluded_ips'] ) ? $this->sanitize_ip_list( $input['excluded_ips'] ) : '';
+		$output['trusted_proxies']    = isset( $input['trusted_proxies'] ) ? $this->sanitize_ip_list( $input['trusted_proxies'] ) : '';
+		$output['excluded_roles']     = isset( $input['excluded_roles'] ) && is_array( $input['excluded_roles'] )
+			? array_values( array_unique( array_map( 'sanitize_key', $input['excluded_roles'] ) ) )
+			: array();
 
-        add_settings_field('anonymize_ip', __('Anonymiser les IPs', 'always-analytics'),
-            array($this, 'render_checkbox'), 'always-analytics-settings', 'aa_privacy',
-            array('field' => 'anonymize_ip', 'desc' => __('Masquer le dernier octet IPv4 / derniers 80 bits IPv6', 'always-analytics'))
-        );
+		foreach ( array( 'consent_message', 'consent_accept', 'consent_decline', 'info_message', 'info_ok' ) as $key ) {
+			if ( isset( $input[ $key ] ) ) {
+				$output[ $key ] = sanitize_text_field( $input[ $key ] );
+			}
+		}
 
-        add_settings_field('cookieless_window', __('Fenêtre d\'unicité (mode sans cookie)', 'always-analytics'),
-            array($this, 'render_cookieless_window'), 'always-analytics-settings', 'aa_privacy');
+		foreach ( array( 'consent_bg_color', 'consent_text_color', 'consent_btn_color' ) as $key ) {
+			if ( isset( $input[ $key ] ) ) {
+				$output[ $key ] = sanitize_hex_color( $input[ $key ] );
+			}
+		}
 
-        add_settings_field('retention_days', __('Durée de rétention', 'always-analytics'),
-            array($this, 'render_retention'), 'always-analytics-settings', 'aa_privacy');
+		add_settings_error(
+			'always_analytics_options',
+			'always_analytics_saved',
+			__( 'Settings saved.', 'always-analytics' ),
+			'updated'
+		);
 
-        add_settings_field('delete_on_uninstall', __('Supprimer à la désinstallation', 'always-analytics'),
-            array($this, 'render_checkbox'), 'always-analytics-settings', 'aa_privacy',
-            array('field' => 'delete_on_uninstall', 'desc' => __('Supprimer toutes les données quand le plugin est désinstallé', 'always-analytics'))
-        );
+		return $output;
+	}
 
-        // Section: Consent Banner
-        add_settings_section('aa_consent', __('Bannière de consentement', 'always-analytics'), null, 'always-analytics-settings');
+	/**
+	 * Registers audience collection settings.
+	 *
+	 * @return void
+	 */
+	private function register_collection_section() {
+		add_settings_section(
+			'always_analytics_collection',
+			__( 'Audience collection', 'always-analytics' ),
+			array( $this, 'render_collection_description' ),
+			'always-analytics-settings'
+		);
 
-        add_settings_field('consent_enabled', __('Activer la bannière', 'always-analytics'),
-            array($this, 'render_checkbox'), 'always-analytics-settings', 'aa_consent',
-            array('field' => 'consent_enabled', 'desc' => __('Afficher un bandeau de consentement aux visiteurs (recommandé en mode cookie)', 'always-analytics'))
-        );
+		$this->add_field( 'disable_tracking', __( 'Pause collection', 'always-analytics' ), 'render_checkbox', 'always_analytics_collection', array( 'description' => __( 'Stop all analytics collection until this option is disabled.', 'always-analytics' ) ) );
+		$this->add_field( 'tracking_mode', __( 'Tracking mode', 'always-analytics' ), 'render_tracking_mode', 'always_analytics_collection' );
+		$this->add_field( 'cookieless_window', __( 'Cookieless uniqueness window', 'always-analytics' ), 'render_cookieless_window', 'always_analytics_collection' );
+		$this->add_field( 'excluded_roles', __( 'Excluded roles', 'always-analytics' ), 'render_excluded_roles', 'always_analytics_collection' );
+		$this->add_field( 'excluded_ips', __( 'Excluded IP addresses', 'always-analytics' ), 'render_textarea', 'always_analytics_collection', array( 'description' => __( 'Enter one IP address or CIDR range per line.', 'always-analytics' ) ) );
+		$this->add_field( 'trusted_proxy_mode', __( 'Trusted proxy mode', 'always-analytics' ), 'render_trusted_proxy_mode', 'always_analytics_collection' );
+		$this->add_field( 'trusted_proxies', __( 'Trusted proxy addresses', 'always-analytics' ), 'render_textarea', 'always_analytics_collection', array( 'description' => __( 'Used only in custom proxy mode. Enter one IP address or CIDR range per line.', 'always-analytics' ) ) );
+	}
 
-        add_settings_field('consent_message', __('Message', 'always-analytics'),
-            array($this, 'render_text'), 'always-analytics-settings', 'aa_consent',
-            array('field' => 'consent_message', 'class' => 'large-text')
-        );
+	/**
+	 * Registers privacy settings.
+	 *
+	 * @return void
+	 */
+	private function register_data_section() {
+		add_settings_section(
+			'always_analytics_data',
+			__( 'Data management', 'always-analytics' ),
+			array( $this, 'render_data_description' ),
+			'always-analytics-settings'
+		);
 
-        add_settings_field('consent_accept', __('Texte bouton accepter', 'always-analytics'),
-            array($this, 'render_text'), 'always-analytics-settings', 'aa_consent',
-            array('field' => 'consent_accept')
-        );
+		$this->add_field( 'anonymize_ip', __( 'Truncate IP addresses', 'always-analytics' ), 'render_anonymize_ip', 'always_analytics_data' );
+		$this->add_field( 'retention_days', __( 'Raw data retention', 'always-analytics' ), 'render_retention', 'always_analytics_data' );
+		$this->add_field( 'delete_on_uninstall', __( 'Delete data on uninstall', 'always-analytics' ), 'render_checkbox', 'always_analytics_data', array( 'description' => __( 'Permanently remove plugin tables and options when the plugin is deleted.', 'always-analytics' ) ) );
+	}
 
-        add_settings_field('consent_decline', __('Texte bouton refuser', 'always-analytics'),
-            array($this, 'render_text'), 'always-analytics-settings', 'aa_consent',
-            array('field' => 'consent_decline')
-        );
+	/**
+	 * Registers notice and consent settings.
+	 *
+	 * @return void
+	 */
+	private function register_visitor_controls_section() {
+		add_settings_section(
+			'always_analytics_notice',
+			__( 'Visitor controls', 'always-analytics' ),
+			array( $this, 'render_visitor_controls_description' ),
+			'always-analytics-settings'
+		);
 
-        add_settings_field('consent_colors', __('Couleurs', 'always-analytics'),
-            array($this, 'render_consent_colors'), 'always-analytics-settings', 'aa_consent');
+		$this->add_field( 'consent_enabled', __( 'Show visitor controls', 'always-analytics' ), 'render_checkbox', 'always_analytics_notice', array( 'description' => __( 'Show an opt-out control in cookieless mode or accept and decline controls in cookie mode.', 'always-analytics' ) ) );
+		$this->add_field( 'info_message', __( 'Cookieless message', 'always-analytics' ), 'render_text', 'always_analytics_notice', array( 'class' => 'large-text' ) );
+		$this->add_field( 'info_ok', __( 'Continue button', 'always-analytics' ), 'render_text', 'always_analytics_notice' );
+		$this->add_field( 'consent_message', __( 'Cookie-mode message', 'always-analytics' ), 'render_text', 'always_analytics_notice', array( 'class' => 'large-text' ) );
+		$this->add_field( 'consent_accept', __( 'Accept button', 'always-analytics' ), 'render_text', 'always_analytics_notice' );
+		$this->add_field( 'consent_decline', __( 'Decline button', 'always-analytics' ), 'render_text', 'always_analytics_notice' );
+		$this->add_field( 'consent_colors', __( 'Notice colors', 'always-analytics' ), 'render_consent_colors', 'always_analytics_notice' );
+	}
 
-        // Section: Geolocation
-        add_settings_section('aa_geo', __('Géolocalisation', 'always-analytics'), null, 'always-analytics-settings');
+	/**
+	 * Registers performance and export settings.
+	 *
+	 * @return void
+	 */
+	private function register_performance_section() {
+		add_settings_section(
+			'always_analytics_performance',
+			__( 'Performance and export', 'always-analytics' ),
+			'__return_false',
+			'always-analytics-settings'
+		);
 
-        add_settings_field('geo_enabled', __('Activer la géolocalisation', 'always-analytics'),
-            array($this, 'render_checkbox'), 'always-analytics-settings', 'aa_geo',
-            array('field' => 'geo_enabled', 'desc' => __('Résoudre les adresses IP en localisation géographique', 'always-analytics'))
-        );
+		$this->add_field(
+			'cache_ttl',
+			__( 'Dashboard cache duration', 'always-analytics' ),
+			'render_number',
+			'always_analytics_performance',
+			array(
+				'min'         => 60,
+				'max'         => 3600,
+				'description' => __( 'Duration in seconds, between 60 and 3600.', 'always-analytics' ),
+			)
+		);
+		$this->add_field( 'bot_filter_info', __( 'Bot filtering', 'always-analytics' ), 'render_bot_filter', 'always_analytics_performance' );
+		$this->add_field( 'external_favicons', __( 'External favicons', 'always-analytics' ), 'render_checkbox', 'always_analytics_performance', array( 'description' => __( "Display external site favicons (requires a connection to Google's servers. Your IP address may be collected by this third-party service).", 'always-analytics' ) ) );
+		$this->add_field( 'export_format', __( 'Default export format', 'always-analytics' ), 'render_export_format', 'always_analytics_performance' );
+	}
 
-        // Section: Performance
-        add_settings_section('aa_perf', __('Performance', 'always-analytics'), null, 'always-analytics-settings');
+	/**
+	 * Adds a settings field with a plugin-prefixed identifier.
+	 *
+	 * @param string               $id       Field identifier.
+	 * @param string               $title    Field title.
+	 * @param string               $callback Renderer method.
+	 * @param string               $section  Section identifier.
+	 * @param array<string, mixed> $args     Renderer arguments.
+	 * @return void
+	 */
+	private function add_field( $id, $title, $callback, $section, $args = array() ) {
+		$args['field'] = $id;
+		add_settings_field(
+			'always_analytics_' . $id,
+			$title,
+			array( $this, $callback ),
+			'always-analytics-settings',
+			$section,
+			$args
+		);
+	}
 
-        add_settings_field('cache_ttl', __('Durée du cache (secondes)', 'always-analytics'),
-            array($this, 'render_number'), 'always-analytics-settings', 'aa_perf',
-            array('field' => 'cache_ttl', 'min' => 60, 'max' => 3600)
-        );
+	/**
+	 * Explains the collection modes.
+	 *
+	 * @return void
+	 */
+	public function render_collection_description() {
+		echo '<p>' . esc_html__( 'Cookieless collection is self-hosted and does not write a visitor identifier to persistent browser storage. Cookie mode creates a persistent first-party identifier only after acceptance.', 'always-analytics' ) . '</p>';
+	}
 
-        add_settings_field('bot_filter_mode', __('Filtrage des bots', 'always-analytics'),
-            array($this, 'render_bot_filter'), 'always-analytics-settings', 'aa_perf');
+	/**
+	 * Explains privacy configuration limitations.
+	 *
+	 * @return void
+	 */
+	public function render_data_description() {
+		echo '<p>' . esc_html__( 'Configure retention, IP truncation, and uninstall cleanup.', 'always-analytics' ) . '</p>';
+	}
 
-        // Section: Export
-        add_settings_section('always_analytics_export', __('Export', 'always-analytics'), null, 'always-analytics-settings');
+	/**
+	 * Explains the front-end controls.
+	 *
+	 * @return void
+	 */
+	public function render_visitor_controls_description() {
+		echo '<p>' . esc_html__( 'These optional controls are provided for sites that need a visitor-facing choice. They do not replace project-specific legal review.', 'always-analytics' ) . '</p>';
+	}
 
-        add_settings_field('export_format', __('Format par défaut', 'always-analytics'),
-            array($this, 'render_export_format'), 'always-analytics-settings', 'always_analytics_export');
-    }
+	/**
+	 * Renders a checkbox.
+	 *
+	 * @param array<string, mixed> $args Field arguments.
+	 * @return void
+	 */
+	public function render_checkbox( $args ) {
+		$options = get_option( 'always_analytics_options', array() );
+		$field   = sanitize_key( $args['field'] );
+		?>
+		<label>
+			<input type="checkbox" name="always_analytics_options[<?php echo esc_attr( $field ); ?>]" value="1" <?php checked( ! empty( $options[ $field ] ) ); ?>>
+			<?php if ( ! empty( $args['description'] ) ) : ?>
+				<span class="description"><?php echo esc_html( $args['description'] ); ?></span>
+			<?php endif; ?>
+		</label>
+		<?php
+	}
 
-    /**
-     * Sanitize all options before saving.
-     */
-    public function sanitize_options($input)
-    {
-        $output = get_option('always_analytics_options', array());
+	/**
+	 * Renders a text input.
+	 *
+	 * @param array<string, mixed> $args Field arguments.
+	 * @return void
+	 */
+	public function render_text( $args ) {
+		$options = get_option( 'always_analytics_options', array() );
+		$field   = sanitize_key( $args['field'] );
+		$class   = ! empty( $args['class'] ) ? sanitize_html_class( $args['class'] ) : 'regular-text';
+		$value   = isset( $options[ $field ] ) ? (string) $options[ $field ] : '';
+		?>
+		<input type="text" name="always_analytics_options[<?php echo esc_attr( $field ); ?>]" value="<?php echo esc_attr( $value ); ?>" class="<?php echo esc_attr( $class ); ?>">
+		<?php
+	}
 
-        // Checkboxes
-        foreach (array('disable_tracking', 'anonymize_ip', 'delete_on_uninstall', 'geo_enabled', 'consent_enabled') as $key) {
-            $output[$key] = !empty($input[$key]);
-        }
+	/**
+	 * Renders a multiline input.
+	 *
+	 * @param array<string, mixed> $args Field arguments.
+	 * @return void
+	 */
+	public function render_textarea( $args ) {
+		$options = get_option( 'always_analytics_options', array() );
+		$field   = sanitize_key( $args['field'] );
+		$value   = isset( $options[ $field ] ) ? (string) $options[ $field ] : '';
+		?>
+		<textarea name="always_analytics_options[<?php echo esc_attr( $field ); ?>]" rows="4" class="large-text code"><?php echo esc_textarea( $value ); ?></textarea>
+		<?php if ( ! empty( $args['description'] ) ) : ?>
+			<p class="description"><?php echo esc_html( $args['description'] ); ?></p>
+		<?php endif; ?>
+		<?php
+	}
 
-        // Text fields
-        foreach (array('consent_message', 'consent_accept', 'consent_decline') as $key) {
-            $output[$key] = isset($input[$key]) ? sanitize_text_field($input[$key]) : '';
-        }
+	/**
+	 * Renders a numeric input.
+	 *
+	 * @param array<string, mixed> $args Field arguments.
+	 * @return void
+	 */
+	public function render_number( $args ) {
+		$options = get_option( 'always_analytics_options', array() );
+		$field   = sanitize_key( $args['field'] );
+		$value   = isset( $options[ $field ] ) ? absint( $options[ $field ] ) : 300;
+		?>
+		<input type="number" name="always_analytics_options[<?php echo esc_attr( $field ); ?>]" value="<?php echo esc_attr( $value ); ?>" min="<?php echo esc_attr( $args['min'] ); ?>" max="<?php echo esc_attr( $args['max'] ); ?>" class="small-text">
+		<?php if ( ! empty( $args['description'] ) ) : ?>
+			<p class="description"><?php echo esc_html( $args['description'] ); ?></p>
+		<?php endif; ?>
+		<?php
+	}
 
-        // geo_provider is always 'native' — MaxMind and external providers removed.
-        $output['geo_provider']    = 'native';
-        $output['maxmind_db_path'] = '';
+	/**
+	 * Renders tracking mode choices.
+	 *
+	 * @return void
+	 */
+	public function render_tracking_mode() {
+		$options = get_option( 'always_analytics_options', array() );
+		$mode    = isset( $options['tracking_mode'] ) ? $options['tracking_mode'] : 'cookieless';
+		?>
+		<fieldset>
+			<label><input type="radio" name="always_analytics_options[tracking_mode]" value="cookieless" <?php checked( $mode, 'cookieless' ); ?>> <?php echo esc_html__( 'Cookieless, self-hosted measurement (recommended)', 'always-analytics' ); ?></label><br>
+			<label><input type="radio" name="always_analytics_options[tracking_mode]" value="cookie" <?php checked( $mode, 'cookie' ); ?>> <?php echo esc_html__( 'Persistent first-party cookie after acceptance (advanced)', 'always-analytics' ); ?></label>
+		</fieldset>
+		<p class="description"><?php echo esc_html__( 'Cookie mode changes how visitors are identified. Use it only when the site has the required visitor information and controls. Developers may enable it for testing.', 'always-analytics' ); ?></p>
+		<?php
+	}
 
-        // Colors
-        foreach (array('consent_bg_color', 'consent_text_color', 'consent_btn_color') as $key) {
-            $output[$key] = isset($input[$key]) ? sanitize_hex_color($input[$key]) : '';
-        }
+	/**
+	 * Renders cookieless uniqueness choices.
+	 *
+	 * @return void
+	 */
+	public function render_cookieless_window() {
+		$options = get_option( 'always_analytics_options', array() );
+		$window  = isset( $options['cookieless_window'] ) ? $options['cookieless_window'] : 'daily';
+		?>
+		<fieldset>
+			<label><input type="radio" name="always_analytics_options[cookieless_window]" value="daily" <?php checked( $window, 'daily' ); ?>> <?php echo esc_html__( 'Daily rotating identifier', 'always-analytics' ); ?></label><br>
+			<label><input type="radio" name="always_analytics_options[cookieless_window]" value="session" <?php checked( $window, 'session' ); ?>> <?php echo esc_html__( 'Browser session only', 'always-analytics' ); ?></label>
+		</fieldset>
+		<p class="description"><?php echo esc_html__( 'Session mode provides stronger unlinkability. Daily mode improves unique-visitor estimates within one UTC day.', 'always-analytics' ); ?></p>
+		<?php
+	}
 
-        // Selects
-        $output['tracking_mode'] = isset($input['tracking_mode']) && in_array($input['tracking_mode'], array('cookieless', 'cookie'), true) ? $input['tracking_mode'] : 'cookieless';
-        $output['bot_filter_mode'] = isset($input['bot_filter_mode']) && in_array($input['bot_filter_mode'], array('normal', 'off'), true) ? $input['bot_filter_mode'] : 'normal';
-        $output['export_format'] = isset($input['export_format']) && in_array($input['export_format'], array('csv', 'json'), true) ? $input['export_format'] : 'csv';
-        $output['cookieless_window'] = isset($input['cookieless_window']) && in_array($input['cookieless_window'], array('daily', 'session'), true) ? $input['cookieless_window'] : 'daily';
+	/**
+	 * Renders the IP truncation option.
+	 *
+	 * @return void
+	 */
+	public function render_anonymize_ip() {
+		$options = get_option( 'always_analytics_options', array() );
+		$mode    = isset( $options['tracking_mode'] ) ? $options['tracking_mode'] : 'cookieless';
+		?>
+		<label>
+			<input type="checkbox" name="always_analytics_options[anonymize_ip]" value="1" <?php checked( ! empty( $options['anonymize_ip'] ) || 'cookieless' === $mode ); ?> <?php disabled( 'cookieless' === $mode ); ?>>
+			<?php echo esc_html__( 'Remove the last IPv4 octet or the last 80 IPv6 bits before analytics storage.', 'always-analytics' ); ?>
+		</label>
+		<?php if ( 'cookieless' === $mode ) : ?>
+			<input type="hidden" name="always_analytics_options[anonymize_ip]" value="1">
+			<p class="description"><?php echo esc_html__( 'This safeguard is enforced in cookieless mode.', 'always-analytics' ); ?></p>
+		<?php endif; ?>
+		<?php
+	}
 
-        // Numbers
-        $output['retention_days'] = isset($input['retention_days']) ? absint($input['retention_days']) : 90;
-        $output['cache_ttl'] = isset($input['cache_ttl']) ? min(3600, max(60, absint($input['cache_ttl']))) : 300;
+	/**
+	 * Renders the raw data retention selector.
+	 *
+	 * @return void
+	 */
+	public function render_retention() {
+		$options = get_option( 'always_analytics_options', array() );
+		$days    = isset( $options['retention_days'] ) ? absint( $options['retention_days'] ) : 90;
+		?>
+		<select name="always_analytics_options[retention_days]">
+			<?php foreach ( array( 30, 90, 180, 365, 395 ) as $value ) : ?>
+				<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $days, $value ); ?>>
+					<?php
+					echo esc_html(
+						sprintf(
+							/* translators: %d: retention period in days. */
+							_n( '%d day', '%d days', $value, 'always-analytics' ),
+							$value
+						)
+					);
+					?>
+				</option>
+			<?php endforeach; ?>
+		</select>
+		<?php
+	}
 
-        // Textarea
-        $output['excluded_ips'] = isset($input['excluded_ips']) ? sanitize_textarea_field($input['excluded_ips']) : '';
-        $output['trusted_proxies'] = isset($input['trusted_proxies']) ? sanitize_textarea_field($input['trusted_proxies']) : '';
+	/**
+	 * Renders trusted proxy choices.
+	 *
+	 * @return void
+	 */
+	public function render_trusted_proxy_mode() {
+		$options = get_option( 'always_analytics_options', array() );
+		$mode    = isset( $options['trusted_proxy_mode'] ) ? $options['trusted_proxy_mode'] : 'none';
+		?>
+		<fieldset>
+			<label><input type="radio" name="always_analytics_options[trusted_proxy_mode]" value="none" <?php checked( $mode, 'none' ); ?>> <?php echo esc_html__( 'Do not trust proxy headers', 'always-analytics' ); ?></label><br>
+			<label><input type="radio" name="always_analytics_options[trusted_proxy_mode]" value="custom" <?php checked( $mode, 'custom' ); ?>> <?php echo esc_html__( 'Trust headers only from listed proxy addresses', 'always-analytics' ); ?></label>
+		</fieldset>
+		<?php
+	}
 
-        // Proxy mode
-        $output['trusted_proxy_mode'] = isset($input['trusted_proxy_mode']) && in_array($input['trusted_proxy_mode'], array('none', 'custom'), true) ? $input['trusted_proxy_mode'] : 'none';
+	/**
+	 * Renders role exclusion choices.
+	 *
+	 * @return void
+	 */
+	public function render_excluded_roles() {
+		$options        = get_option( 'always_analytics_options', array() );
+		$excluded_roles = isset( $options['excluded_roles'] ) ? (array) $options['excluded_roles'] : array();
+		?>
+		<fieldset>
+			<?php foreach ( wp_roles()->get_names() as $role_key => $role_name ) : ?>
+				<label>
+					<input type="checkbox" name="always_analytics_options[excluded_roles][]" value="<?php echo esc_attr( $role_key ); ?>" <?php checked( in_array( $role_key, $excluded_roles, true ) ); ?>>
+					<?php echo esc_html( translate_user_role( $role_name ) ); ?>
+				</label><br>
+			<?php endforeach; ?>
+		</fieldset>
+		<?php
+	}
 
-        // Roles (multi-checkbox)
-        $output['excluded_roles'] = isset($input['excluded_roles']) && is_array($input['excluded_roles'])
-            ? array_map('sanitize_key', $input['excluded_roles'])
-            : array();
+	/**
+	 * Renders information about the built-in bot filter.
+	 *
+	 * @return void
+	 */
+	public function render_bot_filter() {
+		echo '<p>' . esc_html__( 'The local filter validates the target URL, browser challenge, request headers, automation signals, and recent behavior. No external blocklist is contacted.', 'always-analytics' ) . '</p>';
+	}
 
-        return $output;
-    }
+	/**
+	 * Renders export format choices.
+	 *
+	 * @return void
+	 */
+	public function render_export_format() {
+		$options = get_option( 'always_analytics_options', array() );
+		$format  = isset( $options['export_format'] ) ? $options['export_format'] : 'csv';
+		?>
+		<select name="always_analytics_options[export_format]">
+			<option value="csv" <?php selected( $format, 'csv' ); ?>>CSV</option>
+			<option value="json" <?php selected( $format, 'json' ); ?>>JSON</option>
+		</select>
+		<?php
+	}
 
-    // ──────────────────────────────────────────────────
-    // Field renderers
-    // ──────────────────────────────────────────────────
+	/**
+	 * Renders notice color controls.
+	 *
+	 * @return void
+	 */
+	public function render_consent_colors() {
+		$options    = get_option( 'always_analytics_options', array() );
+		$bg_color   = sanitize_hex_color( $options['consent_bg_color'] ?? '' );
+		$text_color = sanitize_hex_color( $options['consent_text_color'] ?? '' );
+		$btn_color  = sanitize_hex_color( $options['consent_btn_color'] ?? '' );
+		$colors     = array(
+			'consent_bg_color'   => $bg_color ? $bg_color : '#0f172a',
+			'consent_text_color' => $text_color ? $text_color : '#f8fafc',
+			'consent_btn_color'  => $btn_color ? $btn_color : '#6366f1',
+		);
+		$labels     = array(
+			'consent_bg_color'   => __( 'Background', 'always-analytics' ),
+			'consent_text_color' => __( 'Text', 'always-analytics' ),
+			'consent_btn_color'  => __( 'Primary button', 'always-analytics' ),
+		);
+		?>
+		<div class="always-analytics-color-fields">
+			<?php foreach ( $colors as $key => $value ) : ?>
+				<label>
+					<?php echo esc_html( $labels[ $key ] ); ?><br>
+					<input type="color" name="always_analytics_options[<?php echo esc_attr( $key ); ?>]" value="<?php echo esc_attr( $value ); ?>">
+				</label>
+			<?php endforeach; ?>
+		</div>
+		<?php
+	}
 
-    public function render_checkbox($args)
-    {
-        $options = get_option('always_analytics_options', array());
-        $checked = !empty($options[$args['field']]);
-?>
-        <label>
-            <input type="checkbox" name="always_analytics_options[<?php echo esc_attr($args['field']); ?>]" value="1" <?php checked($checked); ?> />
-            <?php if (!empty($args['desc'])): ?>
-                <span class="description"><?php echo esc_html($args['desc']); ?></span>
-            <?php
-        endif; ?>
-        </label>
-        <?php
-    }
+	/**
+	 * Sanitizes a line-delimited IP/CIDR list.
+	 *
+	 * @param mixed $value Submitted value.
+	 * @return string
+	 */
+	private function sanitize_ip_list( $value ) {
+		$lines = preg_split( '/\R/', sanitize_textarea_field( (string) $value ) );
+		$valid = array();
 
-    public function render_text($args)
-    {
-        $options = get_option('always_analytics_options', array());
-        $value = isset($options[$args['field']]) ? $options[$args['field']] : '';
-        $class = isset($args['class']) ? $args['class'] : 'regular-text';
-?>
-        <input type="text" name="always_analytics_options[<?php echo esc_attr($args['field']); ?>]"
-               value="<?php echo esc_attr($value); ?>" class="<?php echo esc_attr($class); ?>" />
-        <?php if (!empty($args['desc'])): ?>
-            <p class="description"><?php echo esc_html($args['desc']); ?></p>
-        <?php
-        endif; ?>
-        <?php
-    }
+		foreach ( (array) $lines as $line ) {
+			$line = trim( $line );
+			if ( '' === $line ) {
+				continue;
+			}
 
-    public function render_textarea($args)
-    {
-        $options = get_option('always_analytics_options', array());
-        $value = isset($options[$args['field']]) ? $options[$args['field']] : '';
-?>
-        <textarea name="always_analytics_options[<?php echo esc_attr($args['field']); ?>]"
-                  rows="4" class="large-text"><?php echo esc_textarea($value); ?></textarea>
-        <?php if (!empty($args['desc'])): ?>
-            <p class="description"><?php echo esc_html($args['desc']); ?></p>
-        <?php
-        endif; ?>
-        <?php
-    }
+			$parts   = explode( '/', $line, 2 );
+			$address = $parts[0];
+			if ( ! filter_var( $address, FILTER_VALIDATE_IP ) ) {
+				continue;
+			}
 
-    public function render_number($args)
-    {
-        $options = get_option('always_analytics_options', array());
-        $value = isset($options[$args['field']]) ? absint($options[$args['field']]) : 0;
-        $min = isset($args['min']) ? $args['min'] : 0;
-        $max = isset($args['max']) ? $args['max'] : 99999;
-?>
-        <input type="number" name="always_analytics_options[<?php echo esc_attr($args['field']); ?>]"
-               value="<?php echo esc_attr($value); ?>" min="<?php echo esc_attr($min); ?>" max="<?php echo esc_attr($max); ?>"
-               class="small-text" />
-        <?php
-    }
+			if ( 2 === count( $parts ) ) {
+				if ( '' === $parts[1] || ! ctype_digit( $parts[1] ) ) {
+					continue;
+				}
 
-    public function render_tracking_mode()
-    {
-        $options = get_option('always_analytics_options', array());
-        $mode = isset($options['tracking_mode']) ? $options['tracking_mode'] : 'cookieless';
-?>
-        <fieldset>
-            <label>
-                <input type="radio" name="always_analytics_options[tracking_mode]" value="cookieless" <?php checked($mode, 'cookieless'); ?> />
-                <?php esc_html_e('Sans cookie (respectueux de la vie privée, visiteur identifié par jour uniquement)', 'always-analytics'); ?>
-            </label><br/>
-            <label>
-                <input type="radio" name="always_analytics_options[tracking_mode]" value="cookie" <?php checked($mode, 'cookie'); ?> />
-                <?php esc_html_e('Avec cookie (meilleur suivi, nécessite consentement)', 'always-analytics'); ?>
-            </label>
-        </fieldset>
-        <p class="description">
-            <?php esc_html_e('Le mode cookie permet de suivre les visiteurs sur plusieurs jours. Activez la bannière de consentement ci-dessous si vous utilisez ce mode.', 'always-analytics'); ?>
-        </p>
-        <?php
-    }
+				$prefix     = (int) $parts[1];
+				$max_prefix = filter_var( $address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ? 32 : 128;
+				if ( $prefix < 0 || $prefix > $max_prefix ) {
+					continue;
+				}
 
-    public function render_trusted_proxy_mode()
-    {
-        $options = get_option('always_analytics_options', array());
-        $mode = isset($options['trusted_proxy_mode']) ? $options['trusted_proxy_mode'] : 'none';
-?>
-        <fieldset>
-            <label>
-                <input type="radio" name="always_analytics_options[trusted_proxy_mode]" value="none" <?php checked($mode, 'none'); ?> />
-                <?php esc_html_e('Aucun (recommandé si pas de proxy)', 'always-analytics'); ?>
-            </label><br/>
+				$line = $address . '/' . $prefix;
+			} else {
+				$line = $address;
+			}
 
-            <label>
-                <input type="radio" name="always_analytics_options[trusted_proxy_mode]" value="custom" <?php checked($mode, 'custom'); ?> />
-                <?php esc_html_e('Proxy spécifique (load balancer, Nginx, etc.)', 'always-analytics'); ?>
-            </label>
-        </fieldset>
-        <p class="description">
-            <?php esc_html_e('Configurez comment Always Analytics détecte l\'adresse IP des visiteurs quand votre site est derrière un proxy.', 'always-analytics'); ?>
-        </p>
-        <?php
-    }
+			$valid[] = $line;
+		}
 
-    public function render_excluded_roles()
-    {
-        $options = get_option('always_analytics_options', array());
-        $excluded_roles = isset($options['excluded_roles']) ? (array)$options['excluded_roles'] : array();
-        $wp_roles = wp_roles()->get_names();
-?>
-        <fieldset>
-            <?php foreach ($wp_roles as $role_key => $role_name): ?>
-                <label>
-                    <input type="checkbox" name="always_analytics_options[excluded_roles][]"
-                           value="<?php echo esc_attr($role_key); ?>"
-                           <?php checked(in_array($role_key, $excluded_roles, true)); ?> />
-                    <?php echo esc_html(translate_user_role($role_name)); ?>
-                </label><br/>
-            <?php
-        endforeach; ?>
-        </fieldset>
-        <?php
-    }
-
-    public function render_retention()
-    {
-        $options = get_option('always_analytics_options', array());
-        $days = isset($options['retention_days']) ? absint($options['retention_days']) : 90;
-?>
-        <select name="always_analytics_options[retention_days]">
-            <option value="30" <?php selected($days, 30); ?>>30 <?php esc_html_e('jours', 'always-analytics'); ?></option>
-            <option value="90" <?php selected($days, 90); ?>>90 <?php esc_html_e('jours', 'always-analytics'); ?></option>
-            <option value="180" <?php selected($days, 180); ?>>180 <?php esc_html_e('jours', 'always-analytics'); ?></option>
-            <option value="365" <?php selected($days, 365); ?>>1 <?php esc_html_e('an', 'always-analytics'); ?></option>
-            <option value="0" <?php selected($days, 0); ?>><?php esc_html_e('Illimité', 'always-analytics'); ?></option>
-        </select>
-        <p class="description">
-            <?php esc_html_e('Après cette période, les données sont anonymisées (pas supprimées). Les statistiques agrégées et les métriques de distribution sont conservées indéfiniment.', 'always-analytics'); ?>
-        </p>
-        <?php
-    }
-
-    public function render_cookieless_window()
-    {
-        $options = get_option('always_analytics_options', array());
-        $window  = isset($options['cookieless_window']) ? $options['cookieless_window'] : 'daily';
-?>
-        <fieldset>
-            <label style="display:block;margin-bottom:8px;">
-                <input type="radio" name="always_analytics_options[cookieless_window]" value="daily" <?php checked($window, 'daily'); ?> />
-                <strong><?php esc_html_e('Journalière (Y-m-d)', 'always-analytics'); ?></strong>
-                &nbsp;—&nbsp;
-                <span class="description"><?php esc_html_e('Un visiteur unique par jour. Hash recalculé chaque minuit UTC. Meilleure précision des métriques.', 'always-analytics'); ?></span>
-            </label>
-            <label style="display:block;">
-                <input type="radio" name="always_analytics_options[cookieless_window]" value="session" <?php checked($window, 'session'); ?> />
-                <strong><?php esc_html_e('Session uniquement', 'always-analytics'); ?></strong>
-                &nbsp;—&nbsp;
-                <span class="description"><?php esc_html_e('Hash lié à la session navigateur (sessionStorage). Aucune persistance entre onglets ou après fermeture. Recommandé par la CNIL pour le mode sans cookie.', 'always-analytics'); ?></span>
-            </label>
-        </fieldset>
-        <p class="description" style="margin-top:8px;color:#b32d2e;">
-            ⚠️ <?php esc_html_e('S\'applique au mode sans cookie et au mode pré-consentement RGPD. Sans effet si un cookie visitorId est présent.', 'always-analytics'); ?>
-        </p>
-        <?php
-    }
-
-    public function render_bot_filter()
-    {
-        $options = get_option('always_analytics_options', array());
-        $mode = isset($options['bot_filter_mode']) ? $options['bot_filter_mode'] : 'normal';
-        // Former 'strict' value is treated as 'normal'.
-        if ( 'off' !== $mode ) {
-            $mode = 'normal';
-        }
-?>
-        <select name="always_analytics_options[bot_filter_mode]">
-            <option value="normal" <?php selected($mode, 'normal'); ?>><?php esc_html_e('Activé', 'always-analytics'); ?></option>
-            <option value="off"    <?php selected($mode, 'off'); ?>><?php esc_html_e('Désactivé', 'always-analytics'); ?></option>
-        </select>
-        <p class="description">
-            <?php esc_html_e('Activé : filtre les bots connus, les outils de performance (Lighthouse, PageSpeed…) et les URLs suspectes. Désactivé : tout enregistrer.', 'always-analytics'); ?>
-        </p>
-        <?php
-    }
-
-    public function render_export_format()
-    {
-        $options = get_option('always_analytics_options', array());
-        $format = isset($options['export_format']) ? $options['export_format'] : 'csv';
-?>
-        <select name="always_analytics_options[export_format]">
-            <option value="csv" <?php selected($format, 'csv'); ?>>CSV</option>
-            <option value="json" <?php selected($format, 'json'); ?>>JSON</option>
-        </select>
-        <?php
-    }
-
-    public function render_consent_colors()
-    {
-        $options = get_option('always_analytics_options', array());
-        $bg_color = isset($options['consent_bg_color']) ? $options['consent_bg_color'] : '#1a1a2e';
-        $text_color = isset($options['consent_text_color']) ? $options['consent_text_color'] : '#ffffff';
-        $btn_color = isset($options['consent_btn_color']) ? $options['consent_btn_color'] : '#6c63ff';
-?>
-        <div style="display:flex;gap:24px;flex-wrap:wrap;">
-            <div>
-                <label><?php esc_html_e('Fond', 'always-analytics'); ?></label><br/>
-                <input type="color" name="always_analytics_options[consent_bg_color]" value="<?php echo esc_attr($bg_color); ?>" />
-            </div>
-            <div>
-                <label><?php esc_html_e('Texte', 'always-analytics'); ?></label><br/>
-                <input type="color" name="always_analytics_options[consent_text_color]" value="<?php echo esc_attr($text_color); ?>" />
-            </div>
-            <div>
-                <label><?php esc_html_e('Bouton', 'always-analytics'); ?></label><br/>
-                <input type="color" name="always_analytics_options[consent_btn_color]" value="<?php echo esc_attr($btn_color); ?>" />
-            </div>
-        </div>
-        <?php
-    }
+		return implode( "\n", array_unique( $valid ) );
+	}
 }

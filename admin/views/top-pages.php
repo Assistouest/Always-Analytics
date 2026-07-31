@@ -9,140 +9,164 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$from = isset( $_GET['from'] ) ? sanitize_text_field( wp_unslash( $_GET['from'] ) ) : wp_date( 'Y-m-d' );
-$to   = isset( $_GET['to'] )   ? sanitize_text_field( wp_unslash( $_GET['to'] ) )   : wp_date( 'Y-m-d' );
+if ( ! current_user_can( 'manage_options' ) ) {
+	wp_die( esc_html__( 'You are not allowed to view this report.', 'always-analytics' ) );
+}
 
-if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $from ) ) { $from = wp_date( 'Y-m-d' ); }
-if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $to ) )   { $to   = wp_date( 'Y-m-d' ); }
+// Read-only date-range filter for this report; no state is changed, so no nonce is required.
+// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only filter; access is capability-gated and the value is sanitized and strictly validated below.
+$always_analytics_from = isset( $_GET['from'] ) ? sanitize_text_field( wp_unslash( $_GET['from'] ) ) : wp_date( 'Y-m-d' );
+// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only filter; access is capability-gated and the value is sanitized and strictly validated below.
+$always_analytics_to = isset( $_GET['to'] ) ? sanitize_text_field( wp_unslash( $_GET['to'] ) ) : wp_date( 'Y-m-d' );
+
+$always_analytics_is_valid_date = static function ( $value ) {
+	$date = DateTimeImmutable::createFromFormat( '!Y-m-d', $value );
+	return false !== $date && $date->format( 'Y-m-d' ) === $value;
+};
+
+if ( ! $always_analytics_is_valid_date( $always_analytics_from ) ) {
+	$always_analytics_from = wp_date( 'Y-m-d' );
+}
+if ( ! $always_analytics_is_valid_date( $always_analytics_to ) ) {
+	$always_analytics_to = wp_date( 'Y-m-d' );
+}
 
 global $wpdb;
-$table = $wpdb->prefix . 'aa_hits';
 
-$tz_offset_seconds = (int) ( get_option( 'gmt_offset' ) * HOUR_IN_SECONDS );
-$from_utc = gmdate( 'Y-m-d H:i:s', strtotime( $from . ' 00:00:00' ) - $tz_offset_seconds );
-$to_utc   = gmdate( 'Y-m-d H:i:s', strtotime( $to   . ' 23:59:59' ) - $tz_offset_seconds );
+$always_analytics_tz_offset_seconds = (int) ( get_option( 'gmt_offset' ) * HOUR_IN_SECONDS );
+$always_analytics_from_utc          = gmdate( 'Y-m-d H:i:s', strtotime( $always_analytics_from . ' 00:00:00' ) - $always_analytics_tz_offset_seconds );
+$always_analytics_to_utc            = gmdate( 'Y-m-d H:i:s', strtotime( $always_analytics_to . ' 23:59:59' ) - $always_analytics_tz_offset_seconds );
 
-// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-$rows = $wpdb->get_results( $wpdb->prepare(
-	"SELECT page_url, page_title, post_id,
+// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Read-only report over plugin-owned analytics data; all values are prepared and the screen must show the selected live interval.
+$always_analytics_rows = $wpdb->get_results(
+	$wpdb->prepare(
+		"SELECT page_url, page_title, post_id,
 	        COUNT(*) as views,
 	        COUNT(DISTINCT visitor_hash) as unique_visitors,
 	        COUNT(DISTINCT session_id) as sessions
-	 FROM {$table}
+	 FROM {$wpdb->prefix}always_analytics_hits
 	 WHERE hit_at >= %s AND hit_at <= %s AND is_superseded = 0
 	 GROUP BY page_url, page_title, post_id
 	 ORDER BY views DESC",
-	$from_utc, $to_utc
-) );
+		$always_analytics_from_utc,
+		$always_analytics_to_utc
+	)
+);
 
-// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-$totals = $wpdb->get_row( $wpdb->prepare(
-	"SELECT COUNT(*) as total_views, COUNT(DISTINCT visitor_hash) as total_visitors,
+$always_analytics_totals = $wpdb->get_row(
+	$wpdb->prepare(
+		"SELECT COUNT(*) as total_views, COUNT(DISTINCT visitor_hash) as total_visitors,
 	        COUNT(DISTINCT session_id) as total_sessions
-	 FROM {$table}
+	 FROM {$wpdb->prefix}always_analytics_hits
 	 WHERE hit_at >= %s AND hit_at <= %s AND is_superseded = 0",
-	$from_utc, $to_utc
-) );
+		$always_analytics_from_utc,
+		$always_analytics_to_utc
+	)
+);
+// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 
-$total_views    = (int) ( $totals->total_views    ?? 0 );
-$total_visitors = (int) ( $totals->total_visitors ?? 0 );
-$total_sessions = (int) ( $totals->total_sessions ?? 0 );
-$max_views      = ! empty( $rows ) ? (int) $rows[0]->views : 1;
+$always_analytics_total_views    = (int) ( $always_analytics_totals->total_views ?? 0 );
+$always_analytics_total_visitors = (int) ( $always_analytics_totals->total_visitors ?? 0 );
+$always_analytics_max_views      = ! empty( $always_analytics_rows ) ? (int) $always_analytics_rows[0]->views : 1;
 
-$label_from   = wp_date( 'd/m/Y', strtotime( $from ) );
-$label_to     = wp_date( 'd/m/Y', strtotime( $to ) );
-$period_label = ( $from === $to ) ? $label_from : $label_from . ' → ' . $label_to;
+$always_analytics_label_from   = wp_date( 'd/m/Y', strtotime( $always_analytics_from ) );
+$always_analytics_label_to     = wp_date( 'd/m/Y', strtotime( $always_analytics_to ) );
+$always_analytics_period_label = ( $always_analytics_from === $always_analytics_to ) ? $always_analytics_label_from : $always_analytics_label_from . ' → ' . $always_analytics_label_to;
 ?>
-<div class="wrap aa-wrap">
+<div class="wrap always-analytics-wrap">
 
 	<!-- Header -->
-	<div class="aa-header aa-header--subpage">
-		<div class="aa-header--subpage__nav">
-			<a href="<?php echo esc_url( admin_url( 'admin.php?page=always-analytics&from=' . urlencode( $from ) . '&to=' . urlencode( $to ) ) ); ?>" class="aa-back-btn">
-				← <?php esc_html_e( 'Tableau de bord', 'always-analytics' ); ?>
+	<div class="always-analytics-header always-analytics-header--subpage">
+		<div class="always-analytics-header--subpage__nav">
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=always-analytics&from=' . rawurlencode( $always_analytics_from ) . '&to=' . rawurlencode( $always_analytics_to ) ) ); ?>" class="always-analytics-back-btn">
+				← <?php esc_html_e( 'Dashboard', 'always-analytics' ); ?>
 			</a>
 			<div>
-				<h1 class="aa-header--subpage__title">
+				<h1 class="always-analytics-header--subpage__title">
 					<?php esc_html_e( 'Top Pages', 'always-analytics' ); ?>
 				</h1>
-				<p class="aa-header--subpage__meta">
-					<?php echo esc_html( $period_label ); ?> &middot;
-					<strong><?php echo count( $rows ); ?></strong> <?php esc_html_e( 'pages', 'always-analytics' ); ?>
+				<p class="always-analytics-header--subpage__meta">
+					<?php echo esc_html( $always_analytics_period_label ); ?> &middot;
+					<?php
+					/* translators: %s: number of pages. */
+					echo esc_html( sprintf( _n( '%s page', '%s pages', count( $always_analytics_rows ), 'always-analytics' ), number_format_i18n( count( $always_analytics_rows ) ) ) );
+					?>
 				</p>
 			</div>
 		</div>
-		<div class="aa-detail-date-filter">
-			<input type="date" id="tp-from" value="<?php echo esc_attr( $from ); ?>" />
-			<span class="aa-date-arrow">→</span>
-			<input type="date" id="tp-to" value="<?php echo esc_attr( $to ); ?>" />
-			<button id="tp-apply" class="button button-primary"><?php esc_html_e( 'Appliquer', 'always-analytics' ); ?></button>
+		<div class="always-analytics-detail-date-filter">
+			<input type="date" id="tp-from" value="<?php echo esc_attr( $always_analytics_from ); ?>" />
+			<span class="always-analytics-date-arrow">→</span>
+			<input type="date" id="tp-to" value="<?php echo esc_attr( $always_analytics_to ); ?>" />
+			<button id="tp-apply" class="button button-primary"><?php esc_html_e( 'Apply', 'always-analytics' ); ?></button>
 		</div>
 	</div>
 
 	<!-- KPIs -->
-	<div class="aa-kpis--3col">
-		<div class="aa-kpi-card">
-			<div class="aa-kpi-value"><?php echo number_format_i18n( $total_views ); ?></div>
-			<div class="aa-kpi-label"><?php esc_html_e( 'Pages vues totales', 'always-analytics' ); ?></div>
+	<div class="always-analytics-kpis--3col">
+		<div class="always-analytics-kpi-card">
+			<div class="always-analytics-kpi-value"><?php echo esc_html( number_format_i18n( $always_analytics_total_views ) ); ?></div>
+			<div class="always-analytics-kpi-label"><?php esc_html_e( 'Total page views', 'always-analytics' ); ?></div>
 		</div>
-		<div class="aa-kpi-card">
-			<div class="aa-kpi-value"><?php echo number_format_i18n( $total_visitors ); ?></div>
-			<div class="aa-kpi-label"><?php esc_html_e( 'Visiteurs uniques', 'always-analytics' ); ?></div>
+		<div class="always-analytics-kpi-card">
+			<div class="always-analytics-kpi-value"><?php echo esc_html( number_format_i18n( $always_analytics_total_visitors ) ); ?></div>
+			<div class="always-analytics-kpi-label"><?php esc_html_e( 'Unique visitors', 'always-analytics' ); ?></div>
 		</div>
-		<div class="aa-kpi-card">
-			<div class="aa-kpi-value"><?php echo number_format_i18n( count( $rows ) ); ?></div>
-			<div class="aa-kpi-label"><?php esc_html_e( 'Pages distinctes', 'always-analytics' ); ?></div>
+		<div class="always-analytics-kpi-card">
+			<div class="always-analytics-kpi-value"><?php echo esc_html( number_format_i18n( count( $always_analytics_rows ) ) ); ?></div>
+			<div class="always-analytics-kpi-label"><?php esc_html_e( 'Distinct pages', 'always-analytics' ); ?></div>
 		</div>
 	</div>
 
 	<!-- Table -->
-	<div class="aa-card">
-		<div class="aa-card-header">
-			<h2><?php esc_html_e( 'Toutes les pages', 'always-analytics' ); ?></h2>
+	<div class="always-analytics-card">
+		<div class="always-analytics-card-header">
+			<h2><?php esc_html_e( 'All pages', 'always-analytics' ); ?></h2>
 			<input type="search" id="tp-search"
-				   placeholder="<?php esc_attr_e( 'Rechercher une page…', 'always-analytics' ); ?>"
-				   class="aa-search-input aa-search-input--wide" />
+					placeholder="<?php esc_attr_e( 'Search pages…', 'always-analytics' ); ?>"
+					class="always-analytics-search-input always-analytics-search-input--wide" />
 		</div>
-		<div class="aa-card-body aa-card-body--flush">
-			<?php if ( empty( $rows ) ) : ?>
-				<p class="aa-no-data"><?php esc_html_e( 'Aucune donnée pour cette période.', 'always-analytics' ); ?></p>
+		<div class="always-analytics-card-body always-analytics-card-body--flush">
+			<?php if ( empty( $always_analytics_rows ) ) : ?>
+				<p class="always-analytics-no-data"><?php esc_html_e( 'No data is available for this period.', 'always-analytics' ); ?></p>
 			<?php else : ?>
-			<table class="aa-table aa-full-table" id="tp-table">
+			<table class="always-analytics-table always-analytics-full-table" id="tp-table">
 				<thead>
 					<tr>
 						<th>#</th>
 						<th><?php esc_html_e( 'Page', 'always-analytics' ); ?></th>
-						<th class="aa-col-num"><?php esc_html_e( 'Vues', 'always-analytics' ); ?></th>
-						<th class="aa-col-num"><?php esc_html_e( 'Visiteurs uniques', 'always-analytics' ); ?></th>
-						<th class="aa-col-num"><?php esc_html_e( 'Sessions', 'always-analytics' ); ?></th>
-						<th><?php esc_html_e( 'Popularité', 'always-analytics' ); ?></th>
+						<th class="always-analytics-col-num"><?php esc_html_e( 'Views', 'always-analytics' ); ?></th>
+						<th class="always-analytics-col-num"><?php esc_html_e( 'Unique visitors', 'always-analytics' ); ?></th>
+						<th class="always-analytics-col-num"><?php esc_html_e( 'Sessions', 'always-analytics' ); ?></th>
+						<th><?php esc_html_e( 'Popularity', 'always-analytics' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
-					<?php foreach ( $rows as $i => $row ) :
-						$pct   = $max_views > 0 ? round( ( $row->views / $max_views ) * 100 ) : 0;
-						$title = ! empty( $row->page_title ) ? $row->page_title : $row->page_url;
-						$rank  = $i + 1;
-					?>
+					<?php
+					foreach ( $always_analytics_rows as $always_analytics_i => $always_analytics_row ) :
+						$always_analytics_pct   = $always_analytics_max_views > 0 ? round( ( $always_analytics_row->views / $always_analytics_max_views ) * 100 ) : 0;
+						$always_analytics_title = ! empty( $always_analytics_row->page_title ) ? $always_analytics_row->page_title : $always_analytics_row->page_url;
+						$always_analytics_rank  = $always_analytics_i + 1;
+						?>
 					<tr class="tp-row">
-						<td class="aa-table-rank"><?php echo esc_html( $rank ); ?></td>
+						<td class="always-analytics-table-rank"><?php echo esc_html( $always_analytics_rank ); ?></td>
 						<td>
-							<div class="aa-page-title"><?php echo esc_html( $title ); ?></div>
-							<div class="aa-page-url">
-								<a href="<?php echo esc_url( $row->page_url ); ?>" target="_blank">
-									<?php echo esc_html( $row->page_url ); ?>
+							<div class="always-analytics-page-title"><?php echo esc_html( $always_analytics_title ); ?></div>
+							<div class="always-analytics-page-url">
+								<a href="<?php echo esc_url( $always_analytics_row->page_url ); ?>" target="_blank" rel="noopener noreferrer">
+									<?php echo esc_html( $always_analytics_row->page_url ); ?>
 								</a>
 							</div>
 						</td>
-						<td class="aa-table-num"><?php echo number_format_i18n( (int) $row->views ); ?></td>
-						<td class="aa-table-num--secondary"><?php echo number_format_i18n( (int) $row->unique_visitors ); ?></td>
-						<td class="aa-table-num--secondary"><?php echo number_format_i18n( (int) $row->sessions ); ?></td>
+						<td class="always-analytics-table-num"><?php echo esc_html( number_format_i18n( (int) $always_analytics_row->views ) ); ?></td>
+						<td class="always-analytics-table-num--secondary"><?php echo esc_html( number_format_i18n( (int) $always_analytics_row->unique_visitors ) ); ?></td>
+						<td class="always-analytics-table-num--secondary"><?php echo esc_html( number_format_i18n( (int) $always_analytics_row->sessions ) ); ?></td>
 						<td>
-							<div class="aa-popularity">
-								<div class="aa-popularity__bar">
-									<div class="aa-popularity__fill" style="width:<?php echo esc_attr( $pct ); ?>%;"></div>
+							<div class="always-analytics-popularity">
+								<div class="always-analytics-popularity__bar">
+									<div class="always-analytics-popularity__fill" style="width:<?php echo esc_attr( $always_analytics_pct ); ?>%;"></div>
 								</div>
-								<span class="aa-popularity__pct"><?php echo esc_html( $pct ); ?>%</span>
+								<span class="always-analytics-popularity__pct"><?php echo esc_html( $always_analytics_pct ); ?>%</span>
 							</div>
 						</td>
 					</tr>
@@ -151,9 +175,5 @@ $period_label = ( $from === $to ) ? $label_from : $label_from . ' → ' . $label
 			</table>
 			<?php endif; ?>
 		</div>
-	</div>
-
-	<div class="aa-footer">
-		<p>Always Analytics v<?php echo esc_html( AA_VERSION ); ?></p>
 	</div>
 </div>

@@ -1,17 +1,29 @@
-/**
- * Advanced Stats — Chart.js initialization and rendering.
- */
+
+
+
 (function () {
     'use strict';
+
+    var i18n = (typeof alwaysAnalyticsAdmin !== 'undefined' && alwaysAnalyticsAdmin.i18n) || {};
+    var locale = (typeof alwaysAnalyticsAdmin !== 'undefined' && alwaysAnalyticsAdmin.locale) || document.documentElement.lang || 'en-US';
+
+    function escapeHtml(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
 
     window.AlwaysAnalyticsCharts = {
         visitsChart: null,
         devicesChart: null,
         visitorsChart: null,
 
-        /**
-         * Colors palette.
-         */
+        
+
+
         colors: {
             primary: '#6c63ff',
             primaryLight: 'rgba(108, 99, 255, 0.1)',
@@ -27,9 +39,9 @@
             gray: '#6b7280',
         },
 
-        /**
-         * Default Chart.js configuration.
-         */
+        
+
+
         defaults: function () {
             Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
             Chart.defaults.font.size = 12;
@@ -43,9 +55,9 @@
             Chart.defaults.elements.point.hoverRadius = 5;
         },
 
-        /**
-         * Campaign annotations — vertical dashed lines on the chart.
-         */
+        
+
+
         campaigns: [],
         _lastIsHourly: false,
         _lastLabels: [],
@@ -62,25 +74,25 @@
             }
         },
 
-        /**
-         * Render the main visits line chart.
-         */
+        
+
+
         renderVisitsChart: function (data) {
-            var ctx = document.getElementById('aa-visits-chart');
+            var ctx = document.getElementById('always-analytics-visits-chart');
             if (!ctx) return;
 
             if (this.visitsChart) {
                 this.visitsChart.destroy();
             }
 
-            // Détecter le mode : horaire (today) ou journalier
+
             var isHourly = data.length > 0 && data[0].hasOwnProperty('hour');
             this._lastIsHourly = isHourly;
 
             var labels, visitors, pageViews, sessions, rawDates;
 
             if (isHourly) {
-                // Mode horaire — 24 points, heures futures grisées
+
                 labels    = data.map(function (d) { return d.hour + 'h'; });
                 rawDates  = [];  // pas de date matching en mode horaire
                 visitors  = data.map(function (d) { return d.future ? null : d.visitors; });
@@ -91,7 +103,7 @@
                 labels    = data.map(function (d) {
                     var parts = d.date.split('-');
                     var date  = new Date( parts[0], parts[1] - 1, parts[2] );
-                    return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+                    return date.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
                 });
                 visitors  = data.map(function (d) { return d.visitors; });
                 pageViews = data.map(function (d) { return d.page_views; });
@@ -103,7 +115,7 @@
 
             var self = this;
 
-            // ── Plugin inline : dessine les lignes de campagne ─────────────────
+
             var campaignAnnotationsPlugin = {
                 id: 'aaCampaigns',
                 afterDraw: function (chart) {
@@ -126,7 +138,7 @@
 
                         ctx2.save();
 
-                        // Ligne verticale pointillée
+
                         ctx2.beginPath();
                         ctx2.setLineDash([5, 4]);
                         ctx2.strokeStyle = color;
@@ -136,7 +148,7 @@
                         ctx2.lineTo(xPx, bot);
                         ctx2.stroke();
 
-                        // Losange en haut
+
                         var r = 6;
                         ctx2.setLineDash([]);
                         ctx2.globalAlpha = 1;
@@ -149,7 +161,7 @@
                         ctx2.fillStyle = color;
                         ctx2.fill();
 
-                        // Label court en haut (tronqué)
+
                         var shortLabel = camp.label.length > 18 ? camp.label.substring(0, 16) + '…' : camp.label;
                         ctx2.font      = 'bold 10px -apple-system, sans-serif';
                         ctx2.fillStyle = color;
@@ -160,7 +172,7 @@
                     });
                 },
 
-                // Tooltip custom pour survoler la zone de la ligne
+
                 afterEvent: function (chart, args) {
                     var campaigns = chart._aaCampaigns;
                     var dates     = chart._aaDates;
@@ -182,11 +194,11 @@
                         }
                     });
 
-                    var tip = document.getElementById('aa-camp-tooltip');
+                    var tip = document.getElementById('always-analytics-camp-tooltip');
                     if (!tip) {
                         tip = document.createElement('div');
-                        tip.id = 'aa-camp-tooltip';
-                        tip.className = 'aa-camp-tooltip';
+                        tip.id = 'always-analytics-camp-tooltip';
+                        tip.className = 'always-analytics-camp-tooltip';
                         document.body.appendChild(tip);
                     }
 
@@ -195,22 +207,22 @@
                         var idx2   = dates.indexOf(found.event_date);
                         var xPx2   = xScale.getPixelForValue(idx2);
 
-                        // Format date
+
                         var parts  = found.event_date.split('-');
                         var dObj   = new Date(parts[0], parts[1]-1, parts[2]);
-                        var dLabel = dObj.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+                        var dLabel = dObj.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
 
                         tip.innerHTML =
-                            '<div class="aa-camp-tooltip-header" style="border-left:3px solid ' + (found.color || '#6c63ff') + '">' +
-                            '<strong>' + found.label + '</strong>' +
-                            '<span class="aa-camp-tooltip-date">' + dLabel + '</span>' +
+                            '<div class="always-analytics-camp-tooltip-header" style="border-left:3px solid ' + (found.color || '#6c63ff') + '">' +
+                            '<strong>' + escapeHtml(found.label) + '</strong>' +
+                            '<span class="always-analytics-camp-tooltip-date">' + dLabel + '</span>' +
                             '</div>' +
-                            (found.description ? '<div class="aa-camp-tooltip-desc">' + found.description + '</div>' : '') +
-                            '<button class="aa-camp-tooltip-del" data-id="' + found.id + '" title="Supprimer">✕</button>';
+                            (found.description ? '<div class="always-analytics-camp-tooltip-desc">' + escapeHtml(found.description) + '</div>' : '') +
+                            '<button class="always-analytics-camp-tooltip-del" data-id="' + found.id + '" title="' + escapeHtml(i18n.delete || 'Delete') + '">✕</button>';
 
                         var tipLeft = rect.left + window.scrollX + xPx2 + 10;
                         var tipTop  = rect.top  + window.scrollY + chart.scales.y.top + 20;
-                        // Stay in viewport
+
                         if (tipLeft + 220 > window.innerWidth) tipLeft = tipLeft - 240;
 
                         tip.style.left    = tipLeft + 'px';
@@ -219,8 +231,8 @@
                         tip.style.opacity = '1';
                         tip.style.borderColor = found.color || '#6c63ff';
 
-                        // Delete button handler
-                        var delBtn = tip.querySelector('.aa-camp-tooltip-del');
+
+                        var delBtn = tip.querySelector('.always-analytics-camp-tooltip-del');
                         if (delBtn && !delBtn._bound) {
                             delBtn._bound = true;
                             delBtn.addEventListener('click', function (e) {
@@ -245,7 +257,7 @@
                     labels: labels,
                     datasets: [
                         {
-                            label: 'Visiteurs',
+                            label: i18n.visitors || 'Visitors',
                             data: visitors,
                             borderColor: this.colors.primary,
                             backgroundColor: this.createGradient(ctx, this.colors.primary),
@@ -256,7 +268,7 @@
                             spanGaps: false,
                         },
                         {
-                            label: 'Pages vues',
+                            label: i18n.pageViews || 'Page views',
                             data: pageViews,
                             borderColor: this.colors.success,
                             backgroundColor: this.createGradient(ctx, this.colors.success),
@@ -267,7 +279,7 @@
                             spanGaps: false,
                         },
                         {
-                            label: 'Sessions',
+                            label: i18n.sessions || 'Sessions',
                             data: sessions,
                             borderColor: this.colors.warning,
                             backgroundColor: this.createGradient(ctx, this.colors.warning),
@@ -316,12 +328,12 @@
                             callbacks: {
                                 title: function (items) {
                                     return isHourly
-                                        ? 'Aujourd\'hui à ' + items[0].label
+                                        ? 'Today at ' + items[0].label
                                         : items[0].label;
                                 },
                                 label: function (context) {
                                     if (context.parsed.y === null) return null;
-                                    return context.dataset.label + ': ' + context.parsed.y.toLocaleString('fr-FR');
+                                    return context.dataset.label + ': ' + context.parsed.y.toLocaleString(locale);
                                 },
                             },
                         },
@@ -329,18 +341,18 @@
                 },
             });
 
-            // Attach campaigns to the new chart instance
+
             this.visitsChart._aaCampaigns = this.campaigns;
             this.visitsChart._aaIsHourly  = isHourly;
             this.visitsChart._aaLabels    = labels;
             this.visitsChart._aaDates     = rawDates;
         },
 
-        /**
-         * Render the devices doughnut chart.
-         */
+        
+
+
         renderDevicesChart: function (devices) {
-            var ctx = document.getElementById('aa-devices-chart');
+            var ctx = document.getElementById('always-analytics-devices-chart');
             if (!ctx) return;
 
             if (this.devicesChart) {
@@ -348,7 +360,7 @@
             }
 
             var labels = devices.map(function (d) {
-                var names = { desktop: 'Desktop', mobile: 'Mobile', tablet: 'Tablette', unknown: 'Autre' };
+                var names = { desktop: 'Desktop', mobile: 'Mobile', tablet: 'Tablet', unknown: 'Other' };
                 return names[d.device_type] || d.device_type;
             });
             var values = devices.map(function (d) { return parseInt(d.count, 10); });
@@ -385,7 +397,7 @@
                                 label: function (context) {
                                     var total = context.dataset.data.reduce(function (a, b) { return a + b; }, 0);
                                     var pct = ((context.parsed / total) * 100).toFixed(1);
-                                    return context.label + ': ' + context.parsed.toLocaleString('fr-FR') + ' (' + pct + '%)';
+                                    return context.label + ': ' + context.parsed.toLocaleString(locale) + ' (' + pct + '%)';
                                 },
                             },
                         },
@@ -394,11 +406,11 @@
             });
         },
 
-        /**
-         * Render the visitors (new vs returning) doughnut chart.
-         */
+        
+
+
         renderVisitorsChart: function (data) {
-            var ctx = document.getElementById('aa-visitors-chart');
+            var ctx = document.getElementById('always-analytics-visitors-chart');
             if (!ctx) return;
 
             if (this.visitorsChart) {
@@ -411,7 +423,7 @@
             this.visitorsChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Nouveaux', 'Récurrents'],
+                    labels: ['New', 'Returning'],
                     datasets: [{
                         data: [newV, retV],
                         backgroundColor: [this.colors.primary, this.colors.teal],
@@ -429,21 +441,21 @@
                 },
             });
 
-            // Update legend
-            var legend = document.getElementById('aa-visitors-legend');
+
+            var legend = document.getElementById('always-analytics-visitors-legend');
             if (legend) {
                 var total = newV + retV;
                 var newPct = total > 0 ? ((newV / total) * 100).toFixed(1) : 0;
                 var retPct = total > 0 ? ((retV / total) * 100).toFixed(1) : 0;
                 legend.innerHTML =
-                    '<span><span class="aa-legend-dot" style="background:' + this.colors.primary + '"></span> Nouveaux: ' + newV.toLocaleString('fr-FR') + ' (' + newPct + '%)</span>' +
-                    '<span><span class="aa-legend-dot" style="background:' + this.colors.teal + '"></span> Récurrents: ' + retV.toLocaleString('fr-FR') + ' (' + retPct + '%)</span>';
+                    '<span><span class="always-analytics-legend-dot" style="background:' + this.colors.primary + '"></span> New: ' + newV.toLocaleString(locale) + ' (' + newPct + '%)</span>' +
+                    '<span><span class="always-analytics-legend-dot" style="background:' + this.colors.teal + '"></span> Returning: ' + retV.toLocaleString(locale) + ' (' + retPct + '%)</span>';
             }
         },
 
-        /**
-         * Create a gradient fill for a chart.
-         */
+        
+
+
         createGradient: function (ctx, color) {
             var canvas = ctx.getContext ? ctx : ctx.canvas || ctx;
             if (!canvas.getContext) canvas = canvas;
@@ -458,9 +470,9 @@
             }
         },
 
-        /**
-         * Toggle dataset visibility on the visits chart.
-         */
+        
+
+
         toggleDataset: function (datasetName) {
             if (!this.visitsChart) return;
 
@@ -468,7 +480,7 @@
             var idx = map[datasetName];
             if (idx === undefined) return;
 
-            // Hide all, show selected
+
             this.visitsChart.data.datasets.forEach(function (ds, i) {
                 ds.hidden = (i !== idx);
             });
@@ -476,7 +488,7 @@
         },
     };
 
-    // Initialize defaults on load
+
     if (typeof Chart !== 'undefined') {
         AlwaysAnalyticsCharts.defaults();
     }

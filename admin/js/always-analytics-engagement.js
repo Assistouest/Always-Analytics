@@ -1,41 +1,34 @@
-/**
- * Always Analytics — Engagement page.
- *
- * Handles: period selector, KPI rendering, time chart,
- * scroll-depth distribution, per-page engagement score table.
- *
- * Depends on: alwaysAnalyticsAdmin (wp_localize_script), Chart.js
- *
- * @package Always_Analytics
- */
+
+
 
 ( function () {
 	'use strict';
 
-	// ── Bootstrap: wait for alwaysAnalyticsAdmin to be available ─────────
 
 	function waitForConfig( cb ) {
-		if ( typeof alwaysAnalyticsAdmin !== 'undefined' ) {
+		if ( typeof alwaysAnalyticsEngagement !== 'undefined' ) {
 			cb();
 			return;
 		}
 		var attempts = 0;
 		var interval = setInterval( function () {
 			attempts++;
-			if ( typeof alwaysAnalyticsAdmin !== 'undefined' ) {
+			if ( typeof alwaysAnalyticsEngagement !== 'undefined' ) {
 				clearInterval( interval );
 				cb();
 			} else if ( attempts > 20 ) {
 				clearInterval( interval );
-				console.warn( '[Always Analytics] alwaysAnalyticsAdmin not found.' );
+				console.warn( '[Always Analytics] alwaysAnalyticsEngagement not found.' );
 			}
 		}, 100 );
 	}
 
 	waitForConfig( function () {
 
-		var API   = alwaysAnalyticsAdmin.restBase;
-		var NONCE = alwaysAnalyticsAdmin.nonce;
+		var API    = alwaysAnalyticsEngagement.restBase;
+		var NONCE  = alwaysAnalyticsEngagement.nonce;
+		var I18N   = alwaysAnalyticsEngagement.i18n || {};
+		var LOCALE = alwaysAnalyticsEngagement.locale || document.documentElement.lang || 'en-US';
 
 		var state = {
 			from: dateOffset( 0 ),
@@ -45,7 +38,6 @@
 		var engChart       = null;
 		var currentDataset = 'engaged';
 
-		// ── Init ─────────────────────────────────────────────────
 
 		function init() {
 			bindPeriodSelector();
@@ -59,7 +51,6 @@
 			init();
 		}
 
-		// ── Period selector ───────────────────────────────────────────
 
 		function buildPeriodMap() {
 			var today = dateOffset( 0 );
@@ -101,7 +92,6 @@
 			} );
 		}
 
-		// ─ API fetch ───────────────────────────────────────────────
 
 		function apiFetch( endpoint, extra, cb ) {
 			var qs = 'from=' + enc( state.from ) + '&to=' + enc( state.to ) + '&_t=' + Date.now();
@@ -120,7 +110,6 @@
 				.catch( function ( e ) { console.error( '[AA Engagement]', e ); } );
 		}
 
-		// ── Load all ────────────────────────────────────────────────
 
 		var _overviewPageViews = 0;
 
@@ -136,7 +125,6 @@
 			} );
 		}
 
-		// ── KPIs + main chart ──────────────────────────────────────────
 
 		function renderMain( d ) {
 			var k = d.kpis || {};
@@ -150,7 +138,6 @@
 			renderScrollDist( d.scroll_distribution || {}, _overviewPageViews );
 		}
 
-		// ─ Engagement time chart ─────────────────────────────────────
 
 		function renderEngChart( data ) {
 			var ctx = document.getElementById( 'eng-chart' );
@@ -160,9 +147,9 @@
 			var labels   = data.map( function ( d ) { return d.label; } );
 			var colors   = { engaged: '#6c63ff', avg_dur: '#10b981', avg_scroll: '#f59e0b' };
 			var titles   = {
-				engaged:    'Sessions engagées',
-				avg_dur:    'Dure moy. (s)',
-				avg_scroll: 'Scroll moyen (%)',
+				engaged:    I18N.engagedSessions || 'Engaged sessions',
+				avg_dur:    I18N.averageDuration || 'Average duration (s)',
+				avg_scroll: I18N.averageScroll || 'Average scroll (%)',
 			};
 			var datasets = {
 				engaged:    data.map( function ( d ) { return d.future ? null : d.engaged; } ),
@@ -234,9 +221,9 @@
 		function updateEngChartDataset() {
 			if ( ! engChart ) { return; }
 			var labelMap = {
-				engaged:    'Sessions engagées',
-				avg_dur:    'Durée moy. (s)',
-				avg_scroll: 'Scroll moyen (%)',
+				engaged:    I18N.engagedSessions || 'Engaged sessions',
+				avg_dur:    I18N.averageDuration || 'Average duration (s)',
+				avg_scroll: I18N.averageScroll || 'Average scroll (%)',
 			};
 			engChart.data.datasets.forEach( function ( ds ) {
 				ds.hidden = ( ds.label !== labelMap[ currentDataset ] );
@@ -244,7 +231,6 @@
 			engChart.update();
 		}
 
-		// ─ Scroll depth distribution ──────────────────────────────────
 
 		function renderScrollDist( dist, totalPageViews ) {
 			window._lastScrollDist = dist;
@@ -258,7 +244,7 @@
 			var noScroll   = Math.max( 0, grandTotal - measured );
 
 			var buckets = [
-				{ label: 'Non mesuré',    val: noScroll,        color: '#e2e4e7', faded: true  },
+				{ label: I18N.notMeasured || 'Not measured', val: noScroll,        color: '#e2e4e7', faded: true  },
 				{ label: '< 25 %',        val: dist[10]  || 0,  color: '#94a3b8', faded: false },
 				{ label: '25  49 %',     val: dist[25]  || 0,  color: '#60a5fa', faded: false },
 				{ label: '50 – 74 %',     val: dist[50]  || 0,  color: '#34d399', faded: false },
@@ -267,40 +253,38 @@
 			];
 
 			var max  = Math.max.apply( null, buckets.map( function ( b ) { return b.val; } ) ) || 1;
-			var html = '<div class="aa-scroll-dist">';
+			var html = '<div class="always-analytics-scroll-dist">';
 
 			buckets.forEach( function ( b ) {
 				var pct      = Math.round( ( b.val / max ) * 100 );
 				var sharePct = grandTotal > 0
 					? ' (' + Math.round( b.val / grandTotal * 100 ) + '%)'
 					: '';
-				var labelCls = 'aa-scroll-dist__label' + ( b.faded ? ' aa-scroll-dist__label--faded' : '' );
-				var countCls = 'aa-scroll-dist__count' + ( b.faded ? ' aa-scroll-dist__count--faded' : '' );
-				var fillCls  = 'aa-scroll-dist__fill'  + ( b.faded ? ' aa-scroll-dist__fill--faded'  : '' );
+				var labelCls = 'always-analytics-scroll-dist__label' + ( b.faded ? ' always-analytics-scroll-dist__label--faded' : '' );
+				var countCls = 'always-analytics-scroll-dist__count' + ( b.faded ? ' always-analytics-scroll-dist__count--faded' : '' );
+				var fillCls  = 'always-analytics-scroll-dist__fill'  + ( b.faded ? ' always-analytics-scroll-dist__fill--faded'  : '' );
 
-				html += '<div class="aa-scroll-dist__item">'
-					  +   '<div class="aa-scroll-dist__head">'
+				html += '<div class="always-analytics-scroll-dist__item">'
+					  +   '<div class="always-analytics-scroll-dist__head">'
 					  +     '<span class="' + labelCls + '">' + b.label + '</span>'
 					  +     '<span class="' + countCls + '">'
-					  +       b.val.toLocaleString( 'fr-FR' ) + ' pages vues' + sharePct
+					  +       ( I18N.pageViewsCount || '%s page views' ).replace( '%s', b.val.toLocaleString( LOCALE ) ) + sharePct
 					  +     '</span>'
 					  +   '</div>'
-					  +   '<div class="aa-scroll-dist__bar">'
+					  +   '<div class="always-analytics-scroll-dist__bar">'
 					  +     '<div class="' + fillCls + '" style="width:' + pct + '%;background:' + b.color + ';"></div>'
 					  +   '</div>'
 					  + '</div>';
 			} );
 
 			html += '</div>';
-			html += '<p class="aa-scroll-dist__note">'
-				  + 'Chaque page vue est comptée <strong>une seule fois</strong> '
-				  + 'dans la tranche la plus haute atteinte.'
+			html += '<p class="always-analytics-scroll-dist__note">'
+				  + ( I18N.highestScrollNote || 'Each page view is counted <strong>only once</strong> in the highest scroll range reached.' )
 				  + '</p>';
 
 			container.innerHTML = html;
 		}
 
-		// ─ Reader profiles widget ─────────────────────────────────────
 
 		function renderReaderProfiles( data ) {
 			var container = document.getElementById( 'eng-reader-profiles' );
@@ -308,56 +292,61 @@
 
 			var profiles        = data.profiles || [];
 			var total           = data.total_sessions || 0;
-			var velocitySeuil   = data.median_velocity || 0;
 
 			if ( ! profiles.length || total === 0 ) {
-				container.innerHTML = '<p class="aa-no-data">Aucune donnée pour cette période</p>';
+				container.innerHTML = '<p class="always-analytics-no-data">' + htmlEscape( I18N.noData || 'No data is available for this period.' ) + '</p>';
 				return;
 			}
 
-			// Textes professionnels marketing par profil
+
 			var copy = {
-				zappeur:       {
-					insight: 'Taux de rebond élevé',
-    action: 'Contenu non engageant pour ce segment, ou ciblage inadéquat. Il pourrait sagir de visiteurs arrivés peu intéressés.',		},
-				curieux:       {
-					insight: 'Lecture partielle du contenu',
-    action: 'Le visiteur parcourt pour se faire une idée rapide sans engagement profond.',				},
-				compulsif:     {
-					insight: 'Recherche d\u2019une information pr\u00E9cise',
-action: 'Utilisateurs en phase décisionnelle ou de comparaison, très efficaces dans leur recherche.',				},
-				super_lecteur: {
-					insight: 'Lecture complète et engagement fort',
-action: 'Ce segment est pleinement capté par le contenu. Indique une bonne adéquation avec les attentes et potentiel de conversion.',				},
+				bouncer: {
+					insight: I18N.highBounceRate || 'High bounce rate',
+					action: I18N.bouncerAction || 'The content may not engage this segment, or the traffic targeting may be mismatched.',
+				},
+				explorer: {
+					insight: I18N.partialReading || 'Partial content reading',
+					action: I18N.explorerAction || 'The visitor browses quickly without deep engagement.',
+				},
+				rapid_scanner: {
+					insight: I18N.specificAnswer || 'Search for a specific answer',
+					action: I18N.scannerAction || 'Visitors may be comparing options or looking for a specific answer efficiently.',
+				},
+				deep_reader: {
+					insight: I18N.completeReading || 'Complete reading and strong engagement',
+					action: I18N.deepReaderAction || 'This segment engages deeply with the content, which may indicate a strong match with expectations.',
+				},
 			};
 
-			// ── SVG Lucide par profil ──────────────────────────────────
+
 			var profileIcons = {
-				zappeur:       '<svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>',
-				curieux:       '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
-				compulsif:     '<svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
-				super_lecteur: '<svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
+				bouncer:       '<svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>',
+				explorer:       '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+				rapid_scanner:     '<svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+				deep_reader: '<svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
 			};
 
-			// 4 cartes — sans barre de répartition
-			var cardsHtml = '<div class="aa-rp-cards">'
+
+			var cardsHtml = '<div class="always-analytics-rp-cards">'
 				+ profiles.map( function ( p ) {
 					var c       = copy[ p.key ] || { insight: '', action: '' };
 					var isEmpty = p.count === 0;
-					return '<div class="aa-rp-card aa-rp-card--' + p.key + ( isEmpty ? ' aa-rp-card--empty' : '' ) + '">'
-						+   '<div class="aa-rp-card__header">'
-						+     '<span class="aa-rp-card__label"><span class="aa-rp-card__icon">' + ( profileIcons[ p.key ] || '' ) + '</span>' + htmlEscape( p.label ) + '</span>'
-						+     '<span class="aa-rp-card__range aa-rp-badge--' + p.key + '">' + htmlEscape( p.range ) + '</span>'
+					return '<div class="always-analytics-rp-card always-analytics-rp-card--' + p.key + ( isEmpty ? ' always-analytics-rp-card--empty' : '' ) + '">'
+						+   '<div class="always-analytics-rp-card__header">'
+						+     '<span class="always-analytics-rp-card__label"><span class="always-analytics-rp-card__icon">' + ( profileIcons[ p.key ] || '' ) + '</span>' + htmlEscape( p.label ) + '</span>'
+						+     '<span class="always-analytics-rp-card__range always-analytics-rp-badge--' + p.key + '">' + htmlEscape( p.range ) + '</span>'
 						+   '</div>'
-						+   '<div class="aa-rp-card__pct">'
+						+   '<div class="always-analytics-rp-card__pct">'
 						+     ( isEmpty ? '' : p.pct + '\u202f%' )
 						+   '</div>'
-						+   '<div class="aa-rp-card__count">'
-						+     ( isEmpty ? 'Aucune session' : fmtInt( p.count ) + ' session' + ( p.count > 1 ? 's' : '' ) )
+						+   '<div class="always-analytics-rp-card__count">'
+						+     ( isEmpty
+						? ( I18N.noSessions || 'No sessions' )
+						: ( p.count === 1 ? ( I18N.sessionCount || '%s session' ) : ( I18N.sessionsCount || '%s sessions' ) ).replace( '%s', fmtInt( p.count ) ) )
 						+   '</div>'
-						+   '<div class="aa-rp-card__copy">'
-						+     '<p class="aa-rp-card__insight">' + htmlEscape( c.insight ) + '</p>'
-						+     '<p class="aa-rp-card__action">' + htmlEscape( c.action ) + '</p>'
+						+   '<div class="always-analytics-rp-card__copy">'
+						+     '<p class="always-analytics-rp-card__insight">' + htmlEscape( c.insight ) + '</p>'
+						+     '<p class="always-analytics-rp-card__action">' + htmlEscape( c.action ) + '</p>'
 						+   '</div>'
 						+ '</div>';
 				} ).join( '' )
@@ -367,7 +356,6 @@ action: 'Ce segment est pleinement capté par le contenu. Indique une bonne adé
 			container.innerHTML = cardsHtml ;
 		}
 
-		// ─ Per-page engagement table (paginée) ─────────────────────────────
 
 		var _pagesData   = [];
 		var _visibleRows = 10;
@@ -378,87 +366,90 @@ action: 'Ce segment est pleinement capté par le contenu. Indique une bonne adé
 			var title = p.page_title || p.page_url || '—';
 			var rank  = idx < 3 ? ( idx + 1 ) + '. ' : '';
 
-			// ── Durée moyenne ────────────────────────────────────────────
+
 			var durScore = parseFloat( ( sig.duration || {} ).score || 0 );
-			var durCls   = durScore >= 70 ? 'aa-metric--good' : durScore >= 40 ? 'aa-metric--mid' : 'aa-metric--low';
-			var durHtml  = '<div class="aa-metric ' + durCls + '">'
-				+ '<span class="aa-metric__val">' + fmtDuration( p.avg_duration || 0 ) + '</span>'
+			var durCls   = durScore >= 70 ? 'always-analytics-metric--good' : durScore >= 40 ? 'always-analytics-metric--mid' : 'always-analytics-metric--low';
+			var durHtml  = '<div class="always-analytics-metric ' + durCls + '">'
+				+ '<span class="always-analytics-metric__val">' + fmtDuration( p.avg_duration || 0 ) + '</span>'
 				+ '</div>';
 
-			// ─ Scroll moyen ─────────────────────────────────────────────
+
 			var scrollRaw   = ( sig.scroll && ( sig.scroll.raw != null ) ) ? sig.scroll.raw : null;
 			var scrollScore = parseFloat( ( sig.scroll || {} ).score || 0 );
-			var scrollCls   = scrollScore >= 70 ? 'aa-metric--good' : scrollScore >= 40 ? 'aa-metric--mid' : 'aa-metric--low';
-			var scrollHtml  = '<div class="aa-metric ' + scrollCls + '">'
-				+ '<span class="aa-metric__val">' + ( scrollRaw !== null ? scrollRaw + '%' : '—' ) + '</span>'
+			var scrollCls   = scrollScore >= 70 ? 'always-analytics-metric--good' : scrollScore >= 40 ? 'always-analytics-metric--mid' : 'always-analytics-metric--low';
+			var scrollHtml  = '<div class="always-analytics-metric ' + scrollCls + '">'
+				+ '<span class="always-analytics-metric__val">' + ( scrollRaw !== null ? scrollRaw + '%' : '—' ) + '</span>'
 				+ '</div>';
 
-			// ── Profil lecteur dominant ────────────────────────────────────
-			// Dérivé du scroll moyen de la page (même seuils que reader-profiles global)
+
 			var profileHtml;
 			if ( scrollRaw === null ) {
-				profileHtml = '<span class="aa-profile aa-profile--unknown">—</span>';
+				profileHtml = '<span class="always-analytics-profile always-analytics-profile--unknown">—</span>';
 			} else {
 				var profileKey, profileLabel, profileIcon;
 				if ( scrollRaw < 20 ) {
-					profileKey   = 'zappeur';
-					profileLabel = 'Zappeur';
+					profileKey   = 'bouncer';
+					profileLabel = I18N.bouncer || 'Bouncer';
 					profileIcon  = '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-top:-2px"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>';
 				} else if ( scrollRaw < 75 ) {
-					profileKey   = 'curieux';
-					profileLabel = 'Curieux';
+					profileKey   = 'explorer';
+					profileLabel = I18N.explorer || 'Explorer';
 					profileIcon  = '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-top:-2px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
 				} else {
-					profileKey   = 'super_lecteur';
-					profileLabel = 'Super-Lecteur';
+					profileKey   = 'deep_reader';
+					profileLabel = I18N.deepReader || 'Deep reader';
 					profileIcon  = '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-top:-2px"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>';
 				}
-				profileHtml = '<span class="aa-profile aa-profile--' + profileKey + '"'
-					+ ' title="Scroll moyen : ' + scrollRaw + '%">'
+				profileHtml = '<span class="always-analytics-profile always-analytics-profile--' + profileKey + '"'
+					+ ' title="' + htmlEscape( ( I18N.averageScrollTitle || 'Average scroll: %s%%' ).replace( '%s', scrollRaw ) ) + '">'
 					+ profileIcon + ' ' + profileLabel
 					+ '</span>';
 			}
 
-			// ── Wilson / fiabilit ─────────────────────────────────────────
+
 			var wilsonScore = parseFloat( ( sig.confidence || {} ).score || 0 );
-			var wilsonCls   = wilsonScore >= 70 ? 'aa-wilson--high'
-			                : wilsonScore >= 40 ? 'aa-wilson--mid'
-			                : 'aa-wilson--low';
-			var wilsonHtml  = '<div class="aa-wilson ' + wilsonCls + '"'
-				+ ' title="' + fmtInt( p.total_sessions ) + ' sessions · fiabilité : ' + Math.round( wilsonScore ) + ' %">'
-				+ '<div class="aa-wilson-bar"><div class="aa-wilson-bar__fill" style="width:' + Math.round( wilsonScore ) + '%;"></div></div>'
-				+ '<span class="aa-wilson__pct">' + Math.round( wilsonScore ) + ' %</span>'
+			var wilsonCls   = wilsonScore >= 70 ? 'always-analytics-wilson--high'
+			                : wilsonScore >= 40 ? 'always-analytics-wilson--mid'
+			                : 'always-analytics-wilson--low';
+			var wilsonHtml  = '<div class="always-analytics-wilson ' + wilsonCls + '"'
+				+ ' title="' + htmlEscape( ( I18N.sessionsReliability || '%1$s sessions · reliability: %2$s%%' )
+					.replace( '%1$s', fmtInt( p.total_sessions ) )
+					.replace( '%2$s', Math.round( wilsonScore ) ) ) + '">'
+				+ '<div class="always-analytics-wilson-bar"><div class="always-analytics-wilson-bar__fill" style="width:' + Math.round( wilsonScore ) + '%;"></div></div>'
+				+ '<span class="always-analytics-wilson__pct">' + Math.round( wilsonScore ) + ' %</span>'
 				+ '</div>';
 
-			// ── Lien éditeur WordPress ────────────────────────────────────
-			var adminBase = ( typeof alwaysAnalyticsAdmin !== 'undefined' && alwaysAnalyticsAdmin.adminUrl )
-				? alwaysAnalyticsAdmin.adminUrl
+
+			var adminBase = ( typeof alwaysAnalyticsEngagement !== 'undefined' && alwaysAnalyticsEngagement.adminUrl )
+				? alwaysAnalyticsEngagement.adminUrl
 				: '/wp-admin/';
 			var editLink = p.post_id > 0
 				? adminBase + 'post.php?post=' + p.post_id + '&action=edit'
 				: null;
 
 			var titleHtml = editLink
-				? '<a class="aa-page-edit-link" href="' + editLink + '" target="_blank" title="Éditer dans WordPress">'
+				? '<a class="always-analytics-page-edit-link" href="' + editLink + '" target="_blank" rel="noopener noreferrer" title="' + htmlEscape( I18N.editInWordPress || 'Edit in WordPress' ) + '">'
 					+ rank + htmlEscape( title )
-					+ '<svg class="aa-edit-icon" xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>'
+					+ '<svg class="always-analytics-edit-icon" xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>'
 					+ '</a>'
 				: rank + htmlEscape( title );
 
-			return '<tr class="aa-eng-row">'
-				+ '<td class="aa-eng-cell-page">'
-				+   '<div class="aa-page-detail-title" title="' + htmlEscape( p.page_url ) + '">'
+			return '<tr class="always-analytics-eng-row">'
+				+ '<td class="always-analytics-eng-cell-page">'
+				+   '<div class="always-analytics-page-detail-title" title="' + htmlEscape( p.page_url ) + '">'
 				+     titleHtml
 				+   '</div>'
-				+   '<div class="aa-page-detail-url">' + htmlEscape( p.page_url ) + '</div>'
-				+   '<div class="aa-page-detail-views">'
-				+     fmtInt( p.page_views ) + ' vues · ' + fmtInt( p.total_sessions ) + ' sessions'
+				+   '<div class="always-analytics-page-detail-url">' + htmlEscape( p.page_url ) + '</div>'
+				+   '<div class="always-analytics-page-detail-views">'
+				+     ( I18N.viewsSessions || '%1$s views · %2$s sessions' )
+					.replace( '%1$s', fmtInt( p.page_views ) )
+					.replace( '%2$s', fmtInt( p.total_sessions ) )
 				+   '</div>'
 				+ '</td>'
-				+ '<td class="aa-eng-cell-duration">' + durHtml + '</td>'
-				+ '<td class="aa-eng-cell-scroll">' + scrollHtml + '</td>'
-				+ '<td class="aa-eng-cell-profile">' + profileHtml + '</td>'
-				+ '<td class="aa-eng-cell-wilson">' + wilsonHtml + '</td>'
+				+ '<td class="always-analytics-eng-cell-duration">' + durHtml + '</td>'
+				+ '<td class="always-analytics-eng-cell-scroll">' + scrollHtml + '</td>'
+				+ '<td class="always-analytics-eng-cell-profile">' + profileHtml + '</td>'
+				+ '<td class="always-analytics-eng-cell-wilson">' + wilsonHtml + '</td>'
 				+ '</tr>';
 		}
 
@@ -478,7 +469,7 @@ action: 'Ce segment est pleinement capté par le contenu. Indique une bonne adé
 				wrapBtn.style.display = remaining > 0 ? '' : 'none';
 			}
 			if ( remSpan ) {
-				remSpan.textContent = remaining > 0 ? '(' + remaining + ' restantes)' : '';
+				remSpan.textContent = remaining > 0 ? ( I18N.remaining || '(%s remaining)' ).replace( '%s', remaining ) : '';
 			}
 		}
 
@@ -487,7 +478,7 @@ action: 'Ce segment est pleinement capté par le contenu. Indique une bonne adé
 			if ( ! tbody ) { return; }
 
 			if ( ! data || ! data.length ) {
-				tbody.innerHTML = '<tr><td colspan="3" class="aa-no-data">Aucune donnée pour cette période</td></tr>';
+				tbody.innerHTML = '<tr><td colspan="5" class="always-analytics-no-data">' + htmlEscape( I18N.noData || 'No data is available for this period.' ) + '</td></tr>';
 				var wrapBtn = document.getElementById( 'eng-show-more-wrap' );
 				if ( wrapBtn ) { wrapBtn.style.display = 'none'; }
 				return;
@@ -516,23 +507,22 @@ action: 'Ce segment est pleinement capté par le contenu. Indique une bonne adé
 			if ( ! btn || ! box || btn._bound ) { return; }
 			btn._bound = true;
 
-			// Sur mobile : fermer le panel par défaut au chargement
+
 			if ( window.innerWidth <= 768 ) {
 				box.hidden = true;
 				btn.setAttribute( 'aria-expanded', 'false' );
 			}
 
 			btn.addEventListener( 'click', function () {
-				// Sur desktop le toggle ne fait rien (le panel est toujours visible via CSS)
+
 				if ( window.innerWidth > 768 ) { return; }
 				var isOpen = ! box.hidden;
 				box.hidden = isOpen;
 				btn.setAttribute( 'aria-expanded', String( ! isOpen ) );
-				btn.querySelector( '.aa-score-info-chevron' ).classList.toggle( 'is-open', ! isOpen );
+				btn.querySelector( '.always-analytics-score-info-chevron' ).classList.toggle( 'is-open', ! isOpen );
 			} );
 		}
 
-		// ── Helpers ─────────────────────────────────────────────────
 
 		function setText( id, v ) {
 			var el = document.getElementById( id );
@@ -540,7 +530,7 @@ action: 'Ce segment est pleinement capté par le contenu. Indique une bonne adé
 		}
 
 		function fmtInt( n ) {
-			return ( parseInt( n, 10 ) || 0 ).toLocaleString( 'fr-FR' );
+			return ( parseInt( n, 10 ) || 0 ).toLocaleString( locale );
 		}
 
 		function fmtDuration( s ) {

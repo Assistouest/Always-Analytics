@@ -1,0 +1,1644 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Always Analytics 3.1.1
+Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/always-analytics/
+POT-Creation-Date: 2026-07-25 00:00+0200
+PO-Revision-Date: 2026-07-25 00:00+0200
+Language: fr_FR
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=2; plural=(n > 1);
+X-Domain: always-analytics\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: fr_FR <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-07-25 11:39+0000\n"
+"PO-Revision-Date: 2026-07-25 11:39+0000\n"
+"Language: fr_FR\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: admin/views/dashboard.php:228
+#, no-python-format,python-format
+msgid "% of total"
+msgstr "% du total"
+
+#. translators: 1: number of sessions, 2: reliability percentage.
+#: admin/class-always-analytics-admin.php:319
+#, php-format,python-format
+msgid "%1$s sessions · reliability: %2$s%%"
+msgstr "%1$s sessions · fiabilité : %2$s %%"
+
+#. translators: 1: number of views, 2: number of sessions.
+#: admin/class-always-analytics-admin.php:317
+#, php-format
+msgid "%1$s views · %2$s sessions"
+msgstr "%1$s vues · %2$s sessions"
+
+#. translators: %d: retention period in days.
+#: admin/class-always-analytics-settings.php:389
+#: admin/views/settings.php:112
+#, php-format,python-format
+msgid "%d day"
+msgid_plural "%d days"
+msgstr[0] "%d jour"
+msgstr[1] "%d jours"
+
+#. translators: %d: number of minutes.
+#: public/class-always-analytics-shortcodes.php:442
+#, php-format,python-format
+msgid "%d minute"
+msgid_plural "%d minutes"
+msgstr[0] "%d minute"
+msgstr[1] "%d minutes"
+
+#. translators: %d: number of seconds.
+#: public/class-always-analytics-shortcodes.php:434
+#, php-format,python-format
+msgid "%d second"
+msgid_plural "%d seconds"
+msgstr[0] "%d seconde"
+msgstr[1] "%d secondes"
+
+#. translators: %s: human-readable time difference.
+#: admin/views/visitor-detail.php:84
+#, php-format,python-format
+msgid "%s ago"
+msgstr "Il y a %s"
+
+#. translators: %s: average engaged reading time.
+#: public/class-always-analytics-shortcodes.php:259
+#, php-format,python-format
+msgid "%s average engaged reading time"
+msgstr "%s de temps moyen de lecture active"
+
+#. translators: %s: number of hours.
+#: admin/class-always-analytics-admin.php:251
+#, php-format,python-format
+msgid "%s h ago"
+msgstr "Il y a %s h"
+
+#. translators: %s: number of hits.
+#: admin/class-always-analytics-admin.php:253
+#, php-format,python-format
+msgid "%s hits"
+msgstr "%s événements"
+
+#. translators: %s: total number of hits.
+#: admin/class-always-analytics-admin.php:236
+#, php-format,python-format
+msgid "%s hits total"
+msgstr "%s événements au total"
+
+#. translators: %s: number of minutes.
+#: admin/class-always-analytics-admin.php:249
+#, php-format,python-format
+msgid "%s min ago"
+msgstr "Il y a %s min"
+
+#. translators: %s: number of pages.
+#. translators: %s: number of pages in the session.
+#: admin/class-always-analytics-admin.php:245
+#: admin/views/top-pages.php:92
+#: admin/views/visitor-detail.php:235
+#, php-format,python-format
+msgid "%s page"
+msgid_plural "%s pages"
+msgstr[0] "%s page"
+msgstr[1] "%s pages"
+
+#. translators: %s: number of page views.
+#: admin/class-always-analytics-admin.php:309
+#, php-format,python-format
+msgid "%s page views"
+msgstr "%s pages vues"
+
+#. translators: %s: number of pages.
+#: admin/class-always-analytics-admin.php:247
+#, php-format,python-format
+msgid "%s pages"
+msgstr "%s pages"
+
+#. translators: %s: number of sessions.
+#: admin/class-always-analytics-admin.php:262
+#: admin/class-always-analytics-admin.php:322
+#, php-format,python-format
+msgid "%s session"
+msgstr "%s session"
+
+#. translators: %s: number of sessions.
+#: admin/class-always-analytics-admin.php:264
+#: admin/class-always-analytics-admin.php:324
+#, php-format,python-format
+msgid "%s sessions"
+msgstr "%s sessions"
+
+#. translators: %s: number of unique clicks.
+#: admin/class-always-analytics-admin.php:266
+#, php-format,python-format
+msgid "%s unique"
+msgstr "%s uniques"
+
+#. translators: %s: site name.
+#: includes/class-always-analytics-consent.php:98
+#, php-format,python-format
+msgid "%s uses self-hosted, cookieless audience measurement. You can opt out at any time."
+msgstr "%s utilise une mesure d’audience auto-hébergée sans cookie. Vous pouvez vous y opposer à tout moment."
+
+#. translators: %s: number of visits.
+#: admin/class-always-analytics-admin.php:241
+#: admin/views/visitor-detail.php:172
+#, php-format,python-format
+msgid "%s visit"
+msgid_plural "%s visits"
+msgstr[0] "%s visite"
+msgstr[1] "%s visites"
+
+#. translators: %s: number of visits.
+#: admin/class-always-analytics-admin.php:243
+#, php-format,python-format
+msgid "%s visits"
+msgstr "%s visites"
+
+#. translators: %s: number of sessions remaining.
+#: admin/class-always-analytics-admin.php:315
+#, php-format,python-format
+msgid "(%s remaining)"
+msgstr "(%s restants)"
+
+#: api/class-always-analytics-rest.php:2552
+msgid "A campaign already exists for this date."
+msgstr "Une campagne existe déjà pour cette date."
+
+#: api/class-always-analytics-rest.php:2542
+msgid "A campaign label is required."
+msgstr "Un libellé de campagne est obligatoire."
+
+#: admin/views/settings.php:29
+#: includes/class-always-analytics-activator.php:555
+#: includes/class-always-analytics-consent.php:139
+msgid "Accept"
+msgstr "Accepter"
+
+#: admin/class-always-analytics-settings.php:165
+#: admin/views/settings.php:101
+msgid "Accept button"
+msgstr "Bouton Accepter"
+
+#: admin/views/dashboard.php:141
+msgid "Activity"
+msgstr "Activité"
+
+#: admin/views/dashboard.php:154
+msgid "Add"
+msgstr "Ajouter"
+
+#: admin/views/dashboard.php:76
+#: admin/views/dashboard.php:91
+#: admin/views/dashboard.php:152
+msgid "Add event"
+msgstr "Ajouter un événement"
+
+#: admin/views/dashboard.php:274
+msgid "AI"
+msgstr "IA"
+
+#: admin/views/dashboard.php:271
+#: admin/views/dashboard.php:287
+msgid "All"
+msgstr "Tous"
+
+#: admin/views/top-pages.php:124
+msgid "All pages"
+msgstr "Toutes les pages"
+
+#. Plugin Name of the plugin
+#: always-analytics.php
+#: admin/class-always-analytics-admin.php:26
+#: admin/class-always-analytics-admin.php:27
+#: admin/class-always-analytics-dashboard.php:29
+#: admin/views/dashboard.php:17
+msgid "Always Analytics"
+msgstr "Always Analytics"
+
+#: includes/class-always-analytics-activator.php:62
+msgid "Always Analytics requires PHP 7.4 or later."
+msgstr "Always Analytics nécessite PHP 7.4 ou une version ultérieure."
+
+#: includes/class-always-analytics-activator.php:70
+msgid "Always Analytics requires WordPress 5.8 or later."
+msgstr "Always Analytics nécessite WordPress 5.8 ou une version ultérieure."
+
+#: admin/views/settings.php:47
+#: admin/views/settings.php:50
+msgid "Always Analytics settings"
+msgstr "Réglages d’Always Analytics"
+
+#: admin/class-always-analytics-admin.php:64
+msgid "Always Analytics — Visitor details"
+msgstr "Always Analytics — Détails du visiteur"
+
+#: admin/class-always-analytics-admin.php:227
+msgid "An event already exists for this date."
+msgstr "Un événement existe déjà pour cette date."
+
+#: admin/class-always-analytics-admin.php:215
+#: admin/class-always-analytics-admin.php:444
+msgid "Anonymization completed successfully."
+msgstr "L’anonymisation a été effectuée avec succès."
+
+#: admin/class-always-analytics-admin.php:216
+msgid "Anonymization failed."
+msgstr "L’anonymisation a échoué."
+
+#: admin/views/top-pages.php:101
+msgid "Apply"
+msgstr "Appliquer"
+
+#: api/class-always-analytics-rest.php:1664
+msgid "Arrived and left quickly. The content promise or traffic targeting may not match."
+msgstr "Venu, vu, reparti. Promesse non tenue ou mauvais aiguillage."
+
+#: admin/class-always-analytics-settings.php:116
+msgid "Audience collection"
+msgstr "Collecte d’audience"
+
+#: includes/class-always-analytics-consent.php:148
+msgid "Audience measurement consent"
+msgstr "Consentement à la mesure d’audience"
+
+#: includes/class-always-analytics-consent.php:108
+msgid "Audience measurement information"
+msgstr "Informations sur la mesure d’audience"
+
+#: admin/views/dashboard.php:52
+#: admin/views/engagement.php:69
+#: admin/views/engagement.php:187
+msgid "Average duration"
+msgstr "Durée moyenne"
+
+#: admin/class-always-analytics-admin.php:304
+msgid "Average duration (s)"
+msgstr "Durée moyenne (s)"
+
+#: admin/views/engagement.php:163
+msgid "Average number of pages viewed per session after this page."
+msgstr "Nombre moyen de pages vues par session après cette page. Mesure l'effet d'entraînement."
+
+#: admin/views/engagement.php:188
+msgid "Average scroll"
+msgstr "Scroll moy."
+
+#: admin/class-always-analytics-admin.php:305
+msgid "Average scroll (%)"
+msgstr "Défilement moyen (%)"
+
+#: admin/views/engagement.php:55
+#: admin/views/engagement.php:70
+msgid "Average scroll depth"
+msgstr "Scroll moyen"
+
+#: admin/views/engagement.php:188
+msgid "Average scroll depth on the page"
+msgstr "Profondeur de scroll moyenne sur la page"
+
+#: admin/views/engagement.php:130
+msgid "Average scroll depth. Reading to the end can indicate that the content remained relevant."
+msgstr "Profondeur de défilement moyenne. Une page lue jusqu'au bout signe un contenu pertinent."
+
+#. translators: %s: average scroll percentage.
+#: admin/class-always-analytics-admin.php:312
+#, php-format,python-format
+msgid "Average scroll: %s%%"
+msgstr "Défilement moyen : %s %%"
+
+#: admin/views/engagement.php:47
+msgid "Average session duration"
+msgstr "Durée moy. session"
+
+#: admin/views/engagement.php:187
+msgid "Average time spent on the page"
+msgstr "Durée moyenne passée sur la page"
+
+#: admin/views/engagement.php:119
+msgid "Average time spent on the page. Longer active time generally indicates stronger engagement."
+msgstr "Temps moyen passé sur la page. Plus un visiteur reste, plus il est engagé."
+
+#: admin/views/engagement.php:22
+#: admin/views/engagement.php:149
+msgid "Back"
+msgstr "Retour"
+
+#: admin/views/settings.php:51
+#: admin/views/visitor-detail.php:156
+msgid "Back to dashboard"
+msgstr "Retour au tableau de bord"
+
+#: admin/class-always-analytics-settings.php:477
+#: admin/views/settings.php:102
+msgid "Background"
+msgstr "Arrière-plan"
+
+#: admin/class-always-analytics-settings.php:194
+msgid "Bot filtering"
+msgstr "Filtrage des robots"
+
+#: admin/class-always-analytics-admin.php:325
+#: api/class-always-analytics-rest.php:1662
+msgid "Bouncer"
+msgstr "Rebond immédiat"
+
+#: api/class-always-analytics-rest.php:1673
+msgid "Browsed the content without reaching the conclusion."
+msgstr "A parcouru le contenu sans atteindre la conclusion."
+
+#: admin/class-always-analytics-settings.php:347
+#: admin/views/settings.php:93
+msgid "Browser session only"
+msgstr "Session navigateur uniquement"
+
+#: admin/class-always-analytics-admin.php:259
+msgid "Browsers"
+msgstr "Navigateurs"
+
+#: admin/views/dashboard.php:124
+#: admin/views/dashboard.php:204
+msgid "Cancel"
+msgstr "Annuler"
+
+#: admin/views/dashboard.php:335
+msgid "Clicked internal link"
+msgstr "Lien interne cliqué"
+
+#: admin/views/dashboard.php:321
+#: admin/views/dashboard.php:336
+#: admin/views/dashboard.php:357
+#: admin/views/dashboard.php:372
+msgid "Clicks"
+msgstr "Clics"
+
+#: admin/views/dashboard.php:92
+#: admin/views/dashboard.php:172
+msgid "Close"
+msgstr "Fermer"
+
+#: admin/views/dashboard.php:109
+#: admin/views/dashboard.php:189
+msgid "Color"
+msgstr "Couleur"
+
+#: admin/class-always-analytics-admin.php:334
+msgid "Complete reading and strong engagement"
+msgstr "Lecture complète et engagement fort"
+
+#: includes/class-always-analytics-consent.php:101
+msgid "Continue"
+msgstr "Continuer"
+
+#: admin/class-always-analytics-settings.php:163
+msgid "Continue button"
+msgstr "Bouton Continuer"
+
+#: api/class-always-analytics-rest.php:2175
+msgid "Cookie"
+msgstr "Cookie"
+
+#: api/class-always-analytics-rest.php:2158
+msgid "Cookie mode is configured, but the visitor cookie is blocked; automatic cookieless fallback is used"
+msgstr "Le mode cookie est configuré, mais le cookie visiteur est bloqué ; le repli automatique sans cookie est utilisé"
+
+#: admin/class-always-analytics-settings.php:227
+msgid "Cookieless collection is self-hosted and does not write a visitor identifier to persistent browser storage. Cookie mode creates a persistent first-party identifier only after acceptance."
+msgstr "La collecte sans cookie est auto-hébergée et n’écrit aucun identifiant visiteur dans le stockage persistant du navigateur. Le mode cookie crée un identifiant propriétaire persistant uniquement après acceptation."
+
+#: api/class-always-analytics-rest.php:2164
+msgid "Cookieless hits sent before the visitor responds to the notice. Hits merged after acceptance are marked as superseded."
+msgstr "Événements sans cookie envoyés avant la réponse du visiteur à l’avis. Les événements fusionnés après acceptation sont marqués comme remplacés."
+
+#: api/class-always-analytics-rest.php:2157
+msgid "Cookieless JavaScript fallback"
+msgstr "Repli JavaScript sans cookie"
+
+#: admin/class-always-analytics-settings.php:123
+msgid "Cookieless uniqueness window"
+msgstr "Fenêtre d’unicité sans cookie"
+
+#: admin/class-always-analytics-admin.php:234
+msgid "Creation failed."
+msgstr "La création a échoué."
+
+#: admin/views/dashboard.php:117
+msgid "Custom color"
+msgstr "Couleur personnalisée"
+
+#: admin/class-always-analytics-settings.php:346
+msgid "Daily rotating identifier"
+msgstr "Identifiant renouvelé quotidiennement"
+
+#: admin/class-always-analytics-dashboard.php:328
+msgid "Daily visitors"
+msgstr "Visiteurs quotidiens"
+
+#: admin/class-always-analytics-admin.php:37
+#: admin/class-always-analytics-admin.php:38
+#: admin/views/top-pages.php:82
+msgid "Dashboard"
+msgstr "Tableau de bord"
+
+#: admin/class-always-analytics-settings.php:185
+msgid "Dashboard cache duration"
+msgstr "Durée du cache du tableau de bord"
+
+#: admin/views/dashboard.php:96
+#: admin/views/dashboard.php:177
+msgid "Date"
+msgstr "Date"
+
+#: admin/views/settings.php:30
+#: includes/class-always-analytics-activator.php:556
+#: includes/class-always-analytics-consent.php:140
+msgid "Decline"
+msgstr "Refuser"
+
+#: admin/class-always-analytics-settings.php:166
+#: admin/views/settings.php:101
+msgid "Decline button"
+msgstr "Bouton Refuser"
+
+#: admin/class-always-analytics-admin.php:327
+#: api/class-always-analytics-rest.php:1689
+msgid "Deep reader"
+msgstr "Lecteur attentif"
+
+#: admin/views/engagement.php:59
+msgid "Deep readers ≥ 75%"
+msgstr "Lecteurs profonds ≥ 75%"
+
+#: admin/class-always-analytics-settings.php:196
+#: admin/views/settings.php:126
+msgid "Default export format"
+msgstr "Format d’export par défaut"
+
+#: admin/class-always-analytics-admin.php:224
+msgid "Delete"
+msgstr "Supprimer"
+
+#: admin/class-always-analytics-settings.php:145
+#: admin/views/settings.php:127
+msgid "Delete data on uninstall"
+msgstr "Supprimer les données à la désinstallation"
+
+#: admin/class-always-analytics-admin.php:231
+msgid "Delete this event?"
+msgstr "Supprimer cet événement ?"
+
+#: admin/class-always-analytics-admin.php:233
+msgid "Deletion failed."
+msgstr "La suppression a échoué."
+
+#: admin/views/engagement.php:160
+msgid "Depth"
+msgstr "Profondeur"
+
+#: admin/views/dashboard.php:185
+msgid "Description"
+msgstr "Description"
+
+#: admin/views/dashboard.php:105
+msgid "Description (optional)"
+msgstr "Description (optionnel)"
+
+#: admin/views/dashboard.php:290
+msgid "Desktop"
+msgstr "Ordinateur"
+
+#: admin/views/dashboard.php:106
+msgid "Details, URL, notes…"
+msgstr "Détails, URL, notes…"
+
+#: admin/views/dashboard.php:285
+msgid "Devices"
+msgstr "Appareils"
+
+#: admin/class-always-analytics-admin.php:218
+#: api/class-always-analytics-rest.php:908
+msgid "Direct"
+msgstr "Direct"
+
+#: admin/views/top-pages.php:117
+msgid "Distinct pages"
+msgstr "Pages distinctes"
+
+#: admin/class-always-analytics-settings.php:410
+#: admin/views/settings.php:119
+msgid "Do not trust proxy headers"
+msgstr "Ne pas faire confiance aux en-têtes proxy"
+
+#: admin/views/dashboard.php:361
+msgid "Domains"
+msgstr "Domaines"
+
+#: admin/views/engagement.php:189
+msgid "Dominant reader profile on this page"
+msgstr "Profil de lecteur dominant sur cette page"
+
+#: admin/views/engagement.php:116
+msgid "Duration"
+msgstr "Durée"
+
+#: admin/class-always-analytics-settings.php:191
+msgid "Duration in seconds, between 60 and 3600."
+msgstr "Durée en secondes, comprise entre 60 et 3 600."
+
+#: admin/class-always-analytics-admin.php:310
+msgid "Each page view is counted <strong>only once</strong> in the highest scroll range reached."
+msgstr "Chaque page vue est comptée <strong>une seule fois</strong>, dans la tranche de défilement la plus élevée atteinte."
+
+#: admin/class-always-analytics-admin.php:223
+msgid "Edit"
+msgstr "Modifier"
+
+#: admin/views/dashboard.php:171
+msgid "Edit event"
+msgstr "Modifier l'événement"
+
+#: admin/class-always-analytics-admin.php:313
+msgid "Edit in WordPress"
+msgstr "Modifier dans WordPress"
+
+#: admin/class-always-analytics-admin.php:303
+#: admin/views/engagement.php:68
+msgid "Engaged sessions"
+msgstr "Sessions engagées"
+
+#: admin/class-always-analytics-admin.php:46
+#: admin/class-always-analytics-admin.php:47
+#: admin/views/dashboard.php:57
+#: admin/views/engagement.php:20
+#: admin/views/engagement.php:138
+msgid "Engagement"
+msgstr "Engagement"
+
+#: admin/views/engagement.php:66
+msgid "Engagement over time"
+msgstr "Engagement dans le temps"
+
+#: admin/views/engagement.php:43
+msgid "Engagement rate"
+msgstr "Taux d'engagement"
+
+#: admin/class-always-analytics-settings.php:125
+msgid "Enter one IP address or CIDR range per line."
+msgstr "Saisissez une adresse IP ou une plage CIDR par ligne."
+
+#: admin/class-always-analytics-admin.php:229
+msgid "Error."
+msgstr "Erreur."
+
+#: admin/views/dashboard.php:78
+msgid "Event"
+msgstr "Événement"
+
+#: admin/views/dashboard.php:151
+msgid "Events"
+msgstr "Événements"
+
+#: admin/views/dashboard.php:102
+msgid "Example: backlink campaign, header redesign…"
+msgstr "Ex : Campagne backlinks, Refonte header…"
+
+#: admin/class-always-analytics-settings.php:125
+#: admin/views/settings.php:118
+msgid "Excluded IP addresses"
+msgstr "Adresses IP exclues"
+
+#. translators: %d: retention period in days.
+#: admin/class-always-analytics-settings.php:124
+#: admin/views/settings.php:113
+msgid "Excluded roles"
+msgstr "Rôles exclus"
+
+#: admin/class-always-analytics-admin.php:326
+#: api/class-always-analytics-rest.php:1671
+msgid "Explorer"
+msgstr "Explorateur"
+
+#: admin/class-always-analytics-admin.php:213
+msgid "Export"
+msgstr "Exporter"
+
+#: admin/views/visitor-detail.php:194
+msgid "First visit"
+msgstr "Première visite"
+
+#: admin/views/engagement.php:174
+msgid "Global modifier"
+msgstr "Modificateur global"
+
+#: includes/class-always-analytics-activator.php:558
+msgid "Got it"
+msgstr "Compris"
+
+#: admin/class-always-analytics-admin.php:328
+msgid "High bounce rate"
+msgstr "Taux de rebond élevé"
+
+#: admin/class-always-analytics-admin.php:256
+msgid "Historical data includes records created by the legacy no-JavaScript collection method."
+msgstr "Les données historiques comprennent des enregistrements créés par l’ancienne méthode de collecte sans JavaScript."
+
+#: api/class-always-analytics-rest.php:2170
+msgid "Historical records created by the legacy no-JavaScript collection method"
+msgstr "Enregistrements historiques créés par l’ancienne méthode de collecte sans JavaScript"
+
+#: admin/views/dashboard.php:217
+msgid "Hit distribution by source"
+msgstr "Répartition des hits par source"
+
+#: admin/views/dashboard.php:224
+msgid "Hits"
+msgstr "Événements"
+
+#: api/class-always-analytics-rest.php:2152
+msgid "Hits collected by the JavaScript tracker in cookieless or accepted-cookie mode"
+msgstr "Événements collectés par le suivi JavaScript en mode sans cookie ou avec cookie accepté"
+
+#: api/class-always-analytics-rest.php:2176
+msgid "Hits with an active first-party visitor cookie after acceptance"
+msgstr "Événements avec un cookie visiteur propriétaire actif après acceptation"
+
+#: admin/views/dashboard.php:314
+msgid "Internal links"
+msgstr "Maillage interne"
+
+#: api/class-always-analytics-rest.php:2151
+msgid "JavaScript"
+msgstr "JavaScript"
+
+#: admin/views/dashboard.php:101
+#: admin/views/dashboard.php:181
+msgid "Label"
+msgstr "Label"
+
+#: admin/class-always-analytics-dashboard.php:315
+msgid "Last 14 days"
+msgstr "14 derniers jours"
+
+#: admin/views/dashboard.php:25
+#: admin/views/engagement.php:31
+msgid "Last 30 days"
+msgstr "30 derniers jours"
+
+#: admin/views/dashboard.php:24
+#: admin/views/engagement.php:30
+msgid "Last 7 days"
+msgstr "7 derniers jours"
+
+#: admin/views/dashboard.php:26
+#: admin/views/engagement.php:32
+msgid "Last 90 days"
+msgstr "90 derniers jours"
+
+#: admin/views/visitor-detail.php:200
+msgid "Last activity"
+msgstr "Dernière activité"
+
+#: api/class-always-analytics-rest.php:2169
+msgid "Legacy no-JavaScript source"
+msgstr "Ancienne source sans JavaScript"
+
+#: public/class-always-analytics-shortcodes.php:105
+msgid "Live audience"
+msgstr "Audience en direct"
+
+#: admin/class-always-analytics-admin.php:212
+#: admin/views/engagement.php:196
+msgid "Loading…"
+msgstr "Chargement…"
+
+#: admin/views/dashboard.php:98
+msgid "Maximum one event per day."
+msgstr "Maximum 1 événement par jour."
+
+#: admin/views/dashboard.php:229
+msgid "Merged (pre-consent)"
+msgstr "Fusionnés (pre_consent)"
+
+#: admin/views/engagement.php:101
+msgid "Method"
+msgstr "Méthode"
+
+#: admin/views/dashboard.php:294
+msgid "Mobile"
+msgstr "Mobile"
+
+#: admin/views/dashboard.php:61
+msgid "More details →"
+msgstr "Plus d'infos →"
+
+#: admin/views/visitor-detail.php:226
+msgid "Most recent session"
+msgstr "Session la plus récente"
+
+#: admin/views/dashboard.php:246
+msgid "Most viewed content"
+msgstr "Contenus les plus vus"
+
+#: admin/class-always-analytics-admin.php:254
+msgid "Network error."
+msgstr "Erreur réseau."
+
+#: admin/views/dashboard.php:227
+msgid "New visitors"
+msgstr "Nouveaux visiteurs"
+
+#: admin/class-always-analytics-admin.php:220
+msgid "No data is available for this filter."
+msgstr "Aucune donnée n’est disponible pour ce filtre."
+
+#: admin/class-always-analytics-admin.php:211
+#: admin/class-always-analytics-admin.php:306
+#: admin/views/dashboard.php:340
+#: admin/views/dashboard.php:376
+#: admin/views/top-pages.php:131
+msgid "No data is available for this period."
+msgstr "Aucune donnée pour cette période."
+
+#: public/class-always-analytics-shortcodes.php:198
+msgid "No data is available yet."
+msgstr "Aucune donnée n’est encore disponible."
+
+#: admin/views/dashboard.php:159
+msgid "No events have been recorded."
+msgstr "Aucun événement enregistré."
+
+#: admin/class-always-analytics-admin.php:222
+msgid "No events."
+msgstr "Aucun événement."
+
+#: admin/views/visitor-detail.php:242
+msgid "No page was recorded for this session."
+msgstr "Aucune page enregistrée pour cette session."
+
+#: public/class-always-analytics-shortcodes.php:227
+msgid "No published posts are available yet."
+msgstr "Aucun contenu publié n’est encore disponible."
+
+#: admin/class-always-analytics-admin.php:320
+msgid "No sessions"
+msgstr "Aucune session"
+
+#: admin/class-always-analytics-admin.php:219
+msgid "No source is available in this category."
+msgstr "Aucune source n’est disponible dans cette catégorie."
+
+#: admin/class-always-analytics-admin.php:307
+msgid "Not measured"
+msgstr "Non mesuré"
+
+#: admin/class-always-analytics-settings.php:167
+msgid "Notice colors"
+msgstr "Couleurs de l’avis"
+
+#: admin/class-always-analytics-admin.php:217
+msgid "Now"
+msgstr "Maintenant"
+
+#: admin/class-always-analytics-admin.php:260
+msgid "Operating systems"
+msgstr "Systèmes d’exploitation"
+
+#: includes/class-always-analytics-consent.php:117
+msgid "Opt out"
+msgstr "S’opposer"
+
+#: admin/views/dashboard.php:371
+msgid "Outbound domain"
+msgstr "Domaine sortant"
+
+#: admin/views/dashboard.php:350
+msgid "Outbound links"
+msgstr "Liens sortants"
+
+#: admin/views/dashboard.php:255
+#: admin/views/engagement.php:186
+#: admin/views/top-pages.php:137
+msgid "Page"
+msgstr "Page"
+
+#: admin/class-always-analytics-admin.php:209
+#: admin/views/dashboard.php:42
+#: admin/views/dashboard.php:73
+msgid "Page views"
+msgstr "Pages vues"
+
+#: public/class-always-analytics-shortcodes.php:110
+msgid "page views in the last 7 days"
+msgstr "pages vues au cours des 7 derniers jours"
+
+#: admin/class-always-analytics-dashboard.php:300
+msgid "Page views today"
+msgstr "Pages vues aujourd'hui"
+
+#: admin/class-always-analytics-dashboard.php:321
+msgid "pages"
+msgstr "pages"
+
+#: admin/views/engagement.php:51
+msgid "Pages per session"
+msgstr "Pages / session"
+
+#: admin/class-always-analytics-dashboard.php:305
+msgid "pages/visitor"
+msgstr "pages/visiteur"
+
+#: admin/class-always-analytics-admin.php:330
+msgid "Partial content reading"
+msgstr "Lecture partielle du contenu"
+
+#: admin/class-always-analytics-settings.php:121
+#: admin/views/settings.php:65
+msgid "Pause collection"
+msgstr "Mettre la collecte en pause"
+
+#: admin/class-always-analytics-settings.php:178
+msgid "Performance and export"
+msgstr "Performances et exportation"
+
+#: admin/class-always-analytics-settings.php:145
+msgid "Permanently remove plugin tables and options when the plugin is deleted."
+msgstr "Supprimer définitivement les tables et options de l’extension lorsqu’elle est supprimée."
+
+#: admin/class-always-analytics-admin.php:435
+#: admin/class-always-analytics-admin.php:549
+msgid "Permission denied."
+msgstr "Autorisation refusée."
+
+#: includes/class-always-analytics-activator.php:63
+#: includes/class-always-analytics-activator.php:71
+#: includes/class-always-analytics-activator.php:168
+msgid "Plugin activation error"
+msgstr "Erreur d’activation de l’extension"
+
+#: admin/views/top-pages.php:141
+msgid "Popularity"
+msgstr "Popularité"
+
+#: api/class-always-analytics-rest.php:2163
+msgid "Pre-consent"
+msgstr "Avant consentement"
+
+#: admin/class-always-analytics-admin.php:237
+msgid "Pre-consent hits marked as superseded after acceptance are excluded from the primary count."
+msgstr "Les événements antérieurs au consentement marqués comme remplacés après acceptation sont exclus du décompte principal."
+
+#: admin/class-always-analytics-settings.php:479
+#: admin/views/settings.php:102
+msgid "Primary button"
+msgstr "Bouton principal"
+
+#: api/class-always-analytics-rest.php:1680
+msgid "Rapid scanner"
+msgstr "Lecteur Compulsif"
+
+#: admin/class-always-analytics-settings.php:144
+#: admin/views/settings.php:108
+msgid "Raw data retention"
+msgstr "Conservation des données brutes"
+
+#: api/class-always-analytics-rest.php:1691
+msgid "Read through to the final line with sustained attention."
+msgstr "A tout bu jusqu'à la dernière ligne. Ton graal."
+
+#: admin/views/engagement.php:189
+msgid "Reader profile"
+msgstr "Profil lecteur"
+
+#: admin/views/dashboard.php:134
+msgid "Recent visitors"
+msgstr "Derniers visiteurs"
+
+#: admin/views/dashboard.php:269
+msgid "Referrers"
+msgstr "Référents"
+
+#: admin/views/engagement.php:191
+msgid "Reliability"
+msgstr "Fiabilité"
+
+#: admin/class-always-analytics-settings.php:364
+msgid "Remove the last IPv4 octet or the last 80 IPv6 bits before analytics storage."
+msgstr "Supprimer le dernier octet IPv4 ou les 80 derniers bits IPv6 avant le stockage analytique."
+
+#: admin/class-always-analytics-admin.php:221
+msgid "Run anonymization…"
+msgstr "Lancer l’anonymisation…"
+
+#: admin/class-always-analytics-admin.php:230
+#: admin/views/dashboard.php:123
+#: admin/views/dashboard.php:203
+msgid "Save"
+msgstr "Enregistrer"
+
+#: admin/class-always-analytics-admin.php:226
+msgid "Saving…"
+msgstr "Enregistrement…"
+
+#: api/class-always-analytics-rest.php:1682
+msgid "Scans quickly for a specific answer without reading the details."
+msgstr "Scanne à toute vitesse. Cherche une info précise sans lire le détail."
+
+#: admin/views/engagement.php:127
+msgid "Scroll"
+msgstr "Scroll"
+
+#: admin/views/engagement.php:87
+msgid "Scroll depth"
+msgstr "Profondeur de scroll"
+
+#: admin/views/dashboard.php:272
+msgid "Search engines"
+msgstr "Moteurs"
+
+#: admin/class-always-analytics-admin.php:332
+msgid "Search for a specific answer"
+msgstr "Recherche d’une réponse précise"
+
+#: admin/views/top-pages.php:126
+msgid "Search pages…"
+msgstr "Rechercher une page…"
+
+#: admin/class-always-analytics-admin.php:228
+msgid "Server error."
+msgstr "Erreur du serveur."
+
+#: admin/class-always-analytics-settings.php:349
+msgid "Session mode provides stronger unlinkability. Daily mode improves unique-visitor estimates within one UTC day."
+msgstr "Le mode session renforce la dissociation. Le mode quotidien améliore l’estimation des visiteurs uniques sur une journée UTC."
+
+#: admin/class-always-analytics-admin.php:210
+#: admin/views/dashboard.php:47
+#: admin/views/dashboard.php:74
+#: admin/views/dashboard.php:226
+#: admin/views/dashboard.php:329
+#: admin/views/dashboard.php:365
+#: admin/views/top-pages.php:140
+msgid "Sessions"
+msgstr "Sessions"
+
+#: admin/class-always-analytics-admin.php:55
+#: admin/class-always-analytics-admin.php:56
+msgid "Settings"
+msgstr "Réglages"
+
+#: admin/class-always-analytics-settings.php:101
+msgid "Settings saved."
+msgstr "Réglages enregistrés."
+
+#: admin/views/engagement.php:141
+msgid "Share of active sessions with measured duration that were not bounces."
+msgstr "Part de sessions actives (durée > 0 et non rebond). Filtre les visites superficielles."
+
+#: admin/views/engagement.php:152
+msgid "Share of visitors returning to this page, which can indicate perceived value."
+msgstr "Part de visiteurs qui reviennent sur cette page. Indicateur fort de valeur perçue."
+
+#: admin/views/engagement.php:204
+msgid "Show 10 more"
+msgstr "Afficher 10 de plus"
+
+#: admin/views/dashboard.php:273
+msgid "Social networks"
+msgstr "Réseaux"
+
+#: admin/class-always-analytics-admin.php:257
+msgid "Some visitors block cookies, so the tracker automatically falls back to cookieless hits."
+msgstr "Certains visiteurs bloquent les cookies ; le suivi bascule alors automatiquement vers des événements sans cookie."
+
+#: admin/views/dashboard.php:223
+msgid "Source"
+msgstr "Source"
+
+#: admin/views/visitor-detail.php:270
+msgid "Source:"
+msgstr "Source :"
+
+#: admin/class-always-analytics-admin.php:258
+msgid "Standard cookieless mode is active, and the JavaScript tracker is the only hit source."
+msgstr "Le mode sans cookie standard est actif et le suivi JavaScript constitue l’unique source d’événements."
+
+#: admin/class-always-analytics-settings.php:121
+msgid "Stop all analytics collection until this option is disabled."
+msgstr "Arrêter toute collecte analytique jusqu’à la désactivation de cette option."
+
+#: admin/views/dashboard.php:298
+msgid "Tablet"
+msgstr "Tablette"
+
+#: admin/class-always-analytics-settings.php:478
+#: admin/views/settings.php:102
+msgid "Text"
+msgstr "Texte"
+
+#: api/class-always-analytics-rest.php:2568
+msgid "The campaign could not be created."
+msgstr "La campagne n’a pas pu être créée."
+
+#: api/class-always-analytics-rest.php:2539
+msgid "The campaign date is invalid."
+msgstr "La date de la campagne est invalide."
+
+#: api/class-always-analytics-rest.php:2595
+msgid "The campaign was not found."
+msgstr "La campagne est introuvable."
+
+#: admin/class-always-analytics-admin.php:255
+msgid "The consent notice is active. Merged pre-consent hits are excluded from the primary count."
+msgstr "L’avis de consentement est actif. Les événements antérieurs au consentement fusionnés sont exclus du décompte principal."
+
+#: admin/class-always-analytics-admin.php:329
+msgid "The content may not engage this segment, or the traffic targeting may be mismatched."
+msgstr "Le contenu peut ne pas engager ce segment, ou le ciblage du trafic peut être inadapté."
+
+#: admin/class-always-analytics-admin.php:225
+msgid "The date and label are required."
+msgstr "La date et le libellé sont obligatoires."
+
+#: admin/class-always-analytics-admin.php:232
+msgid "The event could not be deleted."
+msgstr "L’événement n’a pas pu être supprimé."
+
+#: admin/class-always-analytics-settings.php:442
+msgid "The local filter validates the target URL, browser challenge, request headers, automation signals, and recent behavior. No external blocklist is contacted."
+msgstr "Le filtre local vérifie l’URL cible, le défi du navigateur, les en-têtes de requête, les signaux d’automatisation et le comportement récent. Aucune liste de blocage externe n’est contactée."
+
+#: admin/class-always-analytics-admin.php:331
+msgid "The visitor browses quickly without deep engagement."
+msgstr "Le visiteur parcourt rapidement le contenu sans engagement approfondi."
+
+#: admin/views/visitor-detail.php:61
+msgid "The visitor could not be found."
+msgstr "Le visiteur est introuvable."
+
+#: admin/views/visitor-detail.php:45
+msgid "The visitor identifier is missing."
+msgstr "L’identifiant du visiteur est manquant."
+
+#: admin/views/engagement.php:176
+msgid "The Wilson interval applies a statistical confidence factor. Smaller samples are pulled closer to the mean. This modifier is shown separately because its algorithm may evolve independently from the engagement signals."
+msgstr "L'intervalle de Wilson applique un facteur de confiance statistique : moins il y a de données, plus le score est réduit vers la moyenne. Ce modificateur est affiché séparément car son algorithme peut évoluer indépendamment des signaux."
+
+#: admin/class-always-analytics-settings.php:368
+msgid "This safeguard is enforced in cookieless mode."
+msgstr "Cette garantie est imposée en mode sans cookie."
+
+#: admin/class-always-analytics-admin.php:335
+msgid "This segment engages deeply with the content, which may indicate a strong match with expectations."
+msgstr "Ce segment s’engage fortement avec le contenu, ce qui peut indiquer une bonne adéquation avec les attentes."
+
+#: admin/views/settings.php:28
+#: includes/class-always-analytics-activator.php:554
+msgid "This site uses audience measurement cookies. Do you agree?"
+msgstr "Ce site utilise des cookies de mesure d’audience. Acceptez-vous ?"
+
+#: includes/class-always-analytics-activator.php:557
+msgid "This site uses privacy-focused, cookieless audience measurement. The statistics help improve the site content."
+msgstr "Ce site utilise une mesure d’audience sans cookie respectueuse de la vie privée. Les statistiques contribuent à améliorer le contenu du site."
+
+#: includes/class-always-analytics-consent.php:138
+msgid "This site would like to use an audience measurement cookie. Do you agree?"
+msgstr "Ce site souhaite utiliser un cookie de mesure d’audience. Acceptez-vous ?"
+
+#: admin/class-always-analytics-admin.php:214
+msgid "This will anonymize records older than the retention period. Continue?"
+msgstr "Cette action anonymisera les enregistrements antérieurs à la période de conservation. Continuer ?"
+
+#: admin/views/dashboard.php:27
+#: admin/views/engagement.php:33
+msgid "This year"
+msgstr "Cette année"
+
+#: admin/class-always-analytics-dashboard.php:354
+#: admin/views/dashboard.php:22
+#: admin/views/engagement.php:28
+msgid "Today"
+msgstr "Aujourd'hui"
+
+#: public/class-always-analytics-shortcodes.php:119
+msgid "Top AI source"
+msgstr "Principale source IA"
+
+#: admin/class-always-analytics-admin.php:73
+#: admin/class-always-analytics-admin.php:74
+#: admin/views/top-pages.php:86
+msgid "Top Pages"
+msgstr "Pages principales"
+
+#: public/class-always-analytics-shortcodes.php:116
+msgid "Top source"
+msgstr "Principale source"
+
+#: admin/views/visitor-detail.php:188
+msgid "Total duration"
+msgstr "Durée totale"
+
+#: admin/views/top-pages.php:109
+#: admin/views/visitor-detail.php:184
+msgid "Total page views"
+msgstr "Pages vues totales"
+
+#: admin/class-always-analytics-settings.php:122
+#: admin/views/settings.php:68
+msgid "Tracking mode"
+msgstr "Mode de suivi"
+
+#: admin/views/dashboard.php:212
+msgid "Tracking sources"
+msgstr "Sources de tracking"
+
+#: admin/views/dashboard.php:230
+msgid "Trend"
+msgstr "Tendance"
+
+#: admin/class-always-analytics-settings.php:143
+#: admin/views/settings.php:103
+msgid "Truncate IP addresses"
+msgstr "Tronquer les adresses IP"
+
+#: admin/class-always-analytics-settings.php:411
+msgid "Trust headers only from listed proxy addresses"
+msgstr "Faire confiance aux en-têtes uniquement pour les adresses de proxy répertoriées"
+
+#: admin/class-always-analytics-settings.php:127
+#: admin/views/settings.php:118
+msgid "Trusted proxy addresses"
+msgstr "Adresses des proxys de confiance"
+
+#: admin/class-always-analytics-settings.php:126
+msgid "Trusted proxy mode"
+msgstr "Mode de proxy approuvé"
+
+#: admin/views/dashboard.php:325
+msgid "Unique links"
+msgstr "Liens uniques"
+
+#: admin/views/dashboard.php:37
+#: admin/views/dashboard.php:225
+#: admin/views/top-pages.php:113
+#: admin/views/top-pages.php:139
+msgid "Unique visitors"
+msgstr "Visiteurs uniques"
+
+#: admin/class-always-analytics-settings.php:127
+msgid "Used only in custom proxy mode. Enter one IP address or CIDR range per line."
+msgstr "Utilisé uniquement en mode proxy personnalisé. Saisissez une adresse IP ou une plage CIDR par ligne."
+
+#: admin/views/dashboard.php:248
+msgid "View all"
+msgstr "Voir tout"
+
+#: admin/class-always-analytics-dashboard.php:366
+msgid "View full statistics →"
+msgstr "Voir les statistiques complètes →"
+
+#: admin/views/dashboard.php:256
+#: admin/views/top-pages.php:138
+msgid "Views"
+msgstr "Vues"
+
+#: admin/views/visitor-detail.php:228
+msgid "Visit"
+msgstr "Visite"
+
+#: admin/views/visitor-detail.php:162
+msgid "Visitor"
+msgstr "Visiteur"
+
+#. translators: %s: shortened visitor identifier.
+#: admin/class-always-analytics-admin.php:239
+#, php-format,python-format
+msgid "Visitor %s"
+msgstr "Visiteur %s"
+
+#: admin/views/dashboard.php:140
+msgid "Visitor and visited URLs"
+msgstr "Visiteur et URL visitées"
+
+#: admin/class-always-analytics-admin.php:65
+#: admin/views/visitor-detail.php:46
+#: admin/views/visitor-detail.php:62
+msgid "Visitor details"
+msgstr "Détails du visiteur"
+
+#: admin/class-always-analytics-admin.php:208
+#: admin/views/dashboard.php:72
+#: admin/views/dashboard.php:257
+msgid "Visitors"
+msgstr "Visiteurs"
+
+#: admin/class-always-analytics-dashboard.php:318
+msgid "visitors"
+msgstr "visiteurs"
+
+#: admin/class-always-analytics-admin.php:333
+msgid "Visitors may be comparing options or looking for a specific answer efficiently."
+msgstr "Les visiteurs comparent peut-être des options ou cherchent efficacement une réponse précise."
+
+#: admin/class-always-analytics-dashboard.php:290
+msgid "Visitors today"
+msgstr "Visiteurs aujourd'hui"
+
+#: admin/views/dashboard.php:70
+msgid "Visits"
+msgstr "Visites"
+
+#: admin/class-always-analytics-dashboard.php:296
+msgid "vs yesterday"
+msgstr "vs hier"
+
+#: admin/views/dashboard.php:275
+msgid "Websites"
+msgstr "Sites"
+
+#: admin/views/engagement.php:173
+msgid "Wilson adjustment"
+msgstr "Correction de Wilson"
+
+#: admin/views/engagement.php:190
+msgid "Wilson adjustment for statistical reliability. Larger samples increase the confidence of the overall score."
+msgstr "Correction Wilson — fiabilité statistique. Plus il y a de sessions, plus ce score est élevé et plus le score global est fiable."
+
+#: admin/views/engagement.php:97
+msgid "Wilson Engagement Score"
+msgstr "Score d’engagement de Wilson"
+
+#: admin/views/dashboard.php:23
+#: admin/views/engagement.php:29
+msgid "Yesterday"
+msgstr "Hier"
+
+#: admin/class-always-analytics-admin.php:421
+msgid "You are not allowed to access this page."
+msgstr "Vous n’êtes pas autorisé à accéder à cette page."
+
+#: admin/class-always-analytics-settings.php:138
+msgid "Data management"
+msgstr "Gestion des données"
+
+#: admin/class-always-analytics-settings.php:156
+msgid "Visitor controls"
+msgstr "Contrôles visiteurs"
+
+#: admin/class-always-analytics-settings.php:161
+msgid "Show visitor controls"
+msgstr "Afficher les contrôles visiteurs"
+
+#: admin/class-always-analytics-settings.php:161
+msgid "Show an opt-out control in cookieless mode or accept and decline controls in cookie mode."
+msgstr "Afficher une option de refus en mode sans cookie, ou des boutons d’acceptation et de refus en mode cookie."
+
+#: admin/class-always-analytics-settings.php:162
+msgid "Cookieless message"
+msgstr "Message du mode sans cookie"
+
+#: admin/class-always-analytics-settings.php:164
+msgid "Cookie-mode message"
+msgstr "Message du mode cookie"
+
+#: admin/class-always-analytics-settings.php:245
+msgid "These optional controls are provided for sites that need a visitor-facing choice. They do not replace project-specific legal review."
+msgstr "Ces contrôles facultatifs sont destinés aux sites qui doivent proposer un choix aux visiteurs. Ils ne remplacent pas une vérification juridique adaptée au projet."
+
+#: admin/class-always-analytics-settings.php:329
+msgid "Cookieless, self-hosted measurement (recommended)"
+msgstr "Mesure sans cookie et auto-hébergée (recommandée)"
+
+#: admin/class-always-analytics-settings.php:330
+msgid "Persistent first-party cookie after acceptance (advanced)"
+msgstr "Cookie persistant propriétaire après acceptation (avancé)"
+
+#: admin/class-always-analytics-settings.php:332
+msgid "Cookie mode changes how visitors are identified. Use it only when the site has the required visitor information and controls. Developers may enable it for testing."
+msgstr "Le mode cookie modifie la manière dont les visiteurs sont identifiés. Utilisez-le uniquement lorsque le site dispose des informations et contrôles nécessaires. Les développeurs peuvent l’activer pour leurs tests."
+
+#. translators: %s: database error message.
+#: includes/class-always-analytics-activator.php:164
+#, python-format,php-format
+msgid "Always Analytics could not create its database tables: %s"
+msgstr "Always Analytics n’a pas pu créer ses tables de base de données : %s"
+
+#: admin/class-always-analytics-settings.php:195
+msgid "External favicons"
+msgstr "Favicons externes"
+
+#: admin/class-always-analytics-settings.php:195
+msgid "Display external site favicons (requires a connection to Google's servers. Your IP address may be collected by this third-party service)."
+msgstr "Afficher les favicons des sites externes (nécessite une connexion aux serveurs de Google. Votre adresse IP peut être collectée par ce service tiers)."
+
+#: admin/views/settings.php:61
+msgid "Collection profile"
+msgstr "Profil de collecte"
+
+#: admin/views/settings.php:62
+msgid "Choose how visitors are identified"
+msgstr "Choisissez comment les visiteurs sont identifiés"
+
+#: admin/views/settings.php:63
+msgid "Select one profile. The page automatically shows only the settings that apply to that mode."
+msgstr "Sélectionnez un profil. La page affiche automatiquement uniquement les réglages correspondant à ce mode."
+
+#: admin/views/settings.php:43
+#: admin/views/settings.php:72
+msgid "Cookieless"
+msgstr "Sans cookie"
+
+#: admin/views/settings.php:73
+msgid "Recommended"
+msgstr "Recommandé"
+
+#: admin/views/settings.php:74
+msgid "No persistent visitor cookie and no consent banner generated by the plugin. IP truncation is enforced."
+msgstr "Aucun cookie visiteur persistant et aucune bannière de consentement générée par le plugin. La troncature IP est imposée."
+
+#: admin/views/settings.php:75
+msgid "Local, first-party measurement"
+msgstr "Mesure locale et propriétaire"
+
+#: admin/views/settings.php:75
+msgid "Daily or browser-session uniqueness"
+msgstr "Unicité quotidienne ou par session navigateur"
+
+#: admin/views/settings.php:75
+msgid "Simplest configuration"
+msgstr "Configuration la plus simple"
+
+#: admin/views/settings.php:40
+#: admin/views/settings.php:81
+msgid "With cookie"
+msgstr "Avec cookie"
+
+#: admin/views/settings.php:82
+msgid "Advanced"
+msgstr "Avancé"
+
+#: admin/views/settings.php:83
+msgid "Creates a persistent first-party identifier only after the visitor accepts the analytics banner."
+msgstr "Crée un identifiant propriétaire persistant uniquement après acceptation de la bannière de mesure d’audience."
+
+#: admin/views/settings.php:84
+msgid "More stable returning-visitor measurement"
+msgstr "Mesure plus stable des visiteurs récurrents"
+
+#: admin/views/settings.php:84
+msgid "Consent banner enabled automatically"
+msgstr "Bannière de consentement activée automatiquement"
+
+#: admin/views/settings.php:84
+msgid "Developer testing supported"
+msgstr "Tests développeur pris en charge"
+
+#: admin/views/settings.php:92
+msgid "Cookieless measurement"
+msgstr "Mesure sans cookie"
+
+#: admin/views/settings.php:92
+msgid "Only settings relevant to cookieless collection are shown."
+msgstr "Seuls les réglages utiles à la collecte sans cookie sont affichés."
+
+#: admin/views/settings.php:93
+msgid "Unique visitor window"
+msgstr "Fenêtre de visiteur unique"
+
+#: admin/views/settings.php:93
+msgid "Choose how long an anonymous identifier remains comparable."
+msgstr "Choisissez pendant combien de temps un identifiant anonyme reste comparable."
+
+#: admin/views/settings.php:93
+msgid "One UTC day"
+msgstr "Une journée UTC"
+
+#: admin/views/settings.php:94
+msgid "IP truncation"
+msgstr "Troncature IP"
+
+#: admin/views/settings.php:94
+msgid "Always enabled in cookieless mode."
+msgstr "Toujours activée en mode sans cookie."
+
+#: admin/views/settings.php:94
+msgid "Enforced"
+msgstr "Imposée"
+
+#: admin/views/settings.php:95
+msgid "Visitor banner"
+msgstr "Bannière visiteur"
+
+#: admin/views/settings.php:95
+msgid "No banner is displayed by Always Analytics in cookieless mode."
+msgstr "Aucune bannière n’est affichée par Always Analytics en mode sans cookie."
+
+#: admin/views/settings.php:95
+msgid "Disabled"
+msgstr "Désactivée"
+
+#: admin/views/settings.php:99
+msgid "Cookie consent banner"
+msgstr "Bannière de consentement aux cookies"
+
+#: admin/views/settings.php:99
+msgid "This banner is enabled automatically when cookie mode is selected."
+msgstr "Cette bannière est activée automatiquement lorsque le mode avec cookie est sélectionné."
+
+#: admin/views/settings.php:100
+msgid "Cookie mode stores a persistent first-party identifier after acceptance. Verify that your site information and consent workflow match your actual use before production deployment."
+msgstr "Le mode avec cookie stocke un identifiant propriétaire persistant après acceptation. Vérifiez que les informations du site et le parcours de consentement correspondent à votre usage réel avant la mise en production."
+
+#: admin/views/settings.php:101
+msgid "Banner message"
+msgstr "Message de la bannière"
+
+#: admin/views/settings.php:103
+msgid "Recommended even in cookie mode."
+msgstr "Recommandé même en mode avec cookie."
+
+#: admin/views/settings.php:107
+msgid "Data and accuracy"
+msgstr "Données et fiabilité"
+
+#: admin/views/settings.php:108
+msgid "Older detailed records are anonymized by the scheduled cleanup."
+msgstr "Les anciens enregistrements détaillés sont anonymisés par le nettoyage planifié."
+
+#. translators: %d: retention period in days.
+#: admin/views/settings.php:113
+msgid "Logged-in users with these roles are not counted."
+msgstr "Les utilisateurs connectés ayant ces rôles ne sont pas comptabilisés."
+
+#: admin/views/settings.php:118
+msgid "One IP address or CIDR range per line."
+msgstr "Une adresse IP ou plage CIDR par ligne."
+
+#: admin/views/settings.php:118
+msgid "Used only when custom proxy mode is enabled."
+msgstr "Utilisées uniquement lorsque le mode proxy personnalisé est activé."
+
+#: admin/views/settings.php:119
+msgid "Proxy headers"
+msgstr "En-têtes proxy"
+
+#: admin/views/settings.php:119
+msgid "Trust forwarded client addresses only from proxies you explicitly list."
+msgstr "N’acceptez les adresses client transférées que depuis les proxys explicitement listés."
+
+#: admin/views/settings.php:119
+msgid "Trust listed proxies only"
+msgstr "Faire confiance uniquement aux proxys listés"
+
+#: admin/views/settings.php:123
+msgid "Interface and performance"
+msgstr "Interface et performances"
+
+#: admin/views/settings.php:123
+msgid "Dashboard cache, favicons and exports."
+msgstr "Cache du tableau de bord, favicons et exports."
+
+#: admin/views/settings.php:124
+msgid "Dashboard cache"
+msgstr "Cache du tableau de bord"
+
+#: admin/views/settings.php:124
+msgid "Between 60 and 3600 seconds."
+msgstr "Entre 60 et 3 600 secondes."
+
+#: admin/views/settings.php:125
+msgid "Google S2 favicons"
+msgstr "Favicons Google S2"
+
+#: admin/views/settings.php:125
+msgid "Loads external site icons in the WordPress administration. Google's service receives the administrator's IP address and the requested domain."
+msgstr "Charge les icônes des sites externes dans l’administration WordPress. Le service de Google reçoit l’adresse IP de l’administrateur et le domaine demandé."
+
+#: admin/views/settings.php:127
+msgid "Permanently removes plugin tables and options when the plugin is deleted."
+msgstr "Supprime définitivement les tables et options du plugin lorsqu’il est désinstallé."
+
+#: admin/views/settings.php:132
+msgid "Active profile"
+msgstr "Profil actif"
+
+#: admin/views/settings.php:41
+msgid "Persistent first-party identification after explicit acceptance."
+msgstr "Identification propriétaire persistante après acceptation explicite."
+
+#: admin/views/settings.php:42
+msgid "Consent banner enabled"
+msgstr "Bannière de consentement activée"
+
+#: admin/views/settings.php:44
+msgid "No persistent visitor cookie and no plugin consent banner."
+msgstr "Aucun cookie visiteur persistant et aucune bannière de consentement du plugin."
+
+#: admin/views/settings.php:45
+msgid "No visitor banner"
+msgstr "Aucune bannière visiteur"
+
+#: admin/views/settings.php:132
+msgid "Self-hosted analytics data"
+msgstr "Données analytiques auto-hébergées"
+
+#: admin/views/settings.php:132
+msgid "No advertising tracking"
+msgstr "Aucun suivi publicitaire"
+
+#: admin/views/settings.php:133
+msgid "Developer note"
+msgstr "Note pour les développeurs"
+
+#: admin/views/settings.php:133
+msgid "Mode safeguards are also enforced during option sanitization. A crafted request cannot enable the cookie banner in cookieless mode or disable consent handling in cookie mode."
+msgstr "Les protections propres au mode sont aussi imposées lors de la validation des options. Une requête forgée ne peut ni activer la bannière en mode sans cookie, ni désactiver le consentement en mode avec cookie."
+
+#: admin/views/settings.php:137
+msgid "Ready to apply these settings?"
+msgstr "Prêt à appliquer ces réglages ?"
+
+#: admin/views/settings.php:137
+msgid "The selected profile controls which visitor-side features are active."
+msgstr "Le profil sélectionné détermine les fonctionnalités actives côté visiteur."
+
+#: admin/views/settings.php:137
+msgid "Save settings"
+msgstr "Enregistrer les réglages"
+
+#: admin/views/settings.php:76
+#: admin/views/settings.php:85
+msgid "Select this mode"
+msgstr "Sélectionner ce mode"
+
+#. Plugin URI of the plugin
+#: always-analytics.php
+msgid "https://assistouest.fr/always-analytics-wordpress/"
+msgstr ""
+
+#. Description of the plugin
+#: always-analytics.php
+msgid "Self-hosted, privacy-focused audience analytics for WordPress."
+msgstr ""
+
+#. Author of the plugin
+#: always-analytics.php
+msgid "Adrien Piron"
+msgstr ""
+
+#. Author URI of the plugin
+#: always-analytics.php
+msgid "https://assistouest.fr/"
+msgstr ""
+
+#. translators: %s: "Buy me a coffee" link.
+#: admin/class-always-analytics-admin.php:462
+#, php-format
+msgid "Thank you for using Always Analytics! If it saves you time, %s to support development."
+msgstr "Merci d'utiliser Always Analytics ! Si le plugin vous fait gagner du temps, %s pour soutenir son développement."
+
+#: admin/class-always-analytics-admin.php:463
+msgid "buy me a coffee"
+msgstr "offrez-moi un café"
+
+#. translators: 1: number of tracked page views, 2: "buy me a coffee" link.
+#: admin/class-always-analytics-admin.php:507
+#, php-format
+msgid "%1$s tracked so far, with zero third-party trackers and everything staying on your own server. If Always Analytics is useful to you, %2$s helps keep it maintained."
+msgstr "%1$s comptabilisées jusqu'ici, sans aucun traceur tiers et sans que rien ne quitte votre serveur. Si Always Analytics vous est utile, %2$s aide à en poursuivre le développement."
+
+#. translators: %s: number of page views.
+#: admin/class-always-analytics-admin.php:511
+#, php-format
+msgid "%s page view"
+msgid_plural "%s page views"
+msgstr[0] "%s vue"
+msgstr[1] "%s vues"
+
+#: admin/class-always-analytics-admin.php:515
+msgid "buying me a coffee"
+msgstr "m'offrir un café"
+
+#: admin/class-always-analytics-settings.php:236
+msgid "Configure retention, IP truncation, and uninstall cleanup."
+msgstr "Configurez la rétention, la troncature d'IP et le nettoyage à la désinstallation."
+
+#: admin/views/settings.php:107
+msgid "Control retention, exclusions and proxy handling."
+msgstr "Contrôlez la rétention, les exclusions et la gestion des proxys."
+
+#: admin/views/top-pages.php:13
+msgid "You are not allowed to view this report."
+msgstr "Vous n'êtes pas autorisé(e) à consulter ce rapport."
+
+#: admin/views/visitor-detail.php:13
+msgid "You are not allowed to view visitor details."
+msgstr "Vous n'êtes pas autorisé(e) à consulter le détail des visiteurs."

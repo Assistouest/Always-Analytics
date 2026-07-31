@@ -1,24 +1,41 @@
 <?php
+/**
+ * Deactivation tasks.
+ *
+ * @package Always_Analytics
+ */
+
 namespace Always_Analytics;
 
 if ( ! defined( 'ABSPATH' ) ) {
-    exit;
+	exit;
 }
 
 /**
- * Plugin deactivator — cleans up scheduled tasks.
+ * Deactivation tasks.
  */
 class Always_Analytics_Deactivator {
 
-    public static function deactivate() {
-        // Clear current cron hooks
-        wp_clear_scheduled_hook( 'aa_daily_aggregate' );
-        wp_clear_scheduled_hook( 'aa_daily_purge' );
-        wp_clear_scheduled_hook( 'always_analytics_expire_sessions' );
+	/**
+	 * Remove scheduled tasks without deleting analytics data.
+	 *
+	 * @return void
+	 */
+	public static function deactivate() {
+		$hooks = array(
+			'always_analytics_daily_aggregate',
+			'always_analytics_daily_purge',
+			'always_analytics_expire_sessions',
+			'aa_daily_aggregate',
+			'aa_daily_purge',
+			'aa_expire_sessions',
+			'advstats_daily_aggregate',
+			'advstats_daily_purge',
+			'advstats_expire_sessions',
+		);
 
-        // Clear legacy cron hooks (advstats_ prefix) in case they still exist
-        wp_clear_scheduled_hook( 'advstats_daily_aggregate' );
-        wp_clear_scheduled_hook( 'advstats_daily_purge' );
-        wp_clear_scheduled_hook( 'advstats_expire_sessions' );
-    }
+		foreach ( $hooks as $hook ) {
+			wp_clear_scheduled_hook( $hook );
+		}
+	}
 }
